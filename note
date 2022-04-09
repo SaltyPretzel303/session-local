@@ -1,0 +1,3 @@
+To setup everything with python run next command form ./src
+$ pip install -e .
+
