@@ -5,7 +5,7 @@ import jsonpickle
 import requests
 
 # from api.dep_provider import DepProvider
-from shared_model.stream_info import StreamInfo
+# from shared_model.stream_info import StreamInfo
 from shared_model.ingest_request import IngestRequest
 from shared_model.ingest_info import IngestInfo
 
@@ -19,7 +19,7 @@ INGEST_SERVICE_URL = "http://localhost:8001/create"
 
 
 @app.route('/list', methods=['GET'])
-def list_strams():
+def list_streams():
     # TODO implement by reading stream_registry
     # return jsonpickle.encode(streams_db.list_streams(), unpicklable=False)
     return '200'
@@ -34,10 +34,10 @@ def create_stream():
     print("Requested to create stream: " + stream_title)
     print("By: " + user_id)
 
-    ingest_requst = IngestRequest(user_id, stream_title)
+    ingest_request = IngestRequest(user_id, stream_title)
     ingest_response = requests.post(
         INGEST_SERVICE_URL,
-        json=jsonpickle.encode(ingest_requst, unpicklable=True))
+        json=jsonpickle.encode(ingest_request, unpicklable=True))
 
     if ingest_response.status_code != 200:
         print("Ingest request failed")

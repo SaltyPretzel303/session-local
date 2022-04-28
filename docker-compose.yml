@@ -1,0 +1,21 @@
+version: '3.5'
+
+
+services:
+  client-gateway:
+    container_name: session-client-gateway
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Dockerfile.client_gateway
+    image: session/client-gateway
+    ports:
+      - "0.0.0.0:9991:9991"
+
+  ingest-manager:
+    container_name: session-ingest-manager
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Dockerfile.ingest_manager
+    image: session/ingest-manager
+    ports:
+      - "0.0.0.0:9992:9992"

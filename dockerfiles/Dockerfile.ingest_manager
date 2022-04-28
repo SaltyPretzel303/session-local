@@ -1,0 +1,14 @@
+FROM python:3
+
+WORKDIR /src 
+ADD ./ingest_manager/src/ ./
+ADD ./shared_model ./
+
+RUN pip install . 
+
+EXPOSE 9992
+
+ENTRYPOINT ["python3", "./api.py"]
+
+
+

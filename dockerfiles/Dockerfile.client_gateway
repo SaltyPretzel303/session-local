@@ -1,0 +1,15 @@
+from python:3
+
+FROM python:3
+
+WORKDIR /app
+ADD ./client_gateway/ ./
+ADD ./shared_model ./client_gateway/shared_model
+
+WORKDIR /app/src
+RUN pip install . 
+
+EXPOSE 9991
+
+ENTRYPOINT ["python3", "./api/api.py"]
+
