@@ -1,0 +1,18 @@
+{
+	"dev": {
+		"db_address": "localhost",
+		"db_port": 27017,
+		"db_name": "streams",
+		"db_user": "registry_user",
+		"db_password": "registry_password",
+		"streams_info": "info"
+	},
+	"prod": {
+		"db_address": "session-registry-db",
+		"db_port": 27017,
+		"db_name": "streams",
+		"db_user": "registry_user",
+		"db_password": "registry_password",
+		"streams_info": "info"
+	}
+}

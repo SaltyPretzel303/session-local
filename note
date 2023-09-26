@@ -1,3 +1,18 @@
-To setup everything with python run next command form ./src
+To setup everything with python run next command:
 $ pip install -e .
+# Actually not required since setup is removed from root of the project.
+# The next instruction should do the job instead.
+# But in order to use modules from different dirs projects have to be started 
+# from the .../session_local/ (root of all the projects)
+
+
+To enable importing modules from different dirs: 
+$ export PYTHONPATH=.
+
+
+Usefull links: 
+How to stream webm over rtmp (rtmp doesn't really support webm)
+https://stackoverflow.com/questions/73820302/transcode-webm-to-rtmp
+Symmary: ffmpeg -re -i horse.webm -c:v h264 -c:a aac -f flv "rtmp://example.com/live"
+Pay attention to => -c:v h264 -c:a aac
 

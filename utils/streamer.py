@@ -2,7 +2,7 @@ import ffmpeg
 import requests
 import os
 import jsonpickle
-from shared_model.ingest_info import IngestInfo
+from shared_model.ingest_response import IngestResponse
 
 VIDEO_PATH = '/home/nemanja/Videos/sample_video.mp4'
 INGEST_PATH = 'rtmp://172.17.0.2:9991/live/stream'
@@ -39,7 +39,7 @@ if response.status_code != 200:
 
     exit(1)
 
-json_response: IngestInfo = jsonpickle.decode(response.content)
+json_response: IngestResponse = jsonpickle.decode(response.content)
 
 print("Ingest request was successful")
 print("Will stream video ... ")

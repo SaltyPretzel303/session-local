@@ -1,0 +1,22 @@
+{
+	"dev": {
+		"registry_address": "localhost",
+		"registry_port": 8002,
+		"registry_by_creator": "by_creator",
+		"registry_by_cat": "by_category",
+		"ingest_address": "localhost",
+		"ingest_port": "8001",
+		"ingest_check": "check",
+		"ingest_spawn": "create"
+	},
+	"prod": {
+		"registry_address": "session-stream-registry",
+		"registry_port": 1290,
+		"registry_by_creator": "by_creator",
+		"registry_by_cat": "by_category",
+		"ingest_address": "session-stream-ingest",
+		"ingest_port": "8001",
+		"ingest_check": "check",
+		"ingest_spawn": "create"
+	}
+}

@@ -2,8 +2,9 @@
 
 STREAM_NAME="stream"
 
-VIDEO_PATH="/home/nemanja/Videos/sample_video.mp4"
-INGEST_PATH="rtmp://172.17.0.2:9991/live/"$STREAM_NAME
+VIDEO_PATH="/home/nemanja/Videos/rabbit.mp4"
+# VIDEO_PATH="/home/nemanja/Videos/horse.webm"
+INGEST_PATH="rtmp://localhost:9991/live/"$STREAM_NAME
 
 if [ "$#" -eq "2" ]
 then
@@ -14,7 +15,22 @@ fi
 echo "Streaming: $VIDEO_PATH"
 echo "To: $INGEST_PATH"
 
-ffmpeg -re -i "$VIDEO_PATH" -bsf:v h264_mp4toannexb -c copy -f flv "$INGEST_PATH"
+# ffmpeg -re -i "$VIDEO_PATH" -bsf:v h264_mp4toannexb -c copy -f flv -flvflags no_duration_filesize -movflags frag_keyframe+empty_moov "$INGEST_PATH"
+# ffmpeg -re -i "$VIDEO_PATH" -bsf:v h264_mp4toannexb -c:v libvpx -f alsa "$INGEST_PATH"
+# ffmpeg -re -i ~/Movies/sintel.mp4 -bsf:v h264_mp4toannexb -c copy -f mpegts http://127.0.0.1:8000/publish/sintel
+
+ffmpeg -re -i "$VIDEO_PATH" \
+	-c copy \
+	-flvflags no_duration_filesize  `# to avoid `\
+	-movflags frag_keyframe+empty_moov `# unknown` \
+	-f flv "$INGEST_PATH"
+	
+# for webm format, publishing but watching is laggy ... 
+# ffmpeg -re -i "$VIDEO_PATH" \
+# 	-c:v h264 \
+# 	-c:a aac \
+# 	-flvflags no_duration_filesize \
+# 	-f flv "$INGEST_PATH"
 
 # -re 
 # It is an input parameter that instructs FFmpeg to read the same number of 

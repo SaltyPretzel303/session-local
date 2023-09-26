@@ -1,14 +1,19 @@
 FROM python:3
 
-WORKDIR /src 
-ADD ./ingest_manager/src/ ./
-ADD ./shared_model ./
+WORKDIR /app
+ADD ./ingest_manager/ ./ingest_manager
+ADD ./shared_model ./shared_model
 
+WORKDIR /app/ingest_manager
 RUN pip install . 
 
-EXPOSE 9992
+ENV PYTHONPATH=.
 
-ENTRYPOINT ["python3", "./api.py"]
+EXPOSE 8001
+
+WORKDIR /app
+
+ENTRYPOINT ["python3", "ingest_manager/src/api.py"]
 
 
 

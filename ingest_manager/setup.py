@@ -6,6 +6,7 @@ setup(name='ingest_manager',
     #   packages=['api', 'services', 'data'],
       install_requires=['flask',
                         'flask_restful',
+                        'flask_api',
                         'jsonpickle',
                         'docker'],
       zip_safe=False)

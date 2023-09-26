@@ -1,12 +1,10 @@
 from setuptools import setup
 
 setup(name='client_gateway',
-      #   version='0.1',
       description='client gateway for session-local',
-      packages=['api', 'services', 'data'],
-      install_requires=['flask', 
-      'flask_restful', 
-      'jsonpickle', 
-      'docker',
-      'requests'],
+      install_requires=['flask',
+                        'flask_api',
+                        'flask_restful',
+                        'jsonpickle',
+                        'requests'],
       zip_safe=False)
