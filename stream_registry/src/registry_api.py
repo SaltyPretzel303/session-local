@@ -90,6 +90,7 @@ def get_by_category(category: str):
 
 if __name__ == '__main__':
     app.run(port='8002')
+    # app.run(host='0.0.0.0', port='8001')  # possibly will be required
 
 # check out this link
 # how to create/start/stop containers over rest

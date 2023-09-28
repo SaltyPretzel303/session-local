@@ -35,7 +35,7 @@ class AppConfig:
 
     @staticmethod
     def resolve_stage() -> str:
-        if hasattr(os.environ, AppConfig.STAGE_ENV_VAR):
+        if AppConfig.STAGE_ENV_VAR in os.environ:
             return os.environ[AppConfig.STAGE_ENV_VAR]
 
         else:
