@@ -1,6 +1,7 @@
 # from enum import Enum
 from dataclasses import dataclass
 
+
 class ResponseStatus:
     SUCCESS = 'Success'
     ERROR = 'Error'

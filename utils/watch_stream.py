@@ -1,11 +1,11 @@
 import sys
 import vlc
 
-LOCAL_STREAM = "/home/nemanja/Videos/rabbit.mp4"
-REMOTE_STREAM = "http://localhost:9992/hlsstream/stream.m3u8"
+LOCAL_STREAM = "/home/nemanja/Videos/song.mp4"
+REMOTE_STREAM = "http://localhost:8080/live/mystream/index.m3u8"
 
+DEFAULT_STREAM_URL = LOCAL_STREAM
 DEFAULT_STREAM_URL = REMOTE_STREAM
-# DEFAULT_STREAM_URL = LOCAL_STREAM
 
 
 def watch_stream(stream_url):
@@ -17,7 +17,7 @@ def watch_stream(stream_url):
     Instance = vlc.Instance()
     player = Instance.media_player_new()
     Media = Instance.media_new(stream_url)
-    Media.get_mrl()
+    print(Media.get_mrl())
     player.set_media(Media)
     player.play()
 

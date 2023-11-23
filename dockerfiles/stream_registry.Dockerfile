@@ -15,4 +15,4 @@ ENV REGISTRY_STAGE='prod'
 
 WORKDIR /app
 
-ENTRYPOINT ["python","stream_registry/src/registry_api.py"]
+ENTRYPOINT ["python","stream_registry/src/api.py"]

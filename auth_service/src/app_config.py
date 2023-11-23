@@ -3,15 +3,12 @@ import os
 
 class AppConfig:
 
-    # Required instead of just app_config.json because the app is gonna be run
-    # from the parent dir ...
-    CONFIG_PATH = "client_gateway/app_config.json"
+    INSTANCE = None
 
-    STAGE_ENV_VAR = "GATEWAY_STAGE"
+    CONFIG_PATH = "auth_service/src/app_config.json"
+    STAGE_ENV_VAR = "AUTH_STAGE"
     DEV_STAGE = "dev"
     PROD_STAGE = "prod"
-
-    INSTANCE = None
 
     @staticmethod
     def get_instance():
@@ -23,11 +20,11 @@ class AppConfig:
     @staticmethod
     def load_config():
         file = open(AppConfig.CONFIG_PATH, "r")
+
         raw_content = file.read()
-        # print(f"config: \n{raw_content}")
         json_content = json.loads(raw_content)
 
-        stage = AppConfig.reslove_stage()
+        stage = AppConfig.resolve_stage()
         print(f"Config stage resolved to: {stage}")
 
         if stage == AppConfig.PROD_STAGE:
@@ -36,7 +33,7 @@ class AppConfig:
             return json_content[AppConfig.DEV_STAGE]
 
     @staticmethod
-    def reslove_stage() -> str:
+    def resolve_stage() -> str:
         if AppConfig.STAGE_ENV_VAR in os.environ:
             return os.environ[AppConfig.STAGE_ENV_VAR]
 

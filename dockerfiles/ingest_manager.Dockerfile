@@ -13,7 +13,4 @@ EXPOSE 8001
 
 WORKDIR /app
 
-ENTRYPOINT ["python3", "ingest_manager/src/api.py"]
-
-
-
+ENTRYPOINT ["python3", "-u", "ingest_manager/src/api.py"]

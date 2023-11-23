@@ -1,6 +1,6 @@
 #!/bin/bash
 
-STREAM_NAME="stream"
+STREAM_NAME="some_username"
 
 VIDEO_PATH="/home/nemanja/Videos/rabbit.mp4"
 # VIDEO_PATH="/home/nemanja/Videos/horse.webm"
@@ -21,7 +21,7 @@ echo "To: $INGEST_PATH"
 
 ffmpeg -re -i "$VIDEO_PATH" \
 	-c copy \
-	-flvflags no_duration_filesize  `# to avoid `\
+	-flvflags no_duration_filesize  `# to avoid ` \
 	-movflags frag_keyframe+empty_moov `# unknown` \
 	-f flv "$INGEST_PATH"
 	

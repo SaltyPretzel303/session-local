@@ -14,5 +14,5 @@ ENV PYTHONPATH=.
 ENV GATEWAY_STAGE='prod'
 
 WORKDIR /app
-ENTRYPOINT ["python3", "client_gateway/src/gateway_api.py"]
+ENTRYPOINT ["python3", "client_gateway/src/api.py"]
 

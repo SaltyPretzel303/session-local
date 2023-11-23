@@ -63,7 +63,8 @@ def register():
 
     content_type = request.headers.get('Content-type')
     if content_type != JSON_CONTENT_TYPE:
-        return f"Content-type not supported (only {JSON_CONTENT_TYPE} allowed) ... ", status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+        return f"Content-type not supported (only {JSON_CONTENT_TYPE} allowed) ... ", \
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
 
     info = StreamInfo(**request.get_json())
 
@@ -71,7 +72,8 @@ def register():
     if res is not None:
         return json_serialize(res), status.HTTP_200_OK
     else:
-        return "Failure ... ", status.HTTP_500_INTERNAL_SERVER_ERROR
+        return "Failure ... ",\
+            status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
 @app.route("/by_category/<category>", methods=['GET'])

@@ -1,11 +1,16 @@
+from multiprocessing import Event
+from threading import Thread
 from flask import Flask, request, jsonify, send_file
 from flask_restful import Resource, Api
-from flask_api import status
+from requests import get
+# from flask_api import status
 import jsonpickle
-import docker
 
 from shared_model.ingest_response import IngestResponse, ResponseStatus
 from shared_model.spawn_stream_request import SpawnStreamRequest
+from shared_model.ingest_data import IngestData
+
+import signal 
 
 INGEST_SERVICE_IMAGE = "session/ingest"
 INGEST_PATH = 'live/stream'
@@ -13,63 +18,113 @@ INGEST_PATH = 'live/stream'
 app = Flask(__name__)
 api = Api(app)
 
-docker_client = docker.from_env()
+# TODO repace this with some kind of db 
+active_ingests = {}
 
-# TODO somehow get some available port ...
-OUTSIDE_INGEST_PORT = '9991'
-OUTSIDE_WATCH_PORT = '9992'
-
+quit_event = Event()
 
 def json_serialize(content) -> str:
-    return jsonpickle.encode(content, unpicklable=False)
+	return jsonpickle.encode(content, unpicklable=False)
+
+@app.route('/register', methods=['POST'])
+def register():
+	if request.data is None: 
+		return "No data provided ... ", "400" # bad request
+	
+	if not request.is_json: 
+		return "Json data required ... ", "415" # unsupported media type 
+
+	try: 
+		reg_request = IngestData(**request.get_json())
+	except TypeError: 
+		print("Unable to parse incoming data ... ")
+		
+		return "Error parsing data ... ", "422" # unprocessable content
+
+	if reg_request.form_id() in active_ingests:
+		return "Ingest already registered ... ", "200"
+	else:
+		active_ingests[reg_request.form_id()] = reg_request
+		print(active_ingests)
+
+		return "Ingest registered ... ", "200"
+
+@app.route('/unregister/<id>', methods=['GET'])
+def unregister(id):
+	if id is None or id == "":
+		return "400" # bad request
+
+	if id in active_ingests:
+		del active_ingests[id]
+		return "200"
+	else:
+		return "404"
+
+def is_free(key_value):
+	return key_value[1].streams_cnt < key_value[1].max_streams
+
+def get_free_ingest():
+	return next(filter(is_free, active_ingests.items()), None)
+
+def form_url(data:IngestData):
+	return f"rtmp://{data.ip}:{data.port}/{data.ingest_path}"
+
+@app.route("/get_ingest", methods=["GET"])
+def get_ingest():
+	free_ingest:IngestData = get_free_ingest()
+
+	if free_ingest is None:
+		print("Free ingest not fount ... ")
+		return "No free ingests ...", "404" # not fount 
+	
+	print(active_ingests)
+
+	return form_url(free_ingest), "200" # all good 
+
+def hc_check(ing_data: IngestData):
+	url = ing_data.health_check_path
+	try:
+		hc_resp = get(url)
+
+		if hc_resp.status_code != 200:
+			raise Exception("Received not-200 code  ... ")
+		
+		return True
+	except:
+		print(f"Failed to do hc on: {url}")
+		return False
+
+# TODO add list ingest 
+
+def poller():
+	while not quit_event.is_set():
+		global active_ingests
+		active_ingests= { key:active_ingests[key] \
+					for key in active_ingests \
+					if hc_check(active_ingests[key]) }
 
 
-@app.route('/create', methods=['GET'])
-def create_stream_ingest():
+		print(f"Active configs cnt: {len(active_ingests)} ")
+		# TODO externalize this to config
 
-    ing_request = SpawnStreamRequest(**request.args)
+		quit_event.wait(10)
 
-    print("Will try to spawn some ingest for you ... ")
 
-    # TODO Read from config
-    container_name = "ingest_for_" + ing_request.title
-    port_mapping = {
-        OUTSIDE_INGEST_PORT+'/tcp': '9991',
-        OUTSIDE_WATCH_PORT+'/tcp': '9992'
-        # 9992 should be exposed on media server or cdn
-    }
+def quit_handler(signo, _frame):
+	print(f"Handling {signo} ... ")
 
-    container = docker_client.containers.run(INGEST_SERVICE_IMAGE,
-                                             command=None,
-                                             auto_remove=True,
-                                             detach=True,
-                                             name=container_name,
-                                             ports=port_mapping,
-                                             volumes=None)
+	if not quit_event.is_set():
+		quit_event.set()
 
-    if container is None:
-        print("Failed to spawn ingest ... ")
-        return IngestResponse(ResponseStatus.ERROR, "", "", ""), status.HTTP_500_INTERNAL_SERVER_ERROR
+	print(f"{signo} handled ... ")
 
-    cont_info = docker_client.containers.get(container_name)
-
-    cont_ip = cont_info.attrs \
-        .get('NetworkSettings') \
-        .get('Networks') \
-        .get('bridge') \
-        .get('IPAddress')
-    cont_id = cont_info.attrs.get("Id")
-
-    inge_response = IngestResponse(ResponseStatus.SUCCESS,
-                                   cont_ip,
-                                   OUTSIDE_INGEST_PORT,
-                                   cont_id)
-
-    print(json_serialize(inge_response))
-
-    return json_serialize(inge_response), status.HTTP_200_OK
-
+	exit(0)
 
 if __name__ == '__main__':
-    app.run(port='8001')
-    # app.run(host='0.0.0.0', port='8001')  # possibly will be required
+
+	signal.signal(signal.SIGINT, quit_handler)
+	signal.signal(signal.SIGTERM, quit_handler)
+
+	poll_thread = Thread(target=poller)
+	poll_thread.start()
+	app.run(host='0.0.0.0', port='8001')

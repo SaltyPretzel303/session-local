@@ -1,56 +1,104 @@
 version: '3.5'
 
+networks: 
+  session-net: 
+    driver: bridge
+    name: session-net
+    # name: session-net
+    # external: true
 
 services:
   client-gateway:
     container_name: session-client-gateway
     build:
       context: ./
-      dockerfile: ./dockerfiles/Dockerfile.client_gateway
+      dockerfile: ./dockerfiles/client_gateway.Dockerfile
     image: session/client-gateway
     ports:
       - "0.0.0.0:8000:8000"
+    networks: 
+      - session-net
+    stop_signal: SIGINT
+    # Flask will quit the app on SIGINT. 
+    # Docker (by default) sends SIGTERM and if that doesn't work 
+    # SIGKILL will kill the process.
+
+  auth-service:
+    container_name: session-auth
+    build: 
+      context: ./
+      dockerfile: ./dockerfiles/auth.Dockerfile
+    image: session/auth-service
+    ports:
+      - "0.0.0.0:8003:8003"
+    networks: 
+      - session-net
+    stop_signal: SIGINT
+    # Flask will quit the app on SIGINT. 
+    # Docker (by default) sends SIGTERM and if that doesn't work 
+    # SIGKILL will kill the process.
 
   ingest-manager:
     container_name: session-ingest-manager
     build:
       context: ./
-      dockerfile: ./dockerfiles/Dockerfile.ingest_manager
+      dockerfile: ./dockerfiles/ingest_manager.Dockerfile
     image: session/ingest-manager
-    volumes: 
-      - /var/run/docker.sock:/var/run/docker.sock
+    # volumes: 
+    #   - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "0.0.0.0:8001:8001"
+    networks: 
+      - session-net
+    stop_signal: SIGINT
+    # Flask will quit the app on SIGINT. 
+    # Docker (by default) sends SIGTERM and if that doesn't work 
+    # SIGKILL will kill the process.
 
   ingest:
     container_name: session-ingest
     build:
       context: ./
-      dockerfile: dockerfiles/Dockerfile.ingest
+      dockerfile: dockerfiles/ingest.Dockerfile
     image: session/ingest
     ports: 
-      - "0.0.0.0:9991:9991"
-      - "0.0.0.0:9992:9992"
+      - "0.0.0.0:9090:9090"
+      - "0.0.0.0:9080:9080"
+    networks: 
+      - session-net
     # volumes: 
-    #   - ./ingest_server/nginx.config:/etc/nginx/nginx.conf
+    #   - ./ingest/nginx.config:/etc/nginx/nginx.conf
 
   stream-registry:
     container_name: sessin-stream-registry
     build: 
       context: ./
-      dockerfile: ./dockerfiles/Dockerfile.stream_registry
+      dockerfile: ./dockerfiles/stream_registry.Dockerfile
     image: session/stream-registry
     ports:
-      - "0.0.0.0:8001:8001"
+      - "0.0.0.0:8002:8002"
+    networks: 
+      - session-net
 
   registry-database:
     container_name: session-registry-db
     build: 
       context: ./
-      dockerfile: ./dockerfiles/Dockerfile.registry_db
+      dockerfile: ./dockerfiles/registry_db.Dockerfile
     image: session/registry-db
     ports: 
       - "0.0.0.0:27017:27017"
+    networks: 
+      - session-net
 
-# volumes:
-#   ingest_srever/nginx.config
+  auth-database:
+    container_name: session-auth-db
+    build: 
+      context: ./ 
+      dockerfile: ./dockerfiles/auth_db.Dockerfile
+    image: session/auth-db
+    ports: 
+      - "0.0.0.0:27018:27017"
+    networks: 
+      - session-net
+
