@@ -2,6 +2,7 @@ import random
 import string
 
 from flask import Flask, Response, request, session, g
+from flask_api import status
 from flask_restful import Api
 from flask_session import Session
 
@@ -54,30 +55,29 @@ def get_db()->Db:
 def register():
 
 	if request.data is None:
-		return "No data provided ...", "400" # bad request
+		return "No data provided ...", status.HTTP_400_BAD_REQUEST # bad request
 	
 	if not request.is_json:
-		return "Json data required ... ", "415" # unsupported media type 
+		return "Json data required ... ", status.HTTP_415_UNSUPPORTED_MEDIA_TYPE # unsupported media type 
 	
 	try:
 		reg_request = RegisterRequest(**request.get_json())
+		if reg_request is None:
+			raise Exception("Error parsing data ... ")
 	except TypeError:
 		print("Unable to parse incoming data: ")
 		print(request.get_json())
 
-		return "Error parsing data ... ", "422" # unprocessable content
+		return "Error parsing data ... ", status.HTTP_400_BAD_REQUEST
+		# Should return 422 but this one is not defined in status.
 	
-	
-	if reg_request is None:
-		return "Error parsing data ... ", "422" # unprocessable content
-
 	print("Register request ... ")
 	print(json_serialize(reg_request))
 
 	user = get_db().get_user(reg_request.email)
 
 	if user is not None:
-		return "This email is already used ... ","200"
+		return "This email is already used ... ", status.HTTP_200_OK
 	else:
 		new_user = User(username = reg_request.username,
 						email = reg_request.email,
@@ -87,65 +87,60 @@ def register():
 		ret_obj = get_db().save(new_user)
 
 		if ret_obj is not None:
-			return ret_obj.to_json(), "200"
+			return ret_obj.to_json(), status.HTTP_200_OK
 		else:
-			return "Failed to crate new user ... ", "500" # internal server error
+			return "Failed to crate new user ... ", status.HTTP_500_INTERNAL_SERVER_ERROR
 		
 
 @app.route("/authenticate", methods=["POST"])
 def authenticate():
 
+	if USER_SESSION_VAR in session:
+		print(f"User was already authenticated ... ")
+		user_data = session[USER_SESSION_VAR]
+		return user_data.to_json(), status.HTTP_200_OK
+
 	if request.data is None:
-		return "No data provided ...", "400" # bad request
+		return "No data provided ...", status.HTTP_400_BAD_REQUEST
 	
 	if not request.is_json:
-		return "Json data required ... ", "415" # unsupported media type 
+		return "Json data required ... ", status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
 	
 	try:
 		auth_request = AuthRequest(**request.get_json())
-	except TypeError:
+
+		if auth_request is None:
+			raise Exception("Failed to parse data ... ")
+	except (TypeError, Exception) as e:
 		print("Unable to parse incoming data: ")
-		print(request.get_json())
+		print(f"Err: {e}")
+		print(f"Data: \n{request.get_json()}")
+		return "Error parsing data ... ", status.HTTP_400_BAD_REQUEST
 
-		return "Error parsing data ... ", "422" # unprocessable content
-	
-	
-	if auth_request is None:
-		return "Error parsing data ... ", "422" # unprocessable content
-
-	print("Authenticate request ... ")
 	print(json_serialize(auth_request))
 
-	user_data = None
+	user = get_db().get_user(auth_request.email)
 
-	if USER_SESSION_VAR in session:
-		print(f"User {auth_request.email} is already authenticated ... ")
-		user_data = session[USER_SESSION_VAR]
-		return user_data.to_json(), "200" # user is already authenticated
+	if user is None:
+		return "User doesn't exists ... ", status.HTTP_401_UNAUTHORIZED
+	
+	if user.password != auth_request.password:
+		print("Wrong password ... ")
+		return "Wrong password ... ", status.HTTP_401_UNAUTHORIZED
+	
+	print(f"Successfully authenticated {auth_request.email} ... ")
 
-	else:
-		user = get_db().get_user(auth_request.email)
-
-		if user is None:
-			return "User doesn't exists ... ", "401" # unauthorized
-		else:
-			if user.password != auth_request.password:
-				print("Wrong password ... ")
-				return "Wrong password ... ", "401" # unauthorized				
-			else:
-				print(f"Successfully authenticated {auth_request.email} ... ")
-
-				user.last_authenticated = datetime.now().isoformat()
-				res_data = get_db().save(user)
-				session[USER_SESSION_VAR] = res_data
-
-				return res_data.to_json(), "200" # successfully authenticated 
+	user.last_authenticated = datetime.now().isoformat()
+	res_data = get_db().save(user)
+	session[USER_SESSION_VAR] = res_data
+	
+	return res_data.to_json(), status.HTTP_200_OK
 
 
 @app.route("/get_key", methods=["GET"])
 def get_key():
 	if USER_SESSION_VAR not in session:
-		return "User not authenticated ... ", "403" # unauthorized
+		return "User not authenticated ... ", status.HTTP_403_FORBIDDEN
 	
 	s_user = session[USER_SESSION_VAR]
 	exp_date = s_user.key_exp_date
@@ -161,15 +156,16 @@ def get_key():
 		
 		get_db().save(s_user)
 		
-
-	return s_user.stream_key, "200"
+	# TODO Return value should be some kind of object and not just ... text.
+	return s_user.stream_key, status.HTTP_200_OK
 		
 
 def  is_expired(key_time: datetime)->bool:
 	return datetime.now() > key_time
 
+# Accessed by nginx-rtmp module from the on_publish directive.
 @app.route("/match_key", methods=["POST"])
-def match_key():
+def match_key_post():
 
 	args = url_decode(str(request.get_data()))
 
@@ -177,14 +173,26 @@ def match_key():
 	user = get_db().get_by_key(key)
 
 	if user is None or is_expired(user.key_exp_date):
-		print(f"key: {key} ... ")
-		return "Invalid key ... ", "404"
+		return "Invalid key ... ", status.HTTP_404_NOT_FOUND
 
 	print(f"Successfully redirected to: {user.username}")
 
 	resp = Response(status=302)
 	resp.headers["Location"] = user.username
 	return resp
+
+@app.route("/match_key/<key>", methods=["GET"])
+def match_key_get(key: str):
+
+	if key is None or key == "":
+		return "Please provide a key ... ", status.HTTP_400_BAD_REQUEST
+
+	user = get_db().get_by_key(key)
+	
+	if user is None or is_expired(user.key_exp_date):
+		return "Invalid key provided ... ", status.HTTP_404_NOT_FOUND
+
+	return user.username, status.HTTP_200_OK
 
 def url_decode(data:str):
 	return { pair.split("=")[0]:pair.split("=")[1]  for pair in data.split("&")}
@@ -202,12 +210,12 @@ def authorize():
 		print(f"user_name (from session ): {user_name}")
 
 		if is_authorized(user_name, stream_name):
-			return "200"
+			return status.HTTP_200_OK
 		else:
-			return "401"  # redirect to login or just ... discard
+			return status.HTTP_401_UNAUTHORIZED  # redirect to login or just ... discard
 	else:
 		print("No user session ... ")
-		return 'Not authorized ... ', "403"
+		return 'Not authorized ... ', status.HTTP_403_FORBIDDEN
 
 def is_authorized(user: str, stream: str) -> bool:
 	# either db check
@@ -225,9 +233,9 @@ def validate():
 	s_user = session.get("user")
 
 	# if is_authorized(s_user.username, stream_name):
-	#     return "200"
+	#     return status.HTTP_200_OK
 	# else:
-	#     return "403"
+	#     return status.HTTP_403_FORBIDDEN
 
 	print(f"stream: {stream_name}")
 	# print(f"sessionId: {session_id}")
@@ -237,12 +245,12 @@ def validate():
 		username = s_user.username
 		print(f"usernameFromSession: {username}")
 		if is_authorized(username, stream_name):
-			return "200"
+			return status.HTTP_200_OK
 		else:
-			return "403"  # not authorized
+			return status.HTTP_403_FORBIDDEN
 
 	else:
-		return "403"  # to login
+		return status.HTTP_403_SEE_OTHER
 
 
 
@@ -251,7 +259,7 @@ def stop_stream():
 	print(request.headers)
 	print("stream stopped")
 
-	return "200"
+	return status.HTTP_200_OK
 
 if __name__ == '__main__':
 	app.run(port='8003', host="0.0.0.0")

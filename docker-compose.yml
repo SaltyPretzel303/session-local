@@ -70,7 +70,7 @@ services:
     #   - ./ingest/nginx.config:/etc/nginx/nginx.conf
 
   stream-registry:
-    container_name: sessin-stream-registry
+    container_name: session-stream-registry
     build: 
       context: ./
       dockerfile: ./dockerfiles/stream_registry.Dockerfile
@@ -79,6 +79,10 @@ services:
       - "0.0.0.0:8002:8002"
     networks: 
       - session-net
+    stop_signal: SIGINT
+    # Flask will quit the app on SIGINT. 
+    # Docker (by default) sends SIGTERM and if that doesn't work 
+    # SIGKILL will kill the process.
 
   registry-database:
     container_name: session-registry-db

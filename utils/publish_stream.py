@@ -1,19 +1,20 @@
 import sys
 import ffmpeg
 import pickle
-from requests import post, Response
+from requests import post, get,  Response
 from requests import Session
 
 CONTENT_PATH = '/home/nemanja/Videos/clock.mp4'
-INGEST_URL = 'rtmp://localhost:9000/ingest' 
+INGEST_URL = 'rtmp://localhost:9090/ingest' 
 
-USERNAME = "someone"
-EMAIL = "some_user@some.com"
-PASSWORD = "some_password"
+USERNAME = "streamer"
+EMAIL = "some_streamer@session.com"
+PASSWORD = "strong_password"
 
 AUTH_ROUTE = "http://localhost:8003/authenticate"
 REGISTER_ROUTE = "http://localhost:8003/register"
 GETKEY_ROUTE = "http://localhost:8003/get_key"
+GET_INGEST_ROUTE="http://localhost:8001/get_ingest"
 
 COOKIE_PATH = "./cookie"
 
@@ -23,9 +24,9 @@ def get_cookie_path(user: str):
 def authenticate(username: str, email: str, password:str ):
 
 	register_data = {
-		"username":username,
-		"password":password,
-		"email":email
+		"username": username,
+		"password": password,
+		"email": email
 	}
 
 	print("Doing register ... ")
@@ -98,6 +99,22 @@ def request_key():
 	return key_res.text
 
 
+def get_ingest_url():
+	ingest = None
+	try:
+		ingest_res = get(GET_INGEST_ROUTE)
+
+		if ingest_res.status_code != 200:
+			raise Exception("Return code is not 200 ... ")
+		
+		ingest = ingest_res.text
+
+	except Exception as e:
+		print(f"Failed to optain free ingest: {e}")
+	
+	return ingest
+
+
 def publish_stream(video_path, ingest_path, stream_name):
 
 	# process = (
@@ -151,7 +168,12 @@ if __name__ == "__main__":
 		print("Failed to obtain stream key ... ")
 		exit(2)
 
-	print(f"publishing : {CONTENT_PATH} to: {INGEST_URL}/{stream_key}")
+	ingest_url = get_ingest_url()
+	if ingest_url is None: 
+		print("Failed ot obtain free ingest ... ")
+		exit(3)
+
+	print(f"publishing : {CONTENT_PATH} to: {ingest_url}/{stream_key}")
 
 	process = publish_stream(CONTENT_PATH, INGEST_URL, stream_key)
 	input("Press Enter to stop publisher ...")

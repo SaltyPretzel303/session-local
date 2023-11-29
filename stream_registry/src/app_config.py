@@ -6,7 +6,7 @@ class AppConfig:
 
     INSTANCE = None
 
-    CONFIG_PATH = "stream_registry/app_config.json"
+    CONFIG_PATH = "stream_registry/src/app_config.json"
     STAGE_ENV_VAR = "REGISTRY_STAGE"
     DEV_STAGE = "dev"
     PROD_STAGE = "prod"

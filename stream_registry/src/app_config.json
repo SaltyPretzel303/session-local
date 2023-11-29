@@ -5,7 +5,11 @@
 		"db_name": "streams",
 		"db_user": "registry_user",
 		"db_password": "registry_password",
-		"streams_info": "info"
+		"streams_info": "info",
+		"auth_service_ip": "localhost",
+		"auth_service_port": 8003,
+		"match_key_path": "match_key",
+		"authenticate_path": "authenticate"
 	},
 	"prod": {
 		"db_address": "session-registry-db",
@@ -13,6 +17,10 @@
 		"db_name": "streams",
 		"db_user": "registry_user",
 		"db_password": "registry_password",
-		"streams_info": "info"
+		"streams_info": "info",
+		"auth_service_ip": "session-auth",
+		"auth_service_port": 8003,
+		"match_key_path": "match_key",
+		"authenticate_path": "authenticate"
 	}
 }

@@ -97,13 +97,13 @@ def start_stream():
     return json_serialize(response_obj), response_status
 
 
-def stream_data_to_info(live_data) -> StreamInfo:
-    return StreamInfo(live_data[1]['title'],
-                      live_data[1]['creator'],
-                      live_data[1]['category'],
-                      live_data[1]['stream_id'],
-                      live_data[1]['ingest_ip'],
-                      live_data[1]['media_servers'])
+# def stream_data_to_info(live_data) -> StreamInfo:
+#     return StreamInfo(live_data[1]['title'],
+#                       live_data[1]['creator'],
+#                       live_data[1]['category'],
+#                     #   live_data[1]['stream_id'],
+#                       live_data[1]['ingest_ip'],
+#                       live_data[1]['media_servers'])
 
 
 def ingest_data_to_info(title: str,

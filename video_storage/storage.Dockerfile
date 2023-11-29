@@ -1,1 +1,0 @@
-FROM tiangolo/nginx-rtmp

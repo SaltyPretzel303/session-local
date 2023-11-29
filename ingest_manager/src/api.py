@@ -2,6 +2,7 @@ from multiprocessing import Event
 from threading import Thread
 from flask import Flask, request, jsonify, send_file
 from flask_restful import Resource, Api
+from flask_api import status
 from requests import get
 # from flask_api import status
 import jsonpickle
@@ -23,48 +24,55 @@ active_ingests = {}
 
 quit_event = Event()
 
+def log_ingests():
+	json_serialize(active_ingests)
+
 def json_serialize(content) -> str:
 	return jsonpickle.encode(content, unpicklable=False)
 
 @app.route('/register', methods=['POST'])
 def register():
 	if request.data is None: 
-		return "No data provided ... ", "400" # bad request
+		return "No data provided ... ", status.HTTP_400_BAD_REQUEST
 	
 	if not request.is_json: 
-		return "Json data required ... ", "415" # unsupported media type 
+		return "Json data required ... ", status.HTTP_400_BAD_REQUEST
 
 	try: 
 		reg_request = IngestData(**request.get_json())
 	except TypeError: 
 		print("Unable to parse incoming data ... ")
 		
-		return "Error parsing data ... ", "422" # unprocessable content
+		return "Error parsing data ... ", status.HTTP_400_BAD_REQUEST
 
 	if reg_request.form_id() in active_ingests:
-		return "Ingest already registered ... ", "200"
+		return "Ingest already registered ... ", status.HTTP_200_OK
 	else:
 		active_ingests[reg_request.form_id()] = reg_request
-		print(active_ingests)
+		log_ingests()
 
-		return "Ingest registered ... ", "200"
+		return "Ingest registered ... ", status.HTTP_200_OK
 
 @app.route('/unregister/<id>', methods=['GET'])
 def unregister(id):
 	if id is None or id == "":
-		return "400" # bad request
+		return status.HTTP_400_BAD_REQUEST
 
 	if id in active_ingests:
 		del active_ingests[id]
-		return "200"
+		return status.HTTP_200_OK
 	else:
-		return "404"
+		return status.HTTP_404_NOT_FOUND
 
 def is_free(key_value):
 	return key_value[1].streams_cnt < key_value[1].max_streams
 
 def get_free_ingest():
-	return next(filter(is_free, active_ingests.items()), None)
+	ingest = next(filter(is_free, active_ingests.items()), None)
+	if ingest is not None:
+		ingest = ingest[1]
+
+	return ingest
 
 def form_url(data:IngestData):
 	return f"rtmp://{data.ip}:{data.port}/{data.ingest_path}"
@@ -75,11 +83,11 @@ def get_ingest():
 
 	if free_ingest is None:
 		print("Free ingest not fount ... ")
-		return "No free ingests ...", "404" # not fount 
+		return "No free ingests ...", status.HTTP_404_NOT_FOUND
 	
-	print(active_ingests)
+	log_ingests()
 
-	return form_url(free_ingest), "200" # all good 
+	return form_url(free_ingest), status.HTTP_200_OK
 
 def hc_check(ing_data: IngestData):
 	url = ing_data.health_check_path
@@ -96,6 +104,8 @@ def hc_check(ing_data: IngestData):
 
 # TODO add list ingest 
 
+HC_CHECK_INTERVAL = 600
+
 def poller():
 	while not quit_event.is_set():
 		global active_ingests
@@ -107,7 +117,7 @@ def poller():
 		print(f"Active configs cnt: {len(active_ingests)} ")
 		# TODO externalize this to config
 
-		quit_event.wait(10)
+		quit_event.wait(HC_CHECK_INTERVAL)
 
 
 def quit_handler(signo, _frame):

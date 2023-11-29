@@ -7,6 +7,8 @@ STREAM_LIMIT="3"
 
 NETWORK="session-net"
 IP_SUBNET="172.23.1"
+BASE_PORT=9090
+INNER_PORT=9090
 
 INGEST_PREFIX="session-ingest-"
 
@@ -16,10 +18,10 @@ then
 	echo "Taking default values for arguments ... "
 else
 
-	if [ "$#" -ge "2" ]
+	if [ "$#" -eq "2" ]
 	then
-		num_of_instances=$1
-		proc_per_instance=$2	
+		INSTANCE_CNT=$1
+		STREAM_LIMIT=$2	
 
 		if [ "$#" -gt "2" ]
 		then
@@ -76,10 +78,13 @@ do
 	container_ip="$IP_SUBNET.$container_ind"
 	echo "Starting ingest: $INGEST_PREFIX$container_ind with ip: $container_ip" 
 
-
+	let target_port=BASE_PORT+container_ind
+	
 	docker run -d \
 				--name "$INGEST_PREFIX$container_ind" \
 				--network "$NETWORK" \
+				--publish "0.0.0.0:$target_port:$INNER_PORT" \
+				--publish "0.0.0.0:8080:8080" \
 				--ip "$container_ip" \
 				 session/ingest '{"ip": "'$container_ip'", "max_streams": '$STREAM_LIMIT'}'
 

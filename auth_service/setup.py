@@ -8,6 +8,7 @@ setup(
                       'flask_session',
                       'jsonpickle',
                       'requests',
+					  "Werkzeug==2.2",
                       'mongoengine',
 					  'python-dateutil'],
     zip_safe=False)

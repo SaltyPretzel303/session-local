@@ -1,12 +1,15 @@
 FROM python 
 
+WORKDIR /app/stream_registry
+ADD stream_registry/setup.py ./setup.py
+RUN pip install . 
+
+ADD stream_registry/src ./src
+
 WORKDIR /app
-ADD stream_registry ./stream_registry
 ADD shared_model ./shared_model
 
 WORKDIR /app/stream_registry
-
-RUN pip install . 
 
 EXPOSE 8002
 
@@ -15,4 +18,4 @@ ENV REGISTRY_STAGE='prod'
 
 WORKDIR /app
 
-ENTRYPOINT ["python","stream_registry/src/api.py"]
+ENTRYPOINT ["python", "-u", "stream_registry/src/api.py"]

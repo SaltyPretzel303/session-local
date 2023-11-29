@@ -1,34 +1,26 @@
 import sys
-import vlc
-
-LOCAL_STREAM = "/home/nemanja/Videos/song.mp4"
-REMOTE_STREAM = "http://localhost:8080/live/mystream/index.m3u8"
-
-DEFAULT_STREAM_URL = LOCAL_STREAM
-DEFAULT_STREAM_URL = REMOTE_STREAM
+from ffpyplayer.player import MediaPlayer
 
 
-def watch_stream(stream_url):
-    if stream_url == None or stream_url == "":
-        stream_url = DEFAULT_STREAM_URL
+PLAYER_WIDTH = 450
+PLAYER_HEIGHT = 400
+DEFAULT_STREAM_URL = "http://localhost:8000/live/mystream/index.m3u8"
 
-    print(f"watching : {stream_url}")
 
-    Instance = vlc.Instance()
-    player = Instance.media_player_new()
-    Media = Instance.media_new(stream_url)
-    print(Media.get_mrl())
-    player.set_media(Media)
-    player.play()
+def watch_stream(stream_url, w, h ):
+	player = MediaPlayer(filename = stream_url)	
+	player.play()
 
 
 if __name__ == "__main__":
 
-    stream_url = DEFAULT_STREAM_URL
-    print(sys.argv)
-    if len(sys.argv) == 2:
-        stream_url = sys.argv[1]
+	stream_url = DEFAULT_STREAM_URL
+	if len(sys.argv) == 2:
+		print("Using passed argument ... ")
+		stream_url = sys.argv[1]
 
-    watch_stream(stream_url)
+	print(f"Watching: {stream_url}")
+	watch_stream(stream_url, PLAYER_WIDTH, PLAYER_HEIGHT)
 
-    input("Press Enter to close stream...")
+
+	input("Press Enter to close stream...")
