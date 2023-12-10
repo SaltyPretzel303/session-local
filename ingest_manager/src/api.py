@@ -22,8 +22,6 @@ api = Api(app)
 # TODO repace this with some kind of db 
 active_ingests = {}
 
-quit_event = Event()
-
 def log_ingests():
 	json_serialize(active_ingests)
 
@@ -89,7 +87,7 @@ def get_ingest():
 
 	return form_url(free_ingest), status.HTTP_200_OK
 
-def hc_check(ing_data: IngestData):
+def is_alive(ing_data: IngestData):
 	url = ing_data.health_check_path
 	try:
 		hc_resp = get(url)
@@ -102,23 +100,27 @@ def hc_check(ing_data: IngestData):
 		print(f"Failed to do hc on: {url}")
 		return False
 
-# TODO add list ingest 
+@app.route("/list", methods=["GET"])
+def list_ingest():
+	return [ form_url(ingest) \
+		for ingest in active_ingests \
+		if is_alive(ingest)], status.HTTP_200_OK
 
 HC_CHECK_INTERVAL = 600
+
+quit_event = Event()
 
 def poller():
 	while not quit_event.is_set():
 		global active_ingests
 		active_ingests= { key:active_ingests[key] \
 					for key in active_ingests \
-					if hc_check(active_ingests[key]) }
+					if is_alive(active_ingests[key]) }
 
 
-		print(f"Active configs cnt: {len(active_ingests)} ")
-		# TODO externalize this to config
+		print(f"Active ingests cnt: {len(active_ingests)} ")
 
 		quit_event.wait(HC_CHECK_INTERVAL)
-
 
 def quit_handler(signo, _frame):
 	print(f"Handling {signo} ... ")

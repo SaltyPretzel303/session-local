@@ -262,4 +262,4 @@ def stop_stream():
 	return status.HTTP_200_OK
 
 if __name__ == '__main__':
-	app.run(port='8003', host="0.0.0.0")
+	app.run(host="0.0.0.0", port='8003')

@@ -168,7 +168,6 @@ def stop_stream():
 	return "Stream removed ... ", status.HTTP_200_OK
 
 if __name__ == '__main__':
-	# app.run(port='8002')
 	app.run(host='0.0.0.0', port='8002')  # possibly will be required
 
 # check out this link

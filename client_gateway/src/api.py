@@ -164,5 +164,4 @@ def form_get_category_url():
 
 
 if __name__ == '__main__':
-    app.run(port='8000')
-    # app.run(host='0.0.0.0', port='8000')  # possibly will be required
+    app.run(host='0.0.0.0', port='8000')  # possibly will be required

@@ -108,21 +108,33 @@ RUN	mkdir /var/lock/nginx && \
 	mkdir /var/www && mkdir /var/www/live
 	
 
+# This will install very old verison of ffmpeg. 
+# Consider doing custom build or specific verison download. 
+RUN apt update; apt install ffmpeg -y
+
 # # Forward logs to Docker
 RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
 	ln -sf /dev/stderr /var/log/nginx/error.log
 
+# Custom launcher was required for ignest registartion upon the ingst startup. 
+# WORKDIR /launcher
+# ADD ./ingest/launcher/* ./
+# RUN pip3 install setuptools
+# RUN pip3 install . 
+
+RUN useradd nginx
+
 # Set up config file
 COPY ingest/nginx.conf /etc/nginx/nginx.conf
+# COPY ingest/min_nginx.conf /etc/nginx/nginx.conf
 
-WORKDIR /launcher
-ADD ./ingest/launcher/* ./
-RUN pip3 install setuptools
-RUN pip3 install . 
+COPY ingest/processor.sh /processor.sh
+RUN chmod a+x /processor.sh
 
 # ingest
 EXPOSE 9090
 # http health_check
 EXPOSE 8080
 
-ENTRYPOINT ["python3", "-u", "launcher.py"]
+# ENTRYPOINT ["python3", "-u", "launcher.py"]
+ENTRYPOINT ["nginx","-g","daemon off;"]

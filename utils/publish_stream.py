@@ -145,10 +145,13 @@ def publish_stream(video_path, ingest_path, stream_name):
 		.input(video_path, re=None)\
 		.output(
 			f"{ingest_path}/{stream_name}",
-			codec="copy",  # use same codecs of the original video
 			format='flv',  # force format
 			flvflags="no_duration_filesize",
-			loglevel="warning"
+			loglevel="warning",
+			vcodec="libx264",
+			acodec="aac",
+			g=60
+			# codec="copy",  # use same codecs of the original video
 		)\
 		.run_async(pipe_stdin=True)
 	
@@ -175,7 +178,9 @@ if __name__ == "__main__":
 
 	print(f"publishing : {CONTENT_PATH} to: {ingest_url}/{stream_key}")
 
-	process = publish_stream(CONTENT_PATH, INGEST_URL, stream_key)
+	# process = publish_stream(CONTENT_PATH, INGEST_URL, stream_key)
+
+	process = publish_stream(CONTENT_PATH, INGEST_URL, "stream")
 	input("Press Enter to stop publisher ...")
 	process.terminate()
 	process.wait()

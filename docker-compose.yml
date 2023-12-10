@@ -38,6 +38,8 @@ services:
     # Docker (by default) sends SIGTERM and if that doesn't work 
     # SIGKILL will kill the process.
 
+  # TODO this one should be removed
+  # it is essentially replaced with the haproxy 
   ingest-manager:
     container_name: session-ingest-manager
     build:
@@ -55,6 +57,18 @@ services:
     # Docker (by default) sends SIGTERM and if that doesn't work 
     # SIGKILL will kill the process.
 
+  ingest-proxy:
+    container_name: session-ingest-proxy
+    build: 
+      context: ./
+      dockerfile: dockerfiles/ingest_proxy.Dockerfile
+    image: session/ingest-proxy 
+    ports:
+      - 0.0.0.0:9000:9000
+      - 0.0.0.0:9001:9999
+    networks: 
+      - session-net
+
   ingest:
     container_name: session-ingest
     build:
@@ -64,6 +78,7 @@ services:
     ports: 
       - "0.0.0.0:9090:9090"
       - "0.0.0.0:9080:9080"
+      - "0.0.0.0:8080:8080"
     networks: 
       - session-net
     # volumes: 

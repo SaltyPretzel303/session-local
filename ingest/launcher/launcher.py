@@ -11,7 +11,7 @@ CONFIG = {
 	"start_server_cmd": "nginx &",
 	"stop_server_cmd":"nginx -s stop", 
 	"reset_policy": False,
-	"initial_interval": 2,
+	"initial_interval": 1,
 	"initial_retries": 5,
 	"check_interval": 120,
 	"hc_port":8080,
@@ -113,7 +113,11 @@ def launch( quit_event):
 		initial_start = False
 
 		print("Launching server ...")
-		os.system(CONFIG["start_server_cmd"])
+		ret_val = os.system(CONFIG["start_server_cmd"])
+
+		if ret_val != 0:
+			print("Error in starting ingest ... ")
+			return 
 
 		retry_count = CONFIG["initial_retries"]
 
@@ -133,9 +137,9 @@ def launch( quit_event):
 				retry_count -= 1
 
 		if server_running and not quit_event.is_set():
-			registration_complete = register_ingest()
+			reg_result = register_ingest()
 
-			if not registration_complete:
+			if not reg_result:
 				print("Failed to register ingest ... ")
 				stop_server()
 				return 
