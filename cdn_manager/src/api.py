@@ -1,44 +1,42 @@
-from threading import Event, Thread
+from sys import argv
 from flask import Flask
 from flask_restful import Api
-from requests import get
 from flask_api import  status
-import signal
+from requests import get
+
+from app_config import AppConfig
+from instance_conf import InstanceConf
+from jsonpickle import encode
 
 
 app = Flask(__name__)
 api = Api(app)
 
-
-region_conf = {
-	"eu": [
-		"127.0.0.1",
-		"127.0.0.2" # fallbacks
-	],
-	"na": [
-		"127.0.0.3",
-		"127.0.0.4" # fallbacks
-	]
-	# hc path 
-}
-
 @app.route("/match_region/<region>", methods=["GET"])
 def match_region(region:str):
-	if region not in region_conf:
+	config = AppConfig.instance
+
+	if region not in config:
 		return "Region not available ... ", status.HTTP_404_NOT_FOUND
 	
-	if not is_available(region_conf[region][0]):
+	if is_available(config[region][0]):
+		return form_hls_path(config[region][0]), status.HTTP_200_OK
+	else:
 		print(f"Region's ({region}) main instance is not available ... ")
 
-		alt_instance = next(filter(is_available, region_conf[region][1:]), default=None)
+		alt_instance = next(filter(is_available, config[region][1:]), None)
+
 		if alt_instance is not None:
-			return alt_instance, status.HTTP_200_OK
+			return form_hls_path(alt_instance), status.HTTP_200_OK
+		else:
+			return "Region not available ... ", status.HTTP_404_NOT_FOUND
 
-	return region_conf[region][0], status.HTTP_200_OK
-		
+def form_hls_path(inst: InstanceConf):
+	return f"http://{inst.ip}:{inst.hls_port}/{inst.hls_path}"
 
-def is_available(addr:str):
-	url = f"{addr}/{region_conf.hc_path}"
+def is_available(conf: InstanceConf):
+	url = form_hc_path(conf)
+	print(f"Checking: {url}")
 	try:
 		res = get(url)
 		if res.status_code != status.HTTP_200_OK:
@@ -48,24 +46,16 @@ def is_available(addr:str):
 
 	return True
 
-# HC_CHECK = 10
-
-# quit_event = Event()
-
-# def quit_handler(signo, _frame):
-# 	return None
-
-# def poller():
-# 	while not quit_event.is_set():
-
-
+def form_hc_path(inst: InstanceConf):
+	return f"http://{inst.ip}:{inst.hc_port}/{inst.hc_path}"
 
 if __name__ == '__main__':
 
-	# signal.signal(signal.SIGTERM, quit_handler)
-	# signal.signal(signal.SIGINT, quit_handler)
+	print(argv)
+	if len(argv) > 1:
+		print("External cdn configuration passed: ")
+		print(argv[1])
 
-	# poll_thread = Thread(target=poller)
-	# poll_thread.start()
-		
+		AppConfig.load_config(argv[1])
+
 	app.run(host="0.0.0.0", port='8004')

@@ -1,5 +1,8 @@
 #!/usr/bin/python 
 
+# Filter containers (all of them) by the label associated with the ingest server.
+# If remove flag is set (y as an cli argument) stopped containers will be removed.
+
 from sys import argv
 from docker import APIClient
 
@@ -27,7 +30,7 @@ if len(ingests) > 0:
 	print("========")
 
 	if not REMOVE_FLAG:
-		remove_input = input("Do you want to remove this containers ? (y to proceed)")
+		remove_input = input("Do you want to remove this containers ? (y to proceed): ")
 		REMOVE_FLAG = remove_input == "y"
 
 	if REMOVE_FLAG:
@@ -37,43 +40,3 @@ if len(ingests) > 0:
 
 print("Exiting ... ")
 	
-
-# ingests=$(docker ps -a --filter name=$INGEST_PREFIX'(\d)+' -q)
-
-# if [ "$ingests" == "" ]
-# then 
-# 	echo "Ingest not found ... "
-# 	exit 0
-# fi 
-
-# for ingest_id in $ingests
-# do 
-# 	echo $(docker inspect $ingest_id --format='{{.Name}} {{.State.Status}}')
-# 	docker stop $ingest_id
-# done 
-
-# echo "============"
-
-# for ingest_id in $ingests
-# do 
-# 	echo $(docker inspect $ingest_id --format='{{.Name}} {{.State.Status}}')
-# done 
-
-# if [ "$REMOVE_FLAG" -ne "1" ]
-# then 
-# 	read -p "To remove ingests type y: " flag_txt
-# 	if [ "$flag_txt" == "y" ]
-# 	then 
-# 		REMOVE_FLAG=1
-# 	fi
-# fi 
-
-# if [ "$REMOVE_FLAG" -eq "1" ]
-# then 
-# 	echo "Removing ingests ... "
-
-# 	for ingest in $ingests
-# 	do 
-# 		docker remove $ingest
-# 	done
-# fi 

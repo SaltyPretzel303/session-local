@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Using haproxy runtime_cli removes ingest backend server instance from the loabalaners's 
+# server pool.
+
 if [ "$#" -ne '1' ]
 then 
 	echo "Please provide server name."

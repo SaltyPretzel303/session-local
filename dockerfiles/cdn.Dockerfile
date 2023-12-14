@@ -121,9 +121,9 @@ COPY cdn/nginx.conf /etc/nginx/nginx.conf
 # RUN pip3 install . 
 
 # ingest
-EXPOSE 9000
+EXPOSE 11000
 # hls content
-EXPOSE 8000
+EXPOSE 10000
 
 # ENTRYPOINT ["python3", "-u", "launcher.py"]
 

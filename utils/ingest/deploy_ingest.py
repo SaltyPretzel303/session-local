@@ -1,5 +1,12 @@
 #!/usr/bin/python 
 
+# Start choosen number of containers representing ingest servers.
+# Number of containers to start as well as the starting index to use for 
+# naming them are passed as sa cli arguments. 
+
+# ./deoploy_cdn.py ingests_cnt start_index
+
+
 from sys import argv
 from docker import APIClient
 import re
@@ -77,6 +84,8 @@ else:
 		n_config = d_api.create_networking_config({
 			NETWORK: d_api.create_endpoint_config(ipv4_address=addr)
 		})
+
+		print(f"Starting: {c_name} addr: {addr}")
 
 		ing_id = d_api.create_container(image=IMAGE_NAME,
 								  	detach=True, 

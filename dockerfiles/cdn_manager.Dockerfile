@@ -6,8 +6,6 @@ RUN pip install .
 
 ADD cdn_manager/src/ ./src/
 
-ENV CDN_STAGE='prod'
-
 EXPOSE 8004
 
 ENTRYPOINT ["python", "-u", "/app/src/api.py"]

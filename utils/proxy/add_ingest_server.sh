@@ -1,5 +1,8 @@
 #!/bin/bash 
 
+# Using haproxy runtime_cli adds ingest backend server instance to the loabalaners's 
+# server pool.
+
 if [ "$#" -ne '2' ]
 then 
 	echo "Please provide server name and ip:port"
@@ -15,8 +18,7 @@ addr=$2
 echo "add server \
 	 rtmp_backend/$server_name \
 	 $addr \
-	 enabled \
-	 check" | socat stdin tcp4:localhost:9001 
+	 enabled" | socat stdin tcp4:localhost:9001 
 
 # For some reason when added server will be ignored by the loadbalancer. 
 # On of the solutions is to set servers weight to 2 and then back to 1 (default value).

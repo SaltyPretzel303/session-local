@@ -128,8 +128,8 @@ RUN useradd nginx
 COPY ingest/nginx.conf /etc/nginx/nginx.conf
 # COPY ingest/min_nginx.conf /etc/nginx/nginx.conf
 
-COPY ingest/processor.sh /processor.sh
-RUN chmod a+x /processor.sh
+# COPY ingest/processor.sh /processor.sh
+# RUN chmod a+x /processor.sh
 
 # ingest
 EXPOSE 9090

@@ -1,5 +1,3 @@
-#!/usr/bin/python 
-
 import json
 from docker import APIClient
 api = APIClient()

@@ -1,8 +1,12 @@
-import sys
+#!/usr/bin/python 
+
 import ffmpeg
 import pickle
 from requests import post, get,  Response
 from requests import Session
+
+# Register user to be sure it exists, authenticate with those creds, 
+# request stream key and publish stream to ingest-loadbalancer.
 
 CONTENT_PATH = '/home/nemanja/Videos/clock.mp4'
 INGEST_URL = 'rtmp://localhost:9090/ingest' 
@@ -14,7 +18,10 @@ PASSWORD = "strong_password"
 AUTH_ROUTE = "http://localhost:8003/authenticate"
 REGISTER_ROUTE = "http://localhost:8003/register"
 GETKEY_ROUTE = "http://localhost:8003/get_key"
-GET_INGEST_ROUTE="http://localhost:8001/get_ingest"
+# Not used since haproxy loadbalancer is implemented.
+# GET_INGEST_ROUTE="http://localhost:8001/get_ingest"
+
+INGEST_URL = "rtmp://localhost:9000/ingest"
 
 COOKIE_PATH = "./cookie"
 
@@ -171,16 +178,11 @@ if __name__ == "__main__":
 		print("Failed to obtain stream key ... ")
 		exit(2)
 
-	ingest_url = get_ingest_url()
-	if ingest_url is None: 
-		print("Failed ot obtain free ingest ... ")
-		exit(3)
+	print(f"publishing : {CONTENT_PATH} to: {INGEST_URL}/{stream_key}")
 
-	print(f"publishing : {CONTENT_PATH} to: {ingest_url}/{stream_key}")
+	process = publish_stream(CONTENT_PATH, INGEST_URL, stream_key)
 
-	# process = publish_stream(CONTENT_PATH, INGEST_URL, stream_key)
-
-	process = publish_stream(CONTENT_PATH, INGEST_URL, "stream")
+	# process = publish_stream(CONTENT_PATH, INGEST_URL, "stream")
 	input("Press Enter to stop publisher ...")
 	process.terminate()
 	process.wait()

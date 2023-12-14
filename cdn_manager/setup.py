@@ -13,6 +13,7 @@ setup(
 		'jsonpickle',
         'Werkzeug==2.2',
         'requests',
-        'signals'
+        'signals',
+        'pyping'
 	]
 )

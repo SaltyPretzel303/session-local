@@ -1,5 +1,8 @@
 #!/usr/bin/python 
 
+# Filter containers by the cdn_instance label, stop them and wait until 
+# they are stopped and then remove them.
+
 from threading import Event
 import docker
 import signal
@@ -9,6 +12,8 @@ CREATED = "created"
 STOPPED = "exited"
 
 POLL_INTERVAL = 1
+
+CDN_LABEL = "cdn_instance"
 
 api = docker.APIClient()
 
@@ -24,7 +29,7 @@ signal.signal(signal.SIGTERM, quit_handler)
 def get_state(id: str):
 	return api.containers(filters={"id":id}, all=True)[0]['State']
 
-for cdn_cont in api.containers(filters={"label": "cdn_instance"}, all=True):
+for cdn_cont in api.containers(filters={"label": CDN_LABEL}, all=True):
 	id = cdn_cont['Id']
 	name = cdn_cont['Names'][0]
 	state = cdn_cont['State']

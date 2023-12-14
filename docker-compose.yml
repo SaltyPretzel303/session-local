@@ -120,4 +120,27 @@ services:
       - "0.0.0.0:27018:27017"
     networks: 
       - session-net
+    
+  cdn-instance:
+    container_name: session-cdn
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/cdn.Dockerfile
+    image: session/cdn
+    ports:
+      - "0.0.0.0:11000:11000"
+      - "0.0.0.0:10000:10000"
+    networks:
+      - session-net 
+
+  cdn-manager:
+    container_name: session-cdn-manager
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/cdn_manager.Dockerfile
+    image: session/cdn-manager
+    ports:
+      - "0.0.0.0:8004:8004"
+    networks:
+      - session-net 
 
