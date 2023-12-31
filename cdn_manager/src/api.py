@@ -48,6 +48,7 @@ def is_available(conf: InstanceConf):
 
 def form_hc_path(inst: InstanceConf):
 	return f"http://{inst.ip}:{inst.hc_port}/{inst.hc_path}"
+	
 
 if __name__ == '__main__':
 

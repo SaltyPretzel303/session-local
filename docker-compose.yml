@@ -27,29 +27,10 @@ services:
     container_name: session-auth
     build: 
       context: ./
-      dockerfile: ./dockerfiles/auth.Dockerfile
+      dockerfile: ./dockerfiles/auth_service.Dockerfile
     image: session/auth-service
     ports:
       - "0.0.0.0:8003:8003"
-    networks: 
-      - session-net
-    stop_signal: SIGINT
-    # Flask will quit the app on SIGINT. 
-    # Docker (by default) sends SIGTERM and if that doesn't work 
-    # SIGKILL will kill the process.
-
-  # TODO this one should be removed
-  # it is essentially replaced with the haproxy 
-  ingest-manager:
-    container_name: session-ingest-manager
-    build:
-      context: ./
-      dockerfile: ./dockerfiles/ingest_manager.Dockerfile
-    image: session/ingest-manager
-    # volumes: 
-    #   - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "0.0.0.0:8001:8001"
     networks: 
       - session-net
     stop_signal: SIGINT
@@ -121,11 +102,22 @@ services:
     networks: 
       - session-net
     
+  cdn-proxy:
+    container_name: session-cdn-proxy
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/cdn_proxy.Dockerfile
+    image: session/cdn-proxy
+    ports:
+      - "0.0.0.0:12000:12000"
+    networks:
+      - session-net
+
   cdn-instance:
     container_name: session-cdn
     build:
       context: ./
-      dockerfile: ./dockerfiles/cdn.Dockerfile
+      dockerfile: ./dockerfiles/cdn_instance.Dockerfile
     image: session/cdn
     ports:
       - "0.0.0.0:11000:11000"

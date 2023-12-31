@@ -39,6 +39,18 @@ regions =  {
 		]
 	}
 
+# regions =  {
+# 		"eu": [
+# 			{
+# 				"ip":"session-cdn",
+# 				"hls_port": 10000,
+# 				"hc_port":10000,
+# 				"hls_path":"live",
+# 				"hc_path":"health_check"
+# 			}
+# 		]
+# 	}
+
 NETWORK = "session-net"
 # IP_SUBNET_PREFIX = "172.23.2."
 BASE_RTMP_PORT = 11000

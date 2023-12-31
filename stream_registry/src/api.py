@@ -120,7 +120,7 @@ def get_by_category(category: str):
 # request.ip should be the ingest instance's ip.
 @app.route("/start_stream", methods=["POST"])
 def start_stream():
-	
+
 	args = url_decode(request.get_data().decode())
 	key = args.get("name")
 	ingest_ip = args.get("addr")
@@ -131,13 +131,15 @@ def start_stream():
 		if match_res.status_code != 200:
 			raise Exception(f"Auth service returned: {match_res.status_code}")
 
-		db_res = get_db().save_empty(match_res.text, ingest_ip, key)
+		streamer = match_res.text
+
+		db_res = get_db().save_empty(streamer, ingest_ip, key)
 		if db_res is None:
 			return "Failure.", status.HTTP_400_BAD_REQUEST
 
 		response = Response(status=302)
-		response.headers["Location"] = match_res.text
-		print(f"match result: {key} -> {match_res.text}")
+		response.headers["Location"] = streamer
+		print(f"match result: {key} -> {streamer}")
 		return response
 
 	except Exception as e:

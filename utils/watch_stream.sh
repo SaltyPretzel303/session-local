@@ -16,8 +16,12 @@ fi
 stream_name="$1"
 cookie_path="$2"
 
+cookie=$(cat $cookie_path)
+echo "Watching: " $stream_name", with cookie: " $cookie
 
 ffplay -x $X_SIZE -y $Y_SIZE \
 	-fflags nobuffer \
-	-headers 'Cookie: session='$(cat $cookie_path | ./just_cookie.sh) \
-	http://localhost:9080/live/$stream_name/index.m3u8
+	-headers 'Cookie: session='$cookie \
+	http://localhost:10000/live/$stream_name/index.m3u8
+
+# -headers 'Cookie: session='$(cat $cookie_path | ./just_cookie.sh) \

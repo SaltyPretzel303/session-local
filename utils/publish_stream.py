@@ -4,12 +4,13 @@ import ffmpeg
 import pickle
 from requests import post, get,  Response
 from requests import Session
+from jsonpickle import encode, decode
 
 # Register user to be sure it exists, authenticate with those creds, 
 # request stream key and publish stream to ingest-loadbalancer.
 
 CONTENT_PATH = '/home/nemanja/Videos/clock.mp4'
-INGEST_URL = 'rtmp://localhost:9090/ingest' 
+INGEST_URL = 'rtmp://localhost:9000/ingest' 
 
 USERNAME = "streamer"
 EMAIL = "some_streamer@session.com"
@@ -21,9 +22,8 @@ GETKEY_ROUTE = "http://localhost:8003/get_key"
 # Not used since haproxy loadbalancer is implemented.
 # GET_INGEST_ROUTE="http://localhost:8001/get_ingest"
 
-INGEST_URL = "rtmp://localhost:9000/ingest"
-
-COOKIE_PATH = "./cookie"
+SESSION_PATH = "./publisher_session"
+PLAIN_COOKIE_PAT = "./publisher_cookie"
 
 def get_cookie_path(user: str):
 	return f"{user}_cookie"
@@ -41,13 +41,14 @@ def authenticate(username: str, email: str, password:str ):
 	reg_response : Response = post(url=REGISTER_ROUTE, json=register_data) 
 		
 	if reg_response.status_code !=  200:
+		print(f"Register failed and returned {reg_response.status_code}")
 		return None
 
 	s = Session()
 	try:
-		cookie_file = open(COOKIE_PATH, "rb") 
+		cookie_file = open(SESSION_PATH, "rb") 
 		if not cookie_file.read():
-			print("Cookie file empty ... ")
+			print("Session file empty ... ")
 		else:
 			cookie_file.seek(0)
 			s.cookies.update(pickle.load(cookie_file))
@@ -68,12 +69,14 @@ def authenticate(username: str, email: str, password:str ):
 	if auth_response.status_code != 200:
 		return None
 	
-	print(f'Session_id: {auth_response.cookies.get("session")}')
-
 	try:
-		cookie_file = open(COOKIE_PATH, "wb") 
+		cookie_file = open(SESSION_PATH, "wb") 
 		pickle.dump(auth_response.cookies, cookie_file)
 		cookie_file.close()
+
+		plain_cookie = open(PLAIN_COOKIE_PAT,"w")
+		plain_cookie.write(auth_response.cookies.get("session"))
+		plain_cookie.close()
 
 	except IOError as err:
 		print("Failed to write cookie ... ")
@@ -85,7 +88,7 @@ def authenticate(username: str, email: str, password:str ):
 def request_key():
 	s = Session()
 	try:
-		cookie_file = open(COOKIE_PATH, "rb") 
+		cookie_file = open(SESSION_PATH, "rb") 
 		if not cookie_file.read():
 			print("Cookie file empty ... ")
 		else:
@@ -182,7 +185,6 @@ if __name__ == "__main__":
 
 	process = publish_stream(CONTENT_PATH, INGEST_URL, stream_key)
 
-	# process = publish_stream(CONTENT_PATH, INGEST_URL, "stream")
 	input("Press Enter to stop publisher ...")
 	process.terminate()
 	process.wait()

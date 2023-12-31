@@ -40,7 +40,6 @@ def gen_key(len: int):
 
 def get_db()->Db:
 	if 'db' not in g:
-		print("creating request scoped db ... ")
 		address = config["db_host"]
 		port = config["db_port"]
 		db = config["db_name"]
@@ -99,6 +98,8 @@ def authenticate():
 		print(f"User was already authenticated ... ")
 		user_data = session[USER_SESSION_VAR]
 		return user_data.to_json(), status.HTTP_200_OK
+	else:
+		print("User is not already authenticated ... ")
 
 	if request.data is None:
 		return "No data provided ...", status.HTTP_400_BAD_REQUEST
@@ -117,7 +118,7 @@ def authenticate():
 		print(f"Data: \n{request.get_json()}")
 		return "Error parsing data ... ", status.HTTP_400_BAD_REQUEST
 
-	print(json_serialize(auth_request))
+	# print(json_serialize(auth_request))
 
 	user = get_db().get_user(auth_request.email)
 
@@ -163,6 +164,7 @@ def get_key():
 def  is_expired(key_time: datetime)->bool:
 	return datetime.now() > key_time
 
+# TODO not used, should be removed 
 # Accessed by nginx-rtmp module from the on_publish directive.
 @app.route("/match_key", methods=["POST"])
 def match_key_post():
@@ -181,6 +183,7 @@ def match_key_post():
 	resp.headers["Location"] = user.username
 	return resp
 
+# Accessed by the stream_registry api.
 @app.route("/match_key/<key>", methods=["GET"])
 def match_key_get(key: str):
 
@@ -210,11 +213,11 @@ def authorize():
 		print(f"user_name (from session ): {user_name}")
 
 		if is_authorized(user_name, stream_name):
-			return status.HTTP_200_OK
+			return user_name, status.HTTP_200_OK
 		else:
-			return status.HTTP_401_UNAUTHORIZED  # redirect to login or just ... discard
+			return user_name, status.HTTP_401_UNAUTHORIZED  # redirect to login or just ... discard
 	else:
-		print("No user session ... ")
+		print("No user session, not authorized ... ")
 		return 'Not authorized ... ', status.HTTP_403_FORBIDDEN
 
 def is_authorized(user: str, stream: str) -> bool:
