@@ -113,7 +113,7 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
 	ln -sf /dev/stderr /var/log/nginx/error.log
 
 # Set up config file
-COPY cdn/nginx.conf /etc/nginx/nginx.conf
+COPY cdn_instance/nginx.conf /etc/nginx/nginx.conf
 
 # WORKDIR /launcher
 # ADD ./ingest/launcher/* ./

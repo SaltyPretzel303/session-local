@@ -20,14 +20,15 @@ PLAYER_WIDTH = 500
 PLAYER_HEIGHT = int(PLAYER_WIDTH*0.56)
 
 DEFAULT_STREAM_NAME = "streamer"
-QUALITY_EXT = "hd"
+# QUALITY_EXT = "hd"
+QUALITY_EXT = "subsd"
 STREAM_URL = "http://localhost:10000/live/"
 
 def authenticate(username, email, password):
 	register_data = {
 		"username": username, 
-		"password": email,
-		"email": password
+		"password": password,
+		"email": email
 	}
 
 	print(f"Registering: {register_data['username']} ... ")

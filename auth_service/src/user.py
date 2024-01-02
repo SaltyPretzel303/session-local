@@ -1,10 +1,10 @@
-from mongoengine import Document, StringField, DateTimeField
+from mongoengine import Document, StringField, BinaryField
 
 class User(Document):
 	username = StringField(required=True)
 	email = StringField(required=True)
-	# I guess if logged in with google it wont be required ... ? 
-	password = StringField() 
-	stream_key = StringField(required=True)
-	key_exp_date = DateTimeField()
-	last_authenticated = DateTimeField()
+	pwd_hash = BinaryField()
+	# I guess not required in the case of google login or such ... ? 
+
+	# stream_key = ReferenceField(StreamKey)
+	

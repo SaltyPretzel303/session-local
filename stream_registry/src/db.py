@@ -73,6 +73,7 @@ class Db:
 
 		query_res = StreamData.objects(stream_key=key)
 
+
 		return query_res.first().delete()
 
 

@@ -10,7 +10,7 @@
 		"session_secret_key": "super_secret_key_2",
 		"session_type": "filesystem",
 		"stream_key_len": 15,
-		"stream_key_longevity": 120
+		"stream_key_longevity": 400
 	},
 	"prod": {
 		"db_host": "session-auth-db",
@@ -23,6 +23,6 @@
 		"session_secret_key": "super_secret_key_2",
 		"session_type": "filesystem",
 		"stream_key_len": 15,
-		"stream_key_longevity": 120
+		"stream_key_longevity": 400
 	}
 }

@@ -10,5 +10,6 @@ setup(
                       'requests',
 					  "Werkzeug==2.2",
                       'mongoengine',
-					  'python-dateutil'],
+					  'python-dateutil',
+					  "bcrypt"],
     zip_safe=False)

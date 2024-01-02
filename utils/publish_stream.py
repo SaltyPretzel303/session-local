@@ -19,14 +19,9 @@ PASSWORD = "strong_password"
 AUTH_ROUTE = "http://localhost:8003/authenticate"
 REGISTER_ROUTE = "http://localhost:8003/register"
 GETKEY_ROUTE = "http://localhost:8003/get_key"
-# Not used since haproxy loadbalancer is implemented.
-# GET_INGEST_ROUTE="http://localhost:8001/get_ingest"
 
 SESSION_PATH = "./publisher_session"
 PLAIN_COOKIE_PAT = "./publisher_cookie"
-
-def get_cookie_path(user: str):
-	return f"{user}_cookie"
 
 def authenticate(username: str, email: str, password:str ):
 
@@ -36,7 +31,7 @@ def authenticate(username: str, email: str, password:str ):
 		"email": email
 	}
 
-	print("Doing register ... ")
+	print("Trying to register ... ")
 
 	reg_response : Response = post(url=REGISTER_ROUTE, json=register_data) 
 		
@@ -44,6 +39,9 @@ def authenticate(username: str, email: str, password:str ):
 		print(f"Register failed and returned {reg_response.status_code}")
 		return None
 
+	print("Register successfull ... ")
+
+	print("Trying read cookie ... ")
 	s = Session()
 	try:
 		cookie_file = open(SESSION_PATH, "rb") 
@@ -53,6 +51,7 @@ def authenticate(username: str, email: str, password:str ):
 			cookie_file.seek(0)
 			s.cookies.update(pickle.load(cookie_file))
 			cookie_file.close()
+			print("Cookie read ... ")
 
 	except IOError as err:
 		print("Failed to read cookie ... ")
@@ -62,9 +61,12 @@ def authenticate(username: str, email: str, password:str ):
 		"password": register_data["password"]
 	}
 
-	print("Doing authenticate ... ")
+	print("Trying to authenticate ... ")
 
 	auth_response : Response = s.post(url=AUTH_ROUTE, json=auth_data)
+
+	print("Auth response ... ")
+	print(auth_response.json())
 
 	if auth_response.status_code != 200:
 		return None
@@ -108,54 +110,21 @@ def request_key():
 	
 	return key_res.text
 
-
-def get_ingest_url():
-	ingest = None
-	try:
-		ingest_res = get(GET_INGEST_ROUTE)
-
-		if ingest_res.status_code != 200:
-			raise Exception("Return code is not 200 ... ")
-		
-		ingest = ingest_res.text
-
-	except Exception as e:
-		print(f"Failed to optain free ingest: {e}")
-	
-	return ingest
-
-
 def publish_stream(video_path, ingest_path, stream_name):
 
-	# process = (
-	# 	ffmpeg
-	# 	.input(video_path)
-	# 	.output(
-	# 		f"{ingest_path}/{stream_name}",
-	# 		codec="copy",  # use same codecs of the original video
-	# 		format='flv',  # force format
-	# 		flvflags="no_duration_filesize",
-	# 		# ^ will prevent: 'Failed to update header with correct duration.'
-	# 		# https://stackoverflow.com/questions/45220915
-	# 		# vcodec='libx264',
-	# 		# pix_fmt='yuv420p',
-	# 		# preset='veryfast',
-	# 		# r='20',
-	# 		# g='50',
-	# 		# video_bitrate='1.4M',
-	# 		# maxrate='2M',
-	# 		# bufsize='2M',
-	# 		# segment_time='6' # don't know what is this, maybe delay or buffer_size ?
-	# 	)
-	# 	.global_args("-re")  # argument to act as a live stream
-	# 	.run_async()
-	# )
+	# pix_fmt='yuv420p',
+	# preset='veryfast',
+	# r='20',
+	# g='50',
+	# video_bitrate='1.4M',
+	# maxrate='2M',
+	# bufsize='2M',
 
 	cmd = ffmpeg\
 		.input(video_path, re=None)\
 		.output(
 			f"{ingest_path}/{stream_name}",
-			format='flv',  # force format
+			format='flv',
 			flvflags="no_duration_filesize",
 			loglevel="warning",
 			vcodec="libx264",
@@ -182,7 +151,6 @@ if __name__ == "__main__":
 		exit(2)
 
 	print(f"publishing : {CONTENT_PATH} to: {INGEST_URL}/{stream_key}")
-
 	process = publish_stream(CONTENT_PATH, INGEST_URL, stream_key)
 
 	input("Press Enter to stop publisher ...")
