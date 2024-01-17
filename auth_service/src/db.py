@@ -1,3 +1,4 @@
+import datetime
 from stream_key import StreamKey
 from user import User
 from mongoengine import connect as mongo_connect
@@ -34,7 +35,6 @@ class Db:
 	def get_key_with_owner(self, user: User) -> StreamKey:
 		return StreamKey.objects(owner=user).first()
 
-	# def get_by_key(self, wanted_key: str):
-	# 	return User.objects(stream_key__value=wanted_key).first()
-		
-		
+	def invalidate_key(self, key: StreamKey) -> StreamKey:
+		key.exp_date = None
+		return key.save()

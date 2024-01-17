@@ -11,5 +11,6 @@ setup(
 					  "Werkzeug==2.2",
                       'mongoengine',
 					  'python-dateutil',
-					  "bcrypt"],
+					  "bcrypt",
+					  "flask-cors"],
     zip_safe=False)

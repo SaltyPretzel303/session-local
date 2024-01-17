@@ -1,11 +1,18 @@
 FROM python 
 
-WORKDIR /app 
+WORKDIR /app/manager 
 ADD cdn_manager/setup.py ./setup.py
 RUN pip install . 
 
 ADD cdn_manager/src/ ./src/
 
+WORKDIR /app/
+ADD shared_model/ ./shared_model
+
 EXPOSE 8004
 
-ENTRYPOINT ["python", "-u", "/app/src/api.py"]
+ENV PYTHONPATH=.
+
+WORKDIR /app
+
+ENTRYPOINT ["python", "-u", "manager/src/api.py"]

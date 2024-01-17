@@ -4,24 +4,37 @@ networks:
   session-net: 
     driver: bridge
     name: session-net
-    # name: session-net
     # external: true
 
 services:
-  client-gateway:
-    container_name: session-client-gateway
-    build:
-      context: ./
-      dockerfile: ./dockerfiles/client_gateway.Dockerfile
-    image: session/client-gateway
-    ports:
-      - "0.0.0.0:8000:8000"
-    networks: 
-      - session-net
-    stop_signal: SIGINT
+  # client-gateway:
+  #   container_name: session-client-gateway
+  #   build:
+  #     context: ./
+  #     dockerfile: ./dockerfiles/client_gateway.Dockerfile
+  #   image: session/client-gateway
+  #   ports:
+  #     - "0.0.0.0:8000:8000"
+  #   networks: 
+  #     - session-net
+  #   stop_signal: SIGINT
     # Flask will quit the app on SIGINT. 
     # Docker (by default) sends SIGTERM and if that doesn't work 
     # SIGKILL will kill the process.
+
+
+  frontend:
+    container_name: session-frontend
+    build: 
+      context: ./
+      dockerfile: ./dockerfiles/frontend.Dockerfile
+    image: session/frontend
+    ports:
+      - "0.0.0.0:80:80"
+      # - "0.0.0.0:3000:80"
+    networks:
+      - session-net
+    stop_signal: SIGINT
 
   auth-service:
     container_name: session-auth
@@ -80,28 +93,6 @@ services:
     # Docker (by default) sends SIGTERM and if that doesn't work 
     # SIGKILL will kill the process.
 
-  registry-database:
-    container_name: session-registry-db
-    build: 
-      context: ./
-      dockerfile: ./dockerfiles/registry_db.Dockerfile
-    image: session/registry-db
-    ports: 
-      - "0.0.0.0:27017:27017"
-    networks: 
-      - session-net
-
-  auth-database:
-    container_name: session-auth-db
-    build: 
-      context: ./ 
-      dockerfile: ./dockerfiles/auth_db.Dockerfile
-    image: session/auth-db
-    ports: 
-      - "0.0.0.0:27018:27017"
-    networks: 
-      - session-net
-    
   cdn-proxy:
     container_name: session-cdn-proxy
     build:
@@ -136,3 +127,37 @@ services:
     networks:
       - session-net 
 
+  registry-database:
+    container_name: session-registry-db
+    build: 
+      context: ./
+      dockerfile: ./dockerfiles/registry_db.Dockerfile
+    image: session/registry-db
+    ports: 
+      - "0.0.0.0:27017:27017"
+    networks: 
+      - session-net
+
+  auth-database:
+    container_name: session-auth-db
+    build: 
+      context: ./ 
+      dockerfile: ./dockerfiles/auth_db.Dockerfile
+    image: session/auth-db
+    ports: 
+      - "0.0.0.0:27018:27017"
+    networks: 
+      - session-net
+
+  printer: 
+    container_name: printer
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/printer.Dockerfile
+    image: session/printer
+    ports:
+      - "0.0.0.0:8010:8010"
+    networks:
+      - session-net
+    stop_signal: SIGINT
+      

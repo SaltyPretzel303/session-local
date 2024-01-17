@@ -1,0 +1,17 @@
+.explorePage {
+	border: 3px solid green;
+	
+
+	width: 100%;
+	height: 100%;
+
+	display: flex;
+	flex-flow: row;
+
+	justify-content: start;
+
+	.previewsContainer {
+		flex-grow: 1;
+	}
+
+}

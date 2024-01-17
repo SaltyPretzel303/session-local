@@ -1,0 +1,28 @@
+.streamPreview {
+	border: 3px dashed silver;
+	padding: 10px;
+	/* margin: 10px; */
+	display: flex;
+	flex-flow: row;
+
+	img {
+		min-width: 100px;
+		min-height: 100px;
+		max-width: 100px;
+		max-height: 100px;
+	}
+
+	.infoContainer {
+		border: solid 2px blue;
+		margin-left: 10px;
+	}
+
+	.title {
+		font-size: 20px;
+	}
+
+	.viewers {
+		text-align: end;
+	}
+
+}

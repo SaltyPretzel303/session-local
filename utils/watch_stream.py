@@ -23,6 +23,7 @@ DEFAULT_STREAM_NAME = "streamer"
 # QUALITY_EXT = "hd"
 QUALITY_EXT = "subsd"
 STREAM_URL = "http://localhost:10000/live/"
+# STREAM_URL = "http://localhost/watch/live/"
 
 def authenticate(username, email, password):
 	register_data = {

@@ -1,4 +1,4 @@
-import './Chat.css'
+import './style/Chat.css'
 
 export default function Chat({ visible }: { visible: boolean }) {
 

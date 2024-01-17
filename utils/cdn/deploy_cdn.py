@@ -1,7 +1,9 @@
 #!/usr/bin/python 
 
+from asyncio import sleep
 import docker 
 import jsonpickle
+from requests import Response, post
 
 # For each region specified in regions json/dict create one cdn server instance.
 # Update regions json with the created server's ip and create cdn manager 
@@ -87,6 +89,19 @@ if len(old_cdns)>0:
 
 	exit(1)
 
+manager = dckr.containers.run(image=MANAGER_IMAGE_TAG,
+					detach=True,
+					ports={
+						MANAGER_API_PORT: ("0.0.0.0", MANAGER_API_PORT)
+					},
+					network=NETWORK,
+					name=MANAGER_CONT_NAME,
+					labels=[MANAGER_LABEL],
+					stop_signal='SIGINT')
+
+m_container = dckr.containers.get(manager.id)
+manager_ip = m_container.attrs["NetworkSettings"]["Networks"][NETWORK]["IPAddress"]
+
 index=0
 for region_key in regions:
 	c_name = f"{CDN_PREFIX}{region_key}"
@@ -123,14 +138,9 @@ config = jsonpickle.encode(regions,
 						separators=(",",":"))\
 					.replace("\"","\\\"")
 
-manager = dckr.containers.run(image=MANAGER_IMAGE_TAG,
-					detach=True,
-					ports={
-						MANAGER_API_PORT: ("0.0.0.0", MANAGER_API_PORT)
-					},
-					network=NETWORK,
-					name=MANAGER_CONT_NAME,
-					labels=[MANAGER_LABEL],
-					stop_signal='SIGINT',
-					command=config)
-# command represents cli arguments
+config = jsonpickle.encode(regions, unpicklable=False)
+
+# TODO this request should be delayed a bit, right ? 
+
+init_res: Response = post(f'http://{manager_ip}:8004/initialize', json=config)
+print(f"Init res: {init_res.status_code}")

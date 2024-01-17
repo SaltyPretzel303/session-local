@@ -41,7 +41,7 @@ def authenticate(username: str, email: str, password:str ):
 
 	print("Register successfull ... ")
 
-	print("Trying read cookie ... ")
+	print("Trying to read cookie ... ")
 	s = Session()
 	try:
 		cookie_file = open(SESSION_PATH, "rb") 
@@ -51,7 +51,7 @@ def authenticate(username: str, email: str, password:str ):
 			cookie_file.seek(0)
 			s.cookies.update(pickle.load(cookie_file))
 			cookie_file.close()
-			print("Cookie read ... ")
+			print(f"Cookie read: -> {s.cookies}")
 
 	except IOError as err:
 		print("Failed to read cookie ... ")
@@ -61,16 +61,15 @@ def authenticate(username: str, email: str, password:str ):
 		"password": register_data["password"]
 	}
 
-	print("Trying to authenticate ... ")
-
 	auth_response : Response = s.post(url=AUTH_ROUTE, json=auth_data)
 
-	print("Auth response ... ")
-	print(auth_response.json())
+	print(f"Auth response: -> {auth_response.json()}")
+	print(f"Auth cookies:  -> {auth_response.cookies}")
+	print(f"Auth session_c:  -> {auth_response.cookies['session']}")
 
 	if auth_response.status_code != 200:
 		return None
-	
+
 	try:
 		cookie_file = open(SESSION_PATH, "wb") 
 		pickle.dump(auth_response.cookies, cookie_file)
@@ -102,13 +101,13 @@ def request_key():
 		print("Failed to read cookie ... ")
 		return None
 
-	key_res = s.get(url=GETKEY_ROUTE)
+	key_res:Response = s.get(url=GETKEY_ROUTE)
 
 	if key_res.status_code != 200:
-		print("Failed to obtain stream key ... ")
+		print("Failed to obtain stream key: " + key_res.text)
 		return None
 	
-	return key_res.text
+	return key_res.json()
 
 def publish_stream(video_path, ingest_path, stream_name):
 
@@ -143,15 +142,18 @@ if __name__ == "__main__":
 	if session_id is None: 
 		print("Failed to register or authenticate ... ")
 		exit(1)
+	print(f"Authenticated: {session_id}")
 
-	stream_key = request_key()
-
-	if stream_key is None:
+	key_data = request_key()
+	if key_data is None:
 		print("Failed to obtain stream key ... ")
 		exit(2)
+	print(f"Obtained key: {key_data}")
 
-	print(f"publishing : {CONTENT_PATH} to: {INGEST_URL}/{stream_key}")
-	process = publish_stream(CONTENT_PATH, INGEST_URL, stream_key)
+	# print(f"publishing : {CONTENT_PATH} to: {INGEST_URL}/{key_data['value']}")
+	process = publish_stream(CONTENT_PATH, INGEST_URL, key_data["value"])
+	# process = publish_stream(CONTENT_PATH, INGEST_URL, "BtuvCHgOgulyvZO")
+	
 
 	input("Press Enter to stop publisher ...")
 	process.terminate()

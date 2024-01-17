@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+# TODO unused, remove 
 @dataclass
 class IngestData:
 	ip : str

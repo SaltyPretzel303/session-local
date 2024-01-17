@@ -1,3 +1,4 @@
+from ipaddress import ip_address
 from flask import Flask, Response, g, request
 from flask_api import status
 from flask_restful import Api
@@ -6,13 +7,17 @@ from requests import get, post
 import jsonpickle
 
 from app_config import AppConfig
-from stream_data import StreamData
+from shared_model.media_server_request import MediaServerRequest
+from shared_model.media_server_info import MediaServerInfo
 from shared_model.stream_info import StreamInfo
+from stream_data import StreamData
 from shared_model.update_request import UpdateRequest
 from db import Db
 
 
 JSON_CONTENT_TYPE = 'application/json'
+CDN_MANAGER_ADDR = "session-cdn-manager:8004"
+MATCH_REGION_PATH = "/match_region"
 
 app = Flask(__name__)
 api = Api(app)
@@ -24,7 +29,6 @@ def json_serialize(content) -> str:
 
 def get_db() -> Db:
 	if 'db' not in g:
-		print("creating request scoped db ... ")
 		config = AppConfig.get_instance()
 		address = config["db_address"]
 		port = config["db_port"]
@@ -33,7 +37,6 @@ def get_db() -> Db:
 		pwd = config["db_password"]
 		g.db = Db(f"mongodb://{user}:{pwd}@{address}:{port}/{db}")
 
-	print("returning request scoped db ... ")
 	return g.db
 
 
@@ -124,7 +127,7 @@ def start_stream():
 
 	args = url_decode(request.get_data().decode())
 	key = args.get("name")
-	ingest_ip = args.get("addr")
+	ingest_ip = args.get("addr") # this is gonna be the ip of  nxing reverse proxy 
 
 	print(f"Key: {key}")
 	print(f"Source: {ingest_ip}")
@@ -135,15 +138,15 @@ def start_stream():
 		if match_res.status_code != 200:
 			raise Exception(f"Auth service returned: {match_res.status_code}")
 
-		streamer_name = match_res.text
+		match_data = match_res.json()
 
-		db_res = get_db().save_empty(streamer_name, ingest_ip, key)
+		db_res = get_db().save_empty(match_data["value"], ingest_ip, key)
 		if db_res is None:
 			return "Failure.", status.HTTP_400_BAD_REQUEST
 
 		response = Response(status=302)
-		response.headers["Location"] = streamer_name
-		print(f"match result: {key} -> {streamer_name}")
+		response.headers["Location"] = match_data["value"]
+		print(f"match result: {key} -> {match_data['value']}")
 		return response
 
 	except Exception as e:
@@ -151,6 +154,141 @@ def start_stream():
 		print(e)
 
 		return "Failure ... ", status.HTTP_500_INTERNAL_SERVER_ERROR
+
+@app.route("/add_media_server", methods=["POST"])
+def add_media_server():
+	if request.data is None:
+		return "No data provided ...", status.HTTP_400_BAD_REQUEST
+	
+	req_data = None
+	try:
+		req_data = MediaServerRequest(**jsonpickle.decode(request.get_json()))
+		if req_data is None:
+			raise Exception("Data parsed but appears to be empty ... ")
+		
+	except Exception as e: 
+		print(f"err: {e}")
+		return "Failed to parse data ...", status.HTTP_400_BAD_REQUEST
+	
+	print(f"Requesting to add media server:{req_data.media_server} to:{req_data.content_name}")
+
+	add_res = get_db().add_media_server(req_data.content_name, req_data.media_server)
+
+	if add_res is None:
+		return "Failed to add media server ... ", status.HTTP_500_INTERNAL_SERVER_ERROR
+	else:
+		return "Success ... ", status.HTTP_200_OK
+
+@app.route("/remove_media_server", methods=["POST"])
+def remove_media_server():
+	if request.data is None:
+		return "No data provided ...", status.HTTP_400_BAD_REQUEST
+	
+	req_data = None
+	try:
+		req_data = MediaServerRequest(**jsonpickle.decode(request.get_json()))
+		if req_data is None:
+			raise Exception("Data parsed but appears to be empty ... ")
+		
+	except Exception as e: 
+		print(f"err: {e}")
+		return "Failed to parse data ...", status.HTTP_400_BAD_REQUEST
+	
+	print(f"Requesting to remove mediaIp: {req_data.media_server} from: {req_data.content_name}")
+
+	get_db().remove_media_server(req_data.content_name, req_data.media_server)
+
+	return "Success ... ", status.HTTP_200_OK
+
+
+@app.route("/stream_info/<streamer>", methods=["GET"])
+def get_stream_info(streamer: str):
+
+	region = request.args.get("region", default="eu")
+
+	print(f"Request for stream: {streamer} region: {region}")
+
+	stream_data = get_db().get_stream(streamer)
+
+	if stream_data is None:
+		return "No such stream ... ", status.HTTP_404_NOT_FOUND
+
+	if not stream_data.is_public:
+		print("This is not public stream ... ")
+		return "No such stream ... ", status.HTTP_404_NOT_FOUND
+
+	match_res = get(f"http://{CDN_MANAGER_ADDR}/{MATCH_REGION_PATH}/{region}")
+
+	if match_res.status_code != status.HTTP_200_OK:
+		print(f"Failed to match region {region} ... ")
+		return "Failed to match region ...", match_res.status_code
+	
+	print(f"RegionServer: {match_res.json()}")
+
+	print(f"StreamServers: {stream_data.media_servers}")
+	print(f"StreamServers: {list(map(int_to_ip,stream_data.media_servers))}")
+
+	region_info = MediaServerInfo(**match_res.json())
+
+	server = region_info if ip_to_int(region_info.ip) in stream_data.media_servers else None
+
+	stream_info = StreamInfo(title=stream_data.title,
+						  creator=stream_data.creator,
+						  category=stream_data.category,
+						  media_server = server)
+
+	return json_serialize(stream_info), status.HTTP_200_OK
+
+# TODO remove, used as a mockup 
+@app.route("/get_followed/<username>", methods=["GET"])
+def get_followed(username: str):
+	print(f"Returning follow streams for: {username}")
+
+	resp = Response()
+	resp.status_code = status.HTTP_200_OK
+	# resp.headers.add("Access-Control-Allow-Credentials","true")
+	# resp.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
+	# resp.headers.add("Access-Control-Allow-Headers","Content-type")
+	# resp.headers.add("Content-type", "application/json")
+	resp.data = json_serialize(list(map(gen_stream_info,range(0,5))))
+
+	return resp
+
+
+@app.route("/get_explore", methods=["GET"])
+def get_explore():
+
+	resp = Response()
+	resp.status_code = status.HTTP_200_OK
+	# resp.headers.add("Access-Control-Allow-Credentials","true")
+	# resp.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
+	# resp.headers.add("Access-Control-Allow-Headers","Content-type")
+	# resp.headers.add("Content-type", "application/json")
+	resp.data = json_serialize(list(map(gen_stream_info,range(0, 10))))
+
+	return resp
+
+@app.after_request
+def after_request(resp):
+	resp.headers.add("Access-Control-Allow-Credentials","true")
+	resp.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
+	resp.headers.add("Access-Control-Allow-Headers","Content-type")
+	resp.headers.add("Content-type", "application/json")
+
+	return resp
+
+def gen_stream_info(ind: int):
+	return StreamInfo(f"title_{ind}", 
+				f"creator_{ind}", 
+				f"chatting",
+				MediaServerInfo("127.0.0.1", 10000, "live","http://localhost:10000/live/streamer_subsd/index.m3u8") )
+
+def ip_to_int(ip: str):
+	print(f"ip: {ip} to: {int(ip_address(ip))}")
+	return int(ip_address(ip))
+
+def int_to_ip(ip: int):
+	return str(ip_address(ip))
 
 def form_match_key_url(key:str):
 	config = AppConfig.get_instance()
@@ -169,13 +307,11 @@ def stop_stream():
 	args = url_decode(request.get_data().decode())
 	stream_key = args['name']
 
+	print(f"Removing stream with the key: {stream_key}")
+
 	get_db().remove_stream(stream_key)
 
 	return "Stream removed ... ", status.HTTP_200_OK
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port='8002')  # possibly will be required
-
-# check out this link
-# how to create/start/stop containers over rest
-# https://docs.docker.com/engine/api/v1.19/#/inside-docker-run
+	app.run(host='0.0.0.0', port='8002') 

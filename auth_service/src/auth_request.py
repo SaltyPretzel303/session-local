@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
 @dataclass
-class AuthRequest():
-	password: str
+class AuthRequest:
 	email: str
+	password: str

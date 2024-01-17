@@ -1,5 +1,5 @@
 from mongoengine import Document, StringField, ListField, LongField, BooleanField
-from shared_model.stream_info import StreamInfo
+
 from ipaddress import ip_address
 
 class StreamData(Document):
@@ -9,37 +9,36 @@ class StreamData(Document):
 
 	ingest_ip = LongField(required=True)
 	stream_key = StringField(required=True)
-	# ip is stored as an number in order to allow queries on it
 	
+	# ip is stored as an number in order to allow queries on it
 	media_servers = ListField(LongField()) 
-	# This should be removed since all cdn instances should have the same data,
-	# which is accessed trough the load balancer.
-	is_public = BooleanField(required=True, default=False)
+
+	is_public = BooleanField(required=True, default=True)
+	# TODO default here should be false
 	
 
-	def to_stream_info(self) -> StreamInfo:
-		return StreamInfo(self.title,
-						  self.creator,
-						  self.category,
-						  str(ip_address(self.ingest_ip)),
-						  list(map(lambda num: str(ip_address(num)), self.media_servers)),
-						  self.is_public)
+	# def to_stream_info(self) -> StreamInfo:
+	# 	server = self.media_servers[0] if len(self.media_servers) > 0 else None
+	# 	return StreamInfo(title=self.title,
+	# 					  creator=self.creator,
+	# 					  category=self.category,
+	# 					  media_server=server)
 
 	def update(self, title:str, category:str, is_public: bool):
 		self.title = title
 		self.category = category
 		self.is_public = is_public
 
-	@staticmethod
-	def from_stream_info(info: StreamInfo):
-		return StreamData(
-			title=info.title,
-			creator=info.creator,
-			category=info.category,
-			ingest_ip=int(ip_address(info.ingest_ip)),
-			media_servers=(
-				list(map(lambda ip: int(ip_address(ip)), info.media_servers))),
-			is_public=info.is_public)
+	# @staticmethod
+	# def from_stream_info(info: StreamInfo):
+	# 	return StreamData(
+	# 		title=info.title,
+	# 		creator=info.creator,
+	# 		category=info.category,
+	# 		ingest_ip=int(ip_address(info.ingest_ip)),
+	# 		media_servers=(
+	# 			list(map(lambda ip: int(ip_address(ip)), info.media_servers))),
+	# 		is_public=info.is_public)
 	
 
 	@staticmethod
