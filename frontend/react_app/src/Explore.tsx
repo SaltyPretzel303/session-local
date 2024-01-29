@@ -3,6 +3,7 @@ import User from "./data_model/User";
 import { PreviewsContainer } from "./components/PreviewsContainer";
 import { useEffect, useState } from "react";
 import { StreamInfo } from "./data_model/StreamInfo";
+import { HlsPlayer } from "./components/HlsPlayer";
 
 export interface ExploreProps {
 	user: User | null
@@ -18,14 +19,14 @@ export function Explore(props: ExploreProps) {
 		// 	return
 		// }
 
-		populateFollowed([])
-		populateExplore()
+		// populateFollowed([])
+		// populateExplore()
 	}, [])
 
 	async function populateFollowed(followed_names: string[]) {
 		console.log("Populating followed ")
 
-		let streams_res = await fetch("http://localhost:8002/get_followed/some_stream")
+		let streams_res = await fetch("http://localhost:8003/get_following/user_0")
 		if (streams_res.status != 200) {
 			console.log("Failed to obtain followed streams ...")
 			return

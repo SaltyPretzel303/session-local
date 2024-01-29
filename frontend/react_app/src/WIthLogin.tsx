@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Player } from "./Player";
 import { LoginPopup } from "./components/LoginPopup";
 import User from "./data_model/User";
 
@@ -11,12 +13,15 @@ export interface WithLoginProps {
 
 export function WithLogin(props: WithLoginProps) {
 
+	const [pUser, setPUser] = useState<User | null>(null)
+
 	function loginHandler(user: User) {
 		console.log("Handling AuthSuccessfull action ... ")
-		if (user != null) {
-			console.log("Setting user ... ")
-			props.setUser(user)
-		}
+
+		console.log("Will set user|null")
+
+		props.setUser(user)
+		setPUser(user)
 	}
 
 	function closeHandler() {

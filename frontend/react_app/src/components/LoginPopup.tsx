@@ -22,137 +22,124 @@ export function LoginPopup(props: LoginProps) {
 
 	const [inRegState, setInRegState] = useState(false)
 
-	// Instead of holding references to elements, reference only values
-	// with useState instead of useRef, that way validaion will be easier/shorter
-	// since values will be either string or "" (or whatever is passed as a 
-	const statusRef = useRef<HTMLLabelElement>(null)
-	const emailRef = useRef<HTMLInputElement>(null)
-	const usernameRef = useRef<HTMLInputElement>(null)
-	const pwdRef = useRef<HTMLInputElement>(null)
-	const repPwdRef = useRef<HTMLInputElement>(null)
+	const [status, setStatus] = useState("")
+	const [email, setEmail] = useState("dd")
+	const [username, setUsernamer] = useState("user_0")
+	const [pwd, setPwd] = useState("pwd_0")
+	const [rPwd, setRPwd] = useState("pwd_0")
 
-	const registerPath = "http://localhost/auth/register"
-	const authenticatePath = "http://localhost/auth/authenticate"
-	// const authenticatePath = "http://localhost:8003/authenticate"
+	// const registerPath = "http://localhost/auth/register"
+	const registerPath = "http://localhost:8003/register"
+	// const authenticatePath = "http://localhost/auth/authenticate"
+	const authenticatePath = "http://localhost:8003/authenticate"
 
 	async function loginClick() {
 		setInRegState(false)
 
 		console.log("Trying to login ... ")
-		console.log(`Email: ${emailRef.current?.value}`)
-		console.log(`Pwd: ${pwdRef.current?.value}`)
+		console.log(`Email: ${username}`)
+		console.log(`Pwd: ${pwd}`)
 		console.log(`Path: ${authenticatePath}`)
 
-		if (anyClear([emailRef.current, pwdRef.current])) {
+		if (anyClear([username, pwd])) {
 			console.log("Please fill credentials ... ")
 			return
 		}
 
-		const email: string = strOrEmpty(emailRef.current)
-		const password: string = strOrEmpty(pwdRef.current)
+		const loginRequest = formLoginRequest(username, pwd)
 
-		const loginRequest = formLoginRequest(email, password)
+		try {
 
-		let login_res = await fetch(authenticatePath,
-			{
-				method: "POST",
-				headers: {
-					'Content-type': 'application/json',
-					// 'Access-Control-Allow-Credentials': 'true',
-					// 'Access-Control-Allow-Origin': '*'
-				},
-				credentials: 'same-origin',
-				body: JSON.stringify(loginRequest),
-				// mode: 'cors'
-			})
+			let login_res = await fetch(authenticatePath,
+				{
+					method: "POST",
+					headers: { 'Content-type': 'application/json', },
+					// credentials: 'same-origin',
+					body: JSON.stringify(loginRequest),
+				})
 
-		if (login_res.status != 200) {
-			console.log("Login failed miserably .. ")
-			showMessage("Error ... try again ... ")
-			return;
+			let rData = await login_res.json() as AuthResponse
+
+			if (!rData) {
+				throw new Error("Failed to parse received data.")
+			}
+
+			if (login_res.ok && isSuccess(rData)) {
+				props.authSuccess(rData.user)
+			} else {
+				console.log("Authentication failed: " + rData.message)
+				setStatus(rData.message)
+			}
+
+		} catch (err) {
+			console.log("Authenticate request failed: " + err)
+			setStatus("Error.")
 		}
-
-		props.authSuccess({ username: "someone", email: "mail", following: [] })
-
 	}
 
-	function formLoginRequest(email: string, password: string) {
-		return { email: email, password: password }
+	function formLoginRequest(username: string, password: string) {
+		return { username: username, password: password }
 	}
 
 
 	function showMessage(msg: string) {
-		if (statusRef.current !== null) {
-			statusRef.current.textContent = msg
-		}
+		setStatus(msg)
 	}
 
 	async function registerClick() {
 		if (!inRegState) {
 			setInRegState(true)
-		} else {
-			console.log("Trying to register ... ")
-			console.log(`Email: ${emailRef.current?.value} `)
-			console.log(`Pwd: ${pwdRef.current?.value} `)
-
-			const inputFields = [
-				emailRef.current,
-				usernameRef.current,
-				pwdRef.current,
-				repPwdRef.current]
-
-			if (anyClear(inputFields)) {
-				console.log("Please fill all inputs ... ")
-				return;
-			}
-
-			if (validEmail(emailRef.current?.value) &&
-				validUsername(usernameRef.current?.value) &&
-				validPassword(pwdRef.current?.value) &&
-				matchingPwd(pwdRef.current?.value, repPwdRef.current?.value)) {
-
-				const email: string = strOrEmpty(emailRef.current)
-				const username = strOrEmpty(usernameRef.current)
-				const pwd = strOrEmpty(pwdRef.current)
-				// const rPwd = strOrEmpty(repPwdRef.current)
-
-				const regRequest = formRegRequest(email, username, pwd)
-
-				let reg_res = await fetch(registerPath,
-					{
-						method: "POST",
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify(regRequest),
-						credentials: "include"
-						// mode: "cors"
-
-					});
-
-				if (!reg_res.ok) {
-					console.log("Registration failed miserably ...")
-					return
-				}
-
-				console.log("Registration successfull ... ")
-				let data = await reg_res.json()
-
-				console.log("HEADERS: ")
-				console.log(reg_res.headers)
-				console.log()
-				console.log("DATA: ")
-				console.log(data)
-
-				setInRegState(false)
-
-			} else {
-				console.log("Please provide valid credentials ... ")
-				return;
-			}
-
-
+			return;
 		}
+
+		console.log("Trying to register ... ")
+		console.log(`Email: ${email} `)
+		console.log(`Pwd: ${pwd} `)
+
+		if (anyClear([email, username, pwd, rPwd])) {
+			console.log("Not all credentials provided.")
+			setStatus("Fill all credentials.")
+
+			return;
+		}
+
+		if (!validEmail(email) ||
+			!validUsername(username) ||
+			!validPassword(pwd) ||
+			!matchingPwd(pwd, rPwd)) {
+
+			console.log("Invalid credentials.")
+			setStatus("Invalid credentials.")
+
+			return;
+		}
+
+		const regRequest = formRegRequest(email, username, pwd)
+
+		let reg_res = await fetch(registerPath,
+			{
+				method: "POST",
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(regRequest),
+				credentials: "include"
+				// mode: "cors"
+
+			});
+
+		if (!reg_res.ok) {
+			console.log("Registration failed miserably ...")
+			return
+		}
+
+		console.log("Registration successfull ... ")
+		let data = await reg_res.json()
+
+		setInRegState(false)
+
+
+
 	}
 
 	function formRegRequest(email: string, username: string, password: string) {
@@ -171,19 +158,31 @@ export function LoginPopup(props: LoginProps) {
 		<div className="LoginPopup">
 			<div className="LoginInputsContainer">
 
-				<label ref={statusRef} hidden={true} />
+				<label hidden={status === ""} >{status}</label>
 
-				<label>Email address:</label>
-				<input type="text" placeholder="Enter email .. " ref={emailRef} />
+				<label>Username:</label>
+				<input type="text"
+					placeholder="Enter username ... "
+					value={username}
+					onChange={(inEl) => setUsernamer(inEl.target.value)} />
 
-				<label hidden={!inRegState}>Username:</label>
-				<input hidden={!inRegState} type="text" placeholder="Enter username ... " ref={usernameRef} />
+				<label hidden={!inRegState}>Email address:</label>
+				<input hidden={!inRegState} type="text" placeholder="Enter email .. "
+					value={email}
+					onChange={(inEl) => setEmail(inEl.target.value)} />
 
 				<label>Password</label>
-				<input type="password" placeholder="Enter password ... " ref={pwdRef} />
+				<input type="password"
+					placeholder="Enter password ... "
+					value={pwd}
+					onChange={(inEl) => setPwd(inEl.target.value)} />
 
 				<label hidden={!inRegState}>Password again</label>
-				<input hidden={!inRegState} type="password" placeholder="Repeat password ... " ref={repPwdRef} />
+				<input hidden={!inRegState}
+					type="password"
+					placeholder="Repeat password ... "
+					value={rPwd}
+					onChange={(inEl) => setRPwd(inEl.target.value)} />
 
 				<button onClick={loginClick}>Login</button>
 				<button onClick={registerClick}>Register</button>

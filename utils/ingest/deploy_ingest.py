@@ -71,8 +71,8 @@ else:
 		out_rtmp_port = BASE_RTMP_PORT+ind
 		out_hls_port = BASE_HLS_PORT+ind
 
-		c_ports = [INNER_RTMP_PORT, INNER_HLS_PORT]
-		addr = f"{IP_SUBNET}.{ind}"
+		container_ports = [INNER_RTMP_PORT, INNER_HLS_PORT]
+		address = f"{IP_SUBNET}.{ind}"
 
 		h_config = d_api.create_host_config(
 			port_bindings={
@@ -82,16 +82,18 @@ else:
 		)
 
 		n_config = d_api.create_networking_config({
-			NETWORK: d_api.create_endpoint_config(ipv4_address=addr)
+			# NETWORK: d_api.create_endpoint_config(ipv4_address=address)
+			NETWORK: d_api.create_endpoint_config()
 		})
 
-		print(f"Starting: {c_name} addr: {addr}")
+		print(f"Starting: {c_name} addr: {address}")
 
 		ing_id = d_api.create_container(image=IMAGE_NAME,
 								  	detach=True, 
-									ports=c_ports,
+									ports=container_ports,
 									host_config=h_config,
 									networking_config=n_config, 
+									# network=NETWORK,
 									name=c_name, 
 									labels=[INGEST_LABEL])
 		d_api.start(ing_id)

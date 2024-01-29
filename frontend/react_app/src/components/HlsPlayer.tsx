@@ -1,52 +1,43 @@
-import Hls, { HlsConfig } from "hls.js"
-import { useEffect, useRef } from "react"
+import Hls, { CMCDController, EMEControllerConfig, HlsConfig } from "hls.js"
+import { useEffect, useRef, useState } from "react"
 import "../style/Player.css"
 
 export interface HlsPlayerProps {
 	src: string | undefined
 }
 
-// export function HlsPlayer(props: HlsPlayerProps) {
-export function HlsPlayer({ src }: { src: string | null }) {
+export function HlsPlayer(props: HlsPlayerProps) {
 
 	const videoRef = useRef<HTMLVideoElement>(null);
 
-	useEffect(() => {
+	function getAuthData() {
+		return { 'username': 'user_0', 'password': 'pwd_0' }
+	}
 
-		console.log("Hls player setup for: " + src)
+	useEffect(() => {
+		console.log("Preparing for: " + props.src)
 
 		const video = videoRef.current;
-		if (!video) {
+		if (!video || !props.src) {
 			return;
 		}
 
-		if (!src) {
-			return
-		}
-
 		if (video.canPlayType("application/vnd.apple.mpegurl")) {
-			console.log("This browser can play hls stream by default ... ")
-			video.src = src
-
+			console.log("This browser can play hls stream by default.")
+			video.src = props.src
 		} else if (Hls.isSupported()) {
-			console.log("Using hls to play hls stream ... ")
+			console.log("Using hls.js to play hls stream.")
 
 			let config = {
-				debug: true,
-				xhrSetup: (header, url) => {
-					header.withCredentials = true
-					// header.setRequestHeader("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With")
-					// header.setRequestHeader("Access-Control-Allow-Origin", "http://localhost:10000/");
-					// header.setRequestHeader("Access-Control-Allow-Credentials", "true");
-
-					// header.setRequestHeader("Cookie", "session=a512c8eb-1564-4a8d-83bb-f4c769eda3b0")
-				}
+				// debug: true,
+				xhrSetup: (xhr: XMLHttpRequest, url) => {
+					xhr.withCredentials = true;
+				},
 			} as HlsConfig;
 
 			const hls = new Hls(config)
-			hls.loadSource(src)
+			hls.loadSource(props.src)
 			hls.attachMedia(video)
-			// video.play()
 
 		} else {
 			console.log("We are unable to play stream in this browser ... ")
@@ -54,9 +45,12 @@ export function HlsPlayer({ src }: { src: string | null }) {
 
 	});
 
-	return (<video
-		style={{ border: "solid red 2px" }}
-		className='streamVideo'
-		ref={videoRef}
-		autoPlay />)
+	return (
+		<div>
+			<video className='streamVideo'
+				style={{ border: "solid red 2px" }}
+				ref={videoRef}
+				autoPlay />
+		</div>
+	)
 }

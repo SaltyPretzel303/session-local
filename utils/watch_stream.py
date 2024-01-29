@@ -6,9 +6,14 @@ import subprocess
 from ffpyplayer.player import  MediaPlayer 
 from requests import post, get, Response, Session
 
-USERNAME = "viewer"
-EMAIL = "viewer@session.com"
-PASSWORD = "view_password"
+# USERNAME = "viewer"
+# EMAIL = "viewer@session.com"
+# PASSWORD = "view_password"
+
+USERNAME = "user_1"
+EMAIL = "email_1"
+PASSWORD = "pwd_1"
+
 
 REGISTER_URL = "http://localhost:8003/register"
 AUTH_URL = "http://localhost:8003/authenticate"
@@ -19,7 +24,7 @@ VIEWER_COOKIE_PATH = "./viewer_cookie"
 PLAYER_WIDTH = 500
 PLAYER_HEIGHT = int(PLAYER_WIDTH*0.56)
 
-DEFAULT_STREAM_NAME = "streamer"
+DEFAULT_STREAM_NAME = "user_0"
 # QUALITY_EXT = "hd"
 QUALITY_EXT = "subsd"
 STREAM_URL = "http://localhost:10000/live/"
@@ -61,7 +66,7 @@ def authenticate(username, email, password):
 
 
 	auth_data = {
-		"email": register_data["email"],
+		"username": register_data["username"],
 		"password": register_data["password"],
 	}
 
@@ -102,8 +107,6 @@ def authenticate(username, email, password):
 if __name__ == "__main__":
 
 	stream_name = DEFAULT_STREAM_NAME
-	if len(sys.argv) == 2:
-		stream_url = sys.argv[1]
 
 	cookie = authenticate(USERNAME, EMAIL, PASSWORD)
 

@@ -78,9 +78,13 @@ def add_media_server():
 						media_server=instance_ip)
 	
 	req_data = encode(req,unpicklable=False)
+	try:
+		print("Doing post towars registry.")
+		add_res = post(url=f"http://{STREAM_REGISTRY_ADDR}/{ADD_MEDIA_SERVER_PATH}", json=req_data)
+	except Exception as e:
+		print("Request toward registry failed.")
+		print(e)
 
-	add_res = post(url=f"http://{STREAM_REGISTRY_ADDR}/{ADD_MEDIA_SERVER_PATH}", json=req_data)
-	
 	if add_res is None or add_res.status_code != status.HTTP_200_OK:
 		print("Failed to add media server ... ")
 		return "Failure ... ", status.HTTP_500_INTERNAL_SERVER_ERROR

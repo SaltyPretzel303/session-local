@@ -1,7 +1,10 @@
+import User from "./User"
+
+
 export interface AuthResponse {
 	status: number
-	username: string
-	email: string
+	message: string
+	user: User
 }
 
 export function isSuccess(resp: AuthResponse) {

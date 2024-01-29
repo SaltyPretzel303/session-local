@@ -15,10 +15,14 @@ export function matchingPwd(value_1: string | undefined, value_2: string | undef
 	return true
 }
 
-export function anyClear(inputs: (HTMLInputElement | null)[]) {
-	return inputs.find((inEl) => {
-		return inEl != null &&
-			inEl.value != undefined &&
-			inEl.value == ""
-	}) != null;
+// export function anyClear(inputs: (HTMLInputElement | null)[]) {
+// 	return inputs.find((inEl) => {
+// 		return inEl != null &&
+// 			inEl.value != undefined &&
+// 			inEl.value == ""
+// 	}) != null;
+// }
+
+export function anyClear(values: string[]){
+	return values.find((el)=>el===undefined || el==="")
 }

@@ -5,70 +5,101 @@ import { useParams } from "react-router-dom";
 import User from "./data_model/User";
 import { StreamInfo } from "./data_model/StreamInfo";
 
+const REGION: string = "eu"
+
 export interface PlayerProps {
 	user: User | null
 }
 
+enum VideoQuality {
+	HD = 'hd',
+	SD = 'sd',
+	SUBSD = 'subsd'
+}
+
+const MANIFEST_PATH = "index.m3u8"
+
 export function Player(props: PlayerProps) {
 
-	const { streamer } = useParams();
-	const [streamSrc, setStreamSrc] = useState<string>("")
+	const { streamerName } = useParams();
+	const [streamSrc, setStreamSrc] = useState<string | undefined>(undefined)
+	const [quality, setQuality] = useState<VideoQuality>(VideoQuality.SUBSD)
 
 	useEffect(() => {
-		console.log(`Launching player for: ${streamer}`)
 
-		let creator = streamer !== undefined ? streamer : ""
+		console.log(`Launching player for: ${streamerName}`)
 
-		if (creator === "") {
+		if (props.user == null) {
+			console.log("App has no valid user, please authenticate.")
 			return;
 		}
 
+		if (!streamerName) {
+			console.log("No channel provided.")
+			return;
+		}
+
+		// Just because streamerName is string | undefined and not just string ...
+		let creator: string = streamerName
+
 		async function fetchStreamData() {
-			let resp: Response | undefined
 			try {
-				resp = await fetch(formGetInfoUrl(creator, "eu"))
+				let resp = await fetch(formGetInfoUrl(creator, REGION))
 
 				if (!resp) {
 					throw "Stream info fetch result empty ... "
 				}
+
 				if (resp.status !== 200) {
 					throw resp.text
 				}
+
+				let txtData = await resp.text()
+				console.log("Stream info fetched: " + txtData)
+
+				let info = JSON.parse(txtData) as StreamInfo
+
+				// let info = await resp.json() as StreamInfo
+
+				// console.log("Received stream info ...")
+				// console.log(info)
+
+				// setStreamSrc(`${info.media_server.full_path}/${creator}_subsd/index.m3u8`)
+				// setStreamSrc(`${info.media_server.full_path}`)
+				setStreamSrc(formUrl(info.media_server.full_path,
+					creator,
+					quality,
+					MANIFEST_PATH))
+
 			} catch (e) {
 				console.log("Failed to fetch stream info: " + e)
 				return
 			}
-
-			let txt_data = await resp.text()
-			console.log("Stream info fetched: " + txt_data)
-
-			let info = JSON.parse(txt_data) as StreamInfo
-
-			// let info = await resp.json() as StreamInfo
-
-			// console.log("Received stream info ...")
-			// console.log(info)
-
-			setStreamSrc(`${info.media_server.full_path}/${creator}_subsd/index.m3u8`)
-			// index.m3u8 should also be in info 
 
 		}
 
 		fetchStreamData()
 
 		// TODO display some loader or something ... 
-
-	}, []);
+	});
 
 	function formGetInfoUrl(streamer: string, region: string) {
-		return `http://localhost/reg/stream_info/${streamer}?region=${region}`
+		return `http://localhost:8002/stream_info/${streamer}?region=${region}`
 	}
 
+	function formUrl(path: string, streamer: string, quality: string, manifest: string) {
+
+		return `${path}/${streamer}_${quality}/${manifest}`
+	}
 
 	return (
 		<div className="streamPlayer">
-			{/* <HlsPlayer src={"http://localhost:10000/live/streamer_subsd/index.m3u8"} /> */}
 			<HlsPlayer src={streamSrc} />
 			{/* <Chat visible={true} /> */}
+
+			<button onClick={() => setQuality(VideoQuality.HD)}>HD</button>
+			<button onClick={() => setQuality(VideoQuality.SD)}>SD</button>
+			<button onClick={() => setQuality(VideoQuality.SUBSD)}>SUBSD</button>
+
 		</div>)
 }

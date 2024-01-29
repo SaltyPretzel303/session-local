@@ -2,12 +2,12 @@
 
 docker-compose up --detach auth-service auth-database stream-registry registry-database
 
-echo "Auth and registry deoployed ... "
+echo "Auth and registry deployed ... "
 
 ./utils/cdn/remove_cdn.py
 ./utils/cdn/deploy_cdn.py
 
-echo "CDN deoployed ... "
+echo "CDN deployed ... "
 
 docker-compose up --detach cdn-proxy
 

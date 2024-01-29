@@ -1,5 +1,7 @@
 #!/bin/bash 
 
+# NOT USED 
+
 # ffmpeg -re -i - \
 # 	-vf "drawtext=text='%{gmtime\:%H-%M-%S.%6N-%Z}':fontcolor=red:fontsize=36" \
 # 	-f flv -

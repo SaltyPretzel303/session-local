@@ -1,10 +1,20 @@
-from flask import Flask, request
+from flask import Flask, Response, request
 from flask_restful import Api
 from flask_api import status
 
 
 app = Flask(__name__)
 api = Api(app)
+
+@app.after_request
+def after_request(resp):
+	resp.headers.add("Access-Control-Allow-Credentials","true")
+	# resp.headers.add("Access-Control-Allow-Origin", "http://localhost:3000")
+	resp.headers.add("Access-Control-Allow-Origin", f"{request.origin}")
+	resp.headers.add("Access-Control-Allow-Headers","Content-type")
+
+	return resp
+	
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -26,7 +36,14 @@ def key_match(path):
 	print("")
 	print("========================")
 
-	return "all good", status.HTTP_200_OK;
+	resp = Response(status=status.HTTP_200_OK, response="All good.")
+	
+	# resp.headers.add("Access-Control-Allow-Credentials","true")
+	# # resp.headers.add("Access-Control-Allow-Origin", "http://localhost:3000")
+	# resp.headers.add("Access-Control-Allow-Origin", f"{request.origin}")
+	# resp.headers.add("Access-Control-Allow-Headers","Content-type")
+	
+	return resp
 
 
 if __name__ == '__main__':

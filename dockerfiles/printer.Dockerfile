@@ -1,10 +1,9 @@
 FROM python 
 
 WORKDIR /app
+RUN pip install flask flask_api flask_restful Werkzeug==2.2
 
 ADD ./printer/api.py ./api.py
-
-RUN pip install flask flask_api flask_restful Werkzeug==2.2
 
 EXPOSE 8010
 

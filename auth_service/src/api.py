@@ -5,16 +5,19 @@ from flask import Flask, Response, request, session, g
 from flask_api import status
 from flask_restful import Api
 from flask_session import Session
-from flask_cors import CORS
 
-from auth_request import AuthRequest
-from auth_response import AuthResponse,AuthStatus
-from key_response import KeyResponse, KeyStatus
+from requests import get
 
-from stream_key import StreamKey
-from register_request import RegisterRequest
-from user import User
+from shared_model.auth_request import AuthRequest
+from shared_model.user import User
+from shared_model.auth_response import AuthResponse
+from shared_model.key_response import KeyResponse, KeyStatus
+from shared_model.register_request import RegisterRequest
+from shared_model.users_query_response import UsersQueryResponse
+
+from user_doc import UserDoc
 from app_config import AppConfig
+from stream_key_doc import StreamKeyDoc
 from db import Db
 
 import jsonpickle
@@ -32,22 +35,20 @@ api = Api(app)
 
 # CORS(app, support_credentials=True)
 # CORS(app)
-
-app.secret_key = config["session_secret_key"]
+ 
+app.secret_key = config["session_secret_key"] 
 app.config["SESSION_TYPE"] = config["session_type"]
 # TODO switch to redis as a session_type
-
-# app.config["SESSION_COOKIE_SAMESITE"] = "None"
-# app.config["SESSION_COOKIE_SAMESITE"] = "Strict" # should be this 
-# app.config["SESSION_COOKIE_SECURE"] = True # this will require https 
 
 Session(app)
 
 def json_serialize(content):
 	return jsonpickle.encode(content, unpicklable=False, indent=4)
 
+def json_parse(txt):
+	return jsonpickle.decode(txt)
 
-def gen_stream_key(len) -> StreamKey:
+def gen_stream_key(len) -> StreamKeyDoc:
 	chars = string.ascii_letters+string.digits
 	return "".join(random.choice(chars) for i in range(len))
 
@@ -65,52 +66,57 @@ def get_db()->Db:
 
 	return g.db
 
-
 @app.after_request
 def header_filler(resp):
 	resp.headers.add("Access-Control-Allow-Credentials","true")
-	resp.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
+	# Maybe do this instead of just localhost:3000
+	resp.headers.add("Access-Control-Allow-Origin", f"{request.origin}")
+	# resp.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
 	resp.headers.add("Access-Control-Allow-Headers","Content-type")
-	
+
 	return resp
-
-
 
 @app.route("/register", methods=["POST"])
 def register():
 
+	print("Processing register request.")
+
 	if request.data is None:
-		
-		res = AuthResponse(status=AuthStatus.BAD_REQUEST, message="No data provided ...")
+		print("Data not provided.")
+		res = AuthResponse.bad_request("No data provided ...")
 		return json_serialize(res), status.HTTP_400_BAD_REQUEST # bad request
 	
 	if not request.is_json:
-		res = AuthResponse(status=AuthStatus.BAD_REQUEST, message="Json data required ...")
+		print("Provided data is not in json format.")
+		res = AuthResponse.bad_request("Json data required ...")
 		return json_serialize(res), status.HTTP_415_UNSUPPORTED_MEDIA_TYPE # unsupported media type 
 	
 	try:
 		reg_request = RegisterRequest(**request.get_json())
+
 		if reg_request is None:
+			print("Failed to parse data ")
+			print(request.get_json())
 			raise Exception("Error parsing data ... ")
+		
 	except TypeError:
 		print("Unable to parse incoming data: ")
 		print(request.get_json())
 
-		res = AuthResponse(status=AuthStatus.BAD_REQUEST, message="Error parsing data ...")
+		res = AuthResponse.bad_request("Error parsing data ...")
 		return json_serialize(res), status.HTTP_400_BAD_REQUEST
 		# Should return 422 but this one is not defined in status.
 	
-	print("Register request ... ")
-	(json_serialize(reg_request))
-
-	user = get_db().get_user(reg_request.email)
+	print("Querying database.")
+	user = get_db().get_user(reg_request.username)
 
 	if user is not None:
-		print("Email already in use ... ")
-		res = AuthResponse(status=AuthStatus.ALREADY_EXISTS, message="This email already exists ...")
+		print("Username is taken ... ")
+		res = AuthResponse.already_exists("Username taken ...")
 		return json_serialize(res), status.HTTP_200_OK
 	
-	new_user = User(username = reg_request.username,
+	print("Creating new user.")
+	new_user = UserDoc(username = reg_request.username,
 					email = reg_request.email,
 					pwd_hash = hashpw(reg_request.password.encode(), gensalt()))
 
@@ -118,113 +124,114 @@ def register():
 
 	if ret_obj is not None:
 		print("User successfully registered ... ")
-		res = AuthResponse(status=AuthStatus.SUCCESS,
-					username=ret_obj.username,
-					email=ret_obj.email)
+		res = AuthResponse.success(to_public_user(ret_obj))
 		return json_serialize(res), status.HTTP_200_OK
 	else:
-		res = AuthResponse(status=AuthStatus.FAILED, message="Failed to create new user ...")
+		print("Failed to create new user.")
+		res = AuthResponse.failed("Failed to create new user ...")
 		return json_serialize(res), status.HTTP_500_INTERNAL_SERVER_ERROR
-		
 
 @app.route("/authenticate", methods=["POST"])
 def authenticate():
 
-	print("Auth request: ")
-	print(request.headers)
+	print("Processing authenticate request: ")
 
+	print("Session start >>")
+	json_serialize(session)
+	print("<<")
 
 	if USER_SESSION_VAR in session:
 		print(f"User was already authenticated ... ")
-		user_data: User = session[USER_SESSION_VAR]
-		res_data = AuthResponse(status=0,
-					username=user_data.username, 
-					email=user_data.email)
+		user_data: UserDoc = session[USER_SESSION_VAR]
+		
+		res_data = AuthResponse.success(to_public_user(user_data))
 
-
-		response = Response()
-		response.status = status.HTTP_200_OK
-		# response.headers.add("Access-Control-Allow-Credentials","true")
-		# response.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
-		response.content_type = "application/json"
-		response.set_data(json_serialize(res_data))
-
+		response = Response(status=status.HTTP_200_OK, 
+						content_type='application/json',
+						response=json_serialize(res_data))
 		return response
 
 	if request.data is None:
-		res_data = AuthResponse(status=AuthStatus.BAD_REQUEST, 
-					message = "No data provided ...")
+		print("No data provided.")
+		res_data = AuthResponse.bad_request("No data provided.")
+
 		return json_serialize(res_data), status.HTTP_400_BAD_REQUEST
 	
 	if not request.is_json:
-		res_data = AuthResponse(status=AuthStatus.BAD_REQUEST, message="Json data required ...")
+		print("Json data expected.")
+		res_data = AuthResponse.bad_request("Json data required.")
+
 		return json_serialize(res_data), status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
 	
 	try:
+		
+		# auth_request = AuthRequest(**json_parse(request.get_json()))
 		auth_request = AuthRequest(**request.get_json())
 
 		if auth_request is None:
+			print("Invalid data provided.")
 			raise Exception("Failed to parse data ... ")
+
+		print(json_serialize(auth_request))
+
 	except (TypeError, Exception) as e:
 		print("Unable to parse incoming data: ")
 		print(f"Err: {e}")
 
-		res_data = AuthResponse(status=AuthStatus.BAD_REQUEST, message="Failed to parse data ...")
+		res_data = AuthResponse.bad_request("Failed to parse data ...")
+
 		return json_serialize(res_data), status.HTTP_400_BAD_REQUEST
 
-	user: User = get_db().get_user(auth_request.email)
+	user: UserDoc = get_db().get_user(auth_request.username)
 
 	if user is None:
-		res_data = AuthResponse(status=AuthStatus.FAILED, message="User doesn't exists ...")
-		return json_serialize(res_data), status.HTTP_401_UNAUTHORIZED
+		print("User doesn't exists.")
+		res_data = AuthResponse.failed("User doesn't exists.")
+
+		return json_serialize(res_data), status.HTTP_200_OK
 	
 	if not checkpw(auth_request.password.encode(), user.pwd_hash):
 		print("Wrong password ... ")
+		res_data = AuthResponse.failed("Wrong password ... ")
 
-		res_data = AuthResponse(status=AuthStatus.FAILED, message="Wrong password ... ")
-		return json_serialize(res_data), status.HTTP_401_UNAUTHORIZED
+		return json_serialize(res_data), status.HTTP_200_OK
 	
-	print(f"Successfully authenticated {auth_request.email} ... ")
+	print(f"Successfully authenticated {auth_request.username}.")
 
 	user.last_authenticated = datetime.now()
-	res_data = get_db().save_user(user)
+	res_data: UserDoc = get_db().save_user(user)
 	session[USER_SESSION_VAR] = res_data
 
-	res_data = AuthResponse(status=0,
-				username=res_data.username, 
-				email=res_data.email)
-	# return json_serialize(res), status.HTTP_200_OK
-
-	response = Response()
-	response.status = status.HTTP_200_OK
-	# response.headers.add("Access-Control-Allow-Credentials","true")
-	# response.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
-	response.content_type = "application/json"
-	response.set_data(json_serialize(res_data))
+	res_data = AuthResponse.success(to_public_user(res_data))
+	response = Response(status=status.HTTP_200_OK,
+					content_type='application/json',
+					response=json_serialize(res_data))
+	# response.status = status.HTTP_200_OK
+	# response.content_type = "application/json"
+	# response.set_data(json_serialize(res_data))
 
 	return response
 
 @app.route("/get_key", methods=["GET"])
 def get_key():
-	print("Request cookies ... ")
-	print(request.cookies)
-	print("Request header ... ")
-	print(request.headers)
+
+	print("Processing get key request.")
 
 	if USER_SESSION_VAR not in session:
+		print("Not authorized to obtain key.")
 		res = KeyResponse(status=KeyStatus.FAILED, message="Not authorized ...")
 		return json_serialize(res), status.HTTP_403_FORBIDDEN
 	
-	user: User = session[USER_SESSION_VAR]
-	key: StreamKey = get_db().get_key_with_owner(user)
+	user: UserDoc = session[USER_SESSION_VAR]
+	key: StreamKeyDoc = get_db().get_key_with_owner(user)
 
 	if key is None:
 		print("Key not found, will generates new ... ")
-		key = StreamKey()
+		key = StreamKeyDoc()
 		key.owner = user
 
 	if key.is_expired():
-		print("Key missing or expired, will genreate new ... ")
+		print("Key expired, will genreate new ... ")
 		
 		key.value = gen_stream_key(config["stream_key_len"])
 		key.exp_date = gen_exp_date(config['stream_key_longevity'])
@@ -236,11 +243,12 @@ def get_key():
 				exp_data=key.exp_date.isoformat() )
 	
 	return json_serialize(res), status.HTTP_200_OK
-		
 
 # Accessed by the stream_registry api.
 @app.route("/match_key/<req_key>", methods=["GET"])
 def match_key_get(req_key: str):
+
+	print("Processing match key request. ")
 
 	if req_key is None or req_key == "":
 		res = KeyResponse(status=KeyStatus.FAILED, message="No key provided ...")
@@ -253,6 +261,8 @@ def match_key_get(req_key: str):
 		res = KeyResponse(status=KeyStatus.FAILED, message="Invalid/Expired key provided ...")
 		return json_serialize(res), status.HTTP_404_NOT_FOUND
 
+	# Every kye is one time use. 
+	# Match key is used by the ingest instance. 
 	get_db().invalidate_key(key)
 
 	res = KeyResponse(status=KeyStatus.SUCCESS, value=key.owner.username)
@@ -261,38 +271,114 @@ def match_key_get(req_key: str):
 def url_decode(data:str):
 	return { pair.split("=")[0]:pair.split("=")[1]  for pair in data.split("&")}
 
-
 @app.route("/authorize", methods=["GET"])
 def authorize():
 
-	print("Authorization request header ... ")
-	print(request.headers)
+	print("Processing authorization request ... ")
 
 	stream_name = request.headers.get(config["stream_name_h_field"])
-	print(f"X-Stream-Name (extracted): {stream_name}")
-	# TODO this name will contain quality extension as well 
+	print(f"Stream name (from header): {stream_name}")
 	
 	if USER_SESSION_VAR not in session:
 		print("No user session, not authorized ... ")
-		return 'Not authorized ... ', status.HTTP_403_FORBIDDEN
+		return forbiden_res()
 		
-	print("User session found ... ")
-	user_name = session[USER_SESSION_VAR].username
-	print(f"user_name (from session ): {user_name}")
+	print("User is authenticated ... ")
+	user: UserDoc = session[USER_SESSION_VAR]
 
-	if is_authorized(user_name, stream_name):
-		return user_name, status.HTTP_200_OK
+	if is_authorized(user.username, stream_name):
+		resp = AuthResponse.success(to_public_user(user))
+		return json_serialize(resp), status.HTTP_200_OK
 	else:
-		return user_name, status.HTTP_401_UNAUTHORIZED 
+		return forbiden_res()
 		# redirect to login or just ... discard
-	# Return value is ignored, only the status code is checked.
+
+@app.route("/get_user/<username>", methods=["GET"])
+def get_user(username: str):
+
+	print(f"Processing get user request for: {username}")
+
+	if USER_SESSION_VAR not in session:
+		print("NotAuthenticated user requested user data ... ")
+		return forbiden_res()
 	
+	print("Get user requester is authenticated.")
+
+	user: UserDoc = get_db().get_user(username)
+	if user is None: 
+		print("Failed to retrieve requested user's data.")	
+		data = AuthResponse.failed("Failed to find requested data.")
+		return json_serialize(data), status.HTTP_200_OK
+
+	data = AuthResponse.success(to_public_user(user))
+	
+	return json_serialize(data), status.HTTP_200_OK
+
+@app.route("/get_following/<username>", methods=["GET"])
+def get_followers(username: str):
+
+	print(f"Processing get followers request for: {username}")
+
+	from_ind = int(request.args.get("from", default=0))
+	count = int(request.args.get("count", default=10))
+
+	if USER_SESSION_VAR not in session:
+		print("User is not authenticated ... ")
+		return forbiden_res()
+
+	requester: UserDoc = session[USER_SESSION_VAR]
+
+	if requester.username != username:
+		print(f"User: {requester.username} is not authorized for this request.")
+		return forbiden_res()
+
+	user: UserDoc = get_db().get_user(username)
+	if user is None: 
+		print(f"Failed to find user: {username}")
+		res = AuthResponse.failed("No such user.")
+		return json_serialize(res), status.HTTP_200_OK
+
+	followed_docs: [UserDoc] = get_db().get_followers_of(user, from_ind, count)
+	if followed_docs is None or len(followed_docs) == 0: 
+		print("Failed to obtain followed users.")
+		res = UsersQueryResponse(for_user=username, result=[])
+
+		return json_serialize(res), status.HTTP_200_OK
+	
+	followed_users = list(map(to_public_user, followed_docs))
+	res = UsersQueryResponse(for_user=username, result=followed_users)
+
+	return json_serialize(res), status.HTTP_200_OK
 
 def is_authorized(user: str, stream: str) -> bool:
 	# either db check
 	# or with authenticate save user permissions as well in session
 	print(f"Authorized: {user} for {stream} stream ... ")
 	return True
+
+def to_public_user(model: UserDoc)->User:
+	return User(username=model.username, email=model.email)
+
+def forbiden_res():
+	r = Response()
+	r.status = status.HTTP_403_FORBIDDEN
+	r.content_type = 'Application/json'
+	r.set_data(json_serialize(AuthResponse.forbidden()))
+	return r
+
+@app.route("/help", methods=["GET"])
+def help():
+
+	return "yo yo", status.HTTP_200_OK
+
+	get_res:Response = get("http://session-stream-registry:8002/get_explore")
+
+	if get_res is None: 
+		print("Response is None.")
+		return "Failed. ", status.HTTP_200_OK
+	
+	print("Result successfull.")
+	return "Yo", status.HTTP_200_OK
 
 if __name__ == '__main__':
 	app.run(host="0.0.0.0", port='8003')

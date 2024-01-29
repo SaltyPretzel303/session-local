@@ -1,4 +1,6 @@
+from datetime import datetime, timedelta
 from ipaddress import ip_address
+
 from flask import Flask, Response, g, request
 from flask_api import status
 from flask_restful import Api
@@ -7,11 +9,12 @@ from requests import get, post
 import jsonpickle
 
 from app_config import AppConfig
+
 from shared_model.media_server_request import MediaServerRequest
 from shared_model.media_server_info import MediaServerInfo
 from shared_model.stream_info import StreamInfo
-from stream_data import StreamData
 from shared_model.update_request import UpdateRequest
+
 from db import Db
 
 
@@ -127,22 +130,26 @@ def start_stream():
 
 	args = url_decode(request.get_data().decode())
 	key = args.get("name")
-	ingest_ip = args.get("addr") # this is gonna be the ip of  nxing reverse proxy 
+	ingest_ip = args.get("addr") # this is gonna be the ip of nginx reverse proxy 
 
 	print(f"Key: {key}")
 	print(f"Source: {ingest_ip}")
 
 	try:
+		print("Sending match requst to auth service.")
 		match_res = get(form_match_key_url(key))
+		print("Received auth service response.")
 
 		if match_res.status_code != 200:
 			raise Exception(f"Auth service returned: {match_res.status_code}")
 
 		match_data = match_res.json()
 
+		print("Saving empty stream to db.")
 		db_res = get_db().save_empty(match_data["value"], ingest_ip, key)
 		if db_res is None:
 			return "Failure.", status.HTTP_400_BAD_REQUEST
+		print("Stream saved.")
 
 		response = Response(status=302)
 		response.headers["Location"] = match_data["value"]
@@ -157,6 +164,8 @@ def start_stream():
 
 @app.route("/add_media_server", methods=["POST"])
 def add_media_server():
+	print("Processing media server request.")
+
 	if request.data is None:
 		return "No data provided ...", status.HTTP_400_BAD_REQUEST
 	
@@ -239,22 +248,6 @@ def get_stream_info(streamer: str):
 
 	return json_serialize(stream_info), status.HTTP_200_OK
 
-# TODO remove, used as a mockup 
-@app.route("/get_followed/<username>", methods=["GET"])
-def get_followed(username: str):
-	print(f"Returning follow streams for: {username}")
-
-	resp = Response()
-	resp.status_code = status.HTTP_200_OK
-	# resp.headers.add("Access-Control-Allow-Credentials","true")
-	# resp.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
-	# resp.headers.add("Access-Control-Allow-Headers","Content-type")
-	# resp.headers.add("Content-type", "application/json")
-	resp.data = json_serialize(list(map(gen_stream_info,range(0,5))))
-
-	return resp
-
-
 @app.route("/get_explore", methods=["GET"])
 def get_explore():
 
@@ -268,12 +261,19 @@ def get_explore():
 
 	return resp
 
+@app.route("/since/<isodate>", methods=["GET"])
+def get_since(isodate: str):
+	date = datetime.fromisodate(isodate)
+	now = datetime.now()
+
+
+
+
 @app.after_request
 def after_request(resp):
 	resp.headers.add("Access-Control-Allow-Credentials","true")
 	resp.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
 	resp.headers.add("Access-Control-Allow-Headers","Content-type")
-	resp.headers.add("Content-type", "application/json")
 
 	return resp
 

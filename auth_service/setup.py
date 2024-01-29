@@ -1,7 +1,6 @@
 from setuptools import setup
 
-setup(
-    name='auth_service',
+setup(name='auth_service',
     install_requires=['flask',
                       'flask_api',
                       'flask_restful',
