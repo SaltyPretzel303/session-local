@@ -1,14 +1,15 @@
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from ipaddress import ip_address
+import os
+import ffmpeg
 
-from flask import Flask, Response, g, request
+from flask import Flask, Response, g, request, send_file
 from flask_api import status
 from flask_restful import Api
 from requests import get, post
 
 import jsonpickle
-
-from app_config import AppConfig
 
 from shared_model.media_server_request import MediaServerRequest
 from shared_model.media_server_info import MediaServerInfo
@@ -16,6 +17,8 @@ from shared_model.stream_info import StreamInfo
 from shared_model.update_request import UpdateRequest
 
 from db import Db
+
+from app_config import AppConfig
 
 
 JSON_CONTENT_TYPE = 'application/json'
@@ -25,6 +28,8 @@ MATCH_REGION_PATH = "/match_region"
 app = Flask(__name__)
 api = Api(app)
 
+TNAIL_LONGEVITY = 120 # 120s 
+tnails = {}
 
 def json_serialize(content) -> str:
 	return jsonpickle.encode(content, unpicklable=False)
@@ -33,11 +38,11 @@ def json_serialize(content) -> str:
 def get_db() -> Db:
 	if 'db' not in g:
 		config = AppConfig.get_instance()
-		address = config["db_address"]
-		port = config["db_port"]
-		db = config["db_name"]
-		user = config["db_user"]
-		pwd = config["db_password"]
+		address = config.db_address
+		port = config.db_port
+		db = config.db_name
+		user = config.db_user
+		pwd = config.db_password
 		g.db = Db(f"mongodb://{user}:{pwd}@{address}:{port}/{db}")
 
 	return g.db
@@ -92,8 +97,9 @@ def update():
 		return "User not authenticated ... ", status.HTTP_401_UNAUTHORIZED
 
 	auth_data = auth_res.json()
+	print(auth_data)
 
-	res = get_db().update(auth_data["username"], update_request)
+	res = get_db().update(auth_data['user']['username'], update_request)
 
 	if res is None:
 		print("Failed to update stream info ... ")
@@ -101,12 +107,11 @@ def update():
 	
 	return json_serialize(res), status.HTTP_200_OK
 			
-
 def form_auth_url():
 	config = AppConfig.get_instance()
-	auth_ip = config["auth_service_ip"]
-	auth_port = config["auth_service_port"]
-	auth_path = config["authenticate_path"]
+	auth_ip = config.auth_service_ip
+	auth_port = config.auth_service_port
+	auth_path = config.authenticate_path
 	return  f"http://{auth_ip}:{auth_port}/{auth_path}"
 
 @app.route("/by_category/<category>", methods=['GET'])
@@ -136,7 +141,7 @@ def start_stream():
 	print(f"Source: {ingest_ip}")
 
 	try:
-		print("Sending match requst to auth service.")
+		print("Sending match request to auth service.")
 		match_res = get(form_match_key_url(key))
 		print("Received auth service response.")
 
@@ -261,13 +266,66 @@ def get_explore():
 
 	return resp
 
-@app.route("/since/<isodate>", methods=["GET"])
-def get_since(isodate: str):
-	date = datetime.fromisodate(isodate)
-	now = datetime.now()
+@app.route("/tnail/<streamer>", methods=["GET"])
+def get_tnail(streamer: str):
 
+	print(f"Requested tnail for: {streamer}")
 
+	if streamer is None or streamer == "":
+		return "", status.HTTP_400_BAD_REQUEST
 
+	if not is_live(streamer):
+		return "", status.HTTP_404_NOT_FOUND
+
+	if streamer not in tnails or is_expired(tnails[streamer]):
+		print("Thumbnail expired, will generate new.")
+		gen_res = generate_thumbnail(streamer, form_tnail_path(streamer))
+		if not gen_res:
+			print(f"Failed to generate thumbnail for: {streamer}.")
+		else:
+			exp_date = datetime.now() + timedelta(seconds=TNAIL_LONGEVITY)
+			tnails[streamer] = exp_date
+			print("Tnail generated, will expiration date: {exp_date}")
+			
+	
+	path = form_tnail_path(streamer)
+	# With checks above this will never be true ... ? 
+	if not os.path.exists(path):
+		print(f"Tnail for requested streamer doesn't exists: {path}")
+		return "", status.HTTP_404_NOT_FOUND
+
+	print(f"Sending tnail for {streamer}")
+	return send_file(path_or_file=path, mimetype="image/jpeg")
+
+def form_tnail_path(streamer: str):
+	c = AppConfig.get_instance()
+	return f"{c.tnail_path}/{streamer}.{c.tnail_ext}"
+
+def is_expired(expiration_date: datetime):
+	return expiration_date is None or datetime.now() > expiration_date
+
+def generate_thumbnail(creator: str, path: str)->bool:
+
+	info:StreamInfo = get_db().get_stream(creator)
+	quality = "subsd"
+	try:
+		ffmpeg\
+			.input(f"http://session-cdn-eu:10000/live/{info.creator}_{quality}/index.m3u8")\
+			.filter('scale', 300, -1) \
+			.output(path, vframes=1)\
+			.global_args('-y')\
+			.run(capture_stdout=True, capture_stderr=True)
+		
+		return True
+	except ffmpeg.Error as e:
+		print("Error while getting single frame.")
+		# print(f"STDOUT: {e.stdout.decode("utf8")}")
+		# print(f"STDERR: {e.stderr.decode("utf8")}")
+
+	return False
+
+def is_live(streamer: str):
+	return get_db().get_stream(streamer) is not None
 
 @app.after_request
 def after_request(resp):
@@ -292,9 +350,9 @@ def int_to_ip(ip: int):
 
 def form_match_key_url(key:str):
 	config = AppConfig.get_instance()
-	ip = config["auth_service_ip"]
-	port = config["auth_service_port"]
-	match_key_path = config["match_key_path"]
+	ip = config.auth_service_ip
+	port = config.auth_service_port
+	match_key_path = config.match_key_path
 	return f'http://{ip}:{port}/{match_key_path}/{key}'
 
 # IT IS REQUIRED that data is str and not byte or byte[] !!!

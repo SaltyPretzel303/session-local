@@ -1,32 +1,34 @@
 import Hls, { CMCDController, EMEControllerConfig, HlsConfig } from "hls.js"
-import { useEffect, useRef, useState } from "react"
-import "../style/Player.css"
+import React, { useEffect, useRef, useState } from "react"
 
-export interface HlsPlayerProps {
-	src: string | undefined
+
+type HlsPlayerProps = {
+	src: string | undefined,
+	posterUrl: string | undefined,
+	shouldPlay: boolean,
+	quality: string,
+	abr: boolean // if false, passed quality is forced
+	muted: boolean
 }
 
-export function HlsPlayer(props: HlsPlayerProps) {
+export default function HlsPlayer(props: HlsPlayerProps) {
 
 	const videoRef = useRef<HTMLVideoElement>(null);
-
-	function getAuthData() {
-		return { 'username': 'user_0', 'password': 'pwd_0' }
-	}
+	let hls: Hls | undefined = undefined
 
 	useEffect(() => {
-		console.log("Preparing for: " + props.src)
+		console.log("Constructing hlsPlayer for: " + props.src)
 
-		const video = videoRef.current;
-		if (!video || !props.src) {
+		const videoElement = videoRef.current;
+		if (!videoElement || !props.src) {
 			return;
 		}
 
-		if (video.canPlayType("application/vnd.apple.mpegurl")) {
-			console.log("This browser can play hls stream by default.")
-			video.src = props.src
+		if (videoElement.canPlayType("application/vnd.apple.mpegurl")) {
+			console.log("This browser supports hls stream by default.")
+			videoElement.src = props.src
 		} else if (Hls.isSupported()) {
-			console.log("Using hls.js to play hls stream.")
+			console.log("Will use hls.js to play hls stream.")
 
 			let config = {
 				// debug: true,
@@ -35,22 +37,73 @@ export function HlsPlayer(props: HlsPlayerProps) {
 				},
 			} as HlsConfig;
 
-			const hls = new Hls(config)
+			// const hls = new Hls(config)
+			hls = new Hls(config)
 			hls.loadSource(props.src)
-			hls.attachMedia(video)
+			hls.attachMedia(videoElement)
+
+			if (props.shouldPlay) {
+				hls.startLoad()
+				// videoElement.play()
+				// 	.then((res) => {
+				// 		console.log("Video  successfully started.")
+				// 	})
+				// 	.catch((err) => {
+				// 		console.log("Failed to start video: " + err)
+				// 	})
+			} else {
+				hls.stopLoad()
+			}
 
 		} else {
-			console.log("We are unable to play stream in this browser ... ")
+			console.log("Unable to play stream in this browser ... ")
 		}
 
-	});
+		return () => {
+			console.log("Calling hlsPlayer destructor.")
+			if (hls) {
+				hls.detachMedia()
+				hls.destroy()
+			}
+		}
+
+	}, [props]);
+
+	function pauseHandler() {
+		if (!hls) {
+			console.log("Pause ignored, hls is undefined.")
+			return
+		}
+
+		hls.stopLoad()
+		console.log("Pause handled, load stopped.")
+	}
+
 
 	return (
-		<div>
-			<video className='streamVideo'
-				style={{ border: "solid red 2px" }}
+		<div style={
+			{
+				border: "1px solid purple",
+				boxSizing: "border-box",
+				width: "150px",
+				height: "100px"
+			}
+		}
+		>
+			<video
+				style={
+					{
+						border: "solid red 2px",
+						width: "100%",
+						height: "100%"
+					}
+				}
+				muted={props.muted}
+				poster={props.posterUrl}
 				ref={videoRef}
-				autoPlay />
+				onPause={pauseHandler}
+				autoPlay
+			/>
 		</div>
 	)
 }

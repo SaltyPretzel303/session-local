@@ -13,20 +13,16 @@ from jsonpickle import encode, decode
 CONTENT_PATH = '/home/nemanja/Videos/clock.mp4'
 INGEST_URL = 'rtmp://localhost:9000/ingest' 
 
-# USERNAME = "streamer"
-# EMAIL = "some_streamer@session.com"
-# PASSWORD = "strong_password"
-
-USERNAME = "user_0"
-EMAIL = "email_0"
-PASSWORD = "pwd_0"
+USERNAME = "user0"
+EMAIL = "email0"
+PASSWORD = "pwd0"
 
 AUTH_ROUTE = "http://localhost:8003/authenticate"
 REGISTER_ROUTE = "http://localhost:8003/register"
 GETKEY_ROUTE = "http://localhost:8003/get_key"
 
 SESSION_PATH = "./publisher_session"
-PLAIN_COOKIE_PAT = "./publisher_cookie"
+PLAIN_COOKIE_PATH = "./publisher_cookie"
 
 UPDATE_INFO_PATH = "http://localhost:8002/update"
 
@@ -49,6 +45,7 @@ def authenticate(username: str, email: str, password:str ):
 	}
 
 	print("Trying to register ... ")
+	print(encode(register_data, indent=4))
 
 	reg_response : Response = post(url=REGISTER_ROUTE, json=register_data) 
 		
@@ -79,6 +76,7 @@ def authenticate(username: str, email: str, password:str ):
 	}
 
 	print("Trying to authenticate.")
+	print(encode(auth_data, indent=4))
 	auth_response : Response = s.post(url=AUTH_ROUTE, json=auth_data)
 
 	if auth_response.status_code != 200:
@@ -93,7 +91,7 @@ def authenticate(username: str, email: str, password:str ):
 		cookie_file.close()
 		print(f"Wrote cookie: {auth_response.cookies}")
 
-		plain_cookie = open(PLAIN_COOKIE_PAT,"w")
+		plain_cookie = open(PLAIN_COOKIE_PATH, "w")
 		plain_cookie.write(auth_response.cookies.get("session"))
 		plain_cookie.close()
 
@@ -189,3 +187,4 @@ if __name__ == "__main__":
 	input("Press Enter to stop publisher ...")
 	process.terminate()
 	process.wait()
+	

@@ -6,7 +6,9 @@ setup(
                       'flask_api',
                       'flask_restful',
                       'jsonpickle',
+					  'dataclasses',
                       'requests',
+					  'ffmpeg-python',
 					  "Werkzeug==2.2",
                       'mongoengine'],
     zip_safe=False)

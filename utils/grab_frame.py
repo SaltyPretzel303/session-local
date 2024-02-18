@@ -2,7 +2,7 @@
 
 import ffmpeg 
 
-STREAM_NAME="streamer"
+STREAM_NAME="user0"
 STREAM_QUALITY="subsd"
 OUTPUT_FILE="./img.jpg"
 

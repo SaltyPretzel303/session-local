@@ -14,7 +14,6 @@ USERNAME = "user_1"
 EMAIL = "email_1"
 PASSWORD = "pwd_1"
 
-
 REGISTER_URL = "http://localhost:8003/register"
 AUTH_URL = "http://localhost:8003/authenticate"
 
@@ -24,7 +23,7 @@ VIEWER_COOKIE_PATH = "./viewer_cookie"
 PLAYER_WIDTH = 500
 PLAYER_HEIGHT = int(PLAYER_WIDTH*0.56)
 
-DEFAULT_STREAM_NAME = "user_0"
+DEFAULT_STREAM_NAME = "user0"
 # QUALITY_EXT = "hd"
 QUALITY_EXT = "subsd"
 STREAM_URL = "http://localhost:10000/live/"

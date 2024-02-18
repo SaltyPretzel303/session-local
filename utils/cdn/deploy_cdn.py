@@ -3,7 +3,8 @@
 from asyncio import sleep
 import docker 
 import jsonpickle
-from requests import Response, post
+from requests import Response, post, get
+from retry_requests import retry
 
 # For each region specified in regions json/dict create one cdn server instance.
 # Update regions json with the created server's ip and create cdn manager 
@@ -140,7 +141,14 @@ config = jsonpickle.encode(regions,
 
 config = jsonpickle.encode(regions, unpicklable=False)
 
-# TODO this request should be delayed a bit, right ? 
+retry_session = retry(retries=5, backoff_factor=0.2)
+try:
+	print("Waiting for cdn manager.")
+	retry_session.get(f'http://{manager_ip}:8004/ping')
 
-init_res: Response = post(f'http://{manager_ip}:8004/initialize', json=config)
-print(f"Init res: {init_res.status_code}")
+	init_res: Response = post(f'http://{manager_ip}:8004/initialize', json=config)
+	print(f"Initialize response2: {init_res.status_code}")
+	
+except:
+	print("Cdn manager failed ot start ...")
+	print("Or I should wait a bit/lot more.")

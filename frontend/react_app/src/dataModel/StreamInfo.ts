@@ -1,11 +1,11 @@
-export interface MediaServer {
+export type MediaServer = {
 	ip: string
 	port: number
 	media_path: string
 	full_path: string
 }
 
-export interface StreamInfo {
+export type StreamInfo = {
 	title: string
 	creator: string
 	category: string

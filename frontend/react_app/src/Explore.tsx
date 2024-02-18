@@ -1,81 +1,45 @@
-import "./style/ExplorePage.css"
-import User from "./data_model/User";
-import { PreviewsContainer } from "./components/PreviewsContainer";
-import { useEffect, useState } from "react";
-import { StreamInfo } from "./data_model/StreamInfo";
-import { HlsPlayer } from "./components/HlsPlayer";
+import PreviewsList from "./components/PreviewList"
+import { StreamInfo } from "./dataModel/StreamInfo"
+import streams from "./Data"
 
-export interface ExploreProps {
-	user: User | null
+type ExploreProps = {
+
 }
-export function Explore(props: ExploreProps) {
 
-	const [followed, setFollowed] = useState<StreamInfo[]>([])
-	const [toExplore, setToExplore] = useState<StreamInfo[]>([])
+export default function Explore(props: ExploreProps) {
 
-	useEffect(() => {
-
-		// if (props.user === null) {
-		// 	return
-		// }
-
-		// populateFollowed([])
-		// populateExplore()
-	}, [])
-
-	async function populateFollowed(followed_names: string[]) {
-		console.log("Populating followed ")
-
-		let streams_res = await fetch("http://localhost:8003/get_following/user_0")
-		if (streams_res.status != 200) {
-			console.log("Failed to obtain followed streams ...")
-			return
-		}
-
-		console.log("Successfully obtained followed streams info ...")
-
-		let data = await streams_res.json()
-		if (data === null) {
-			console.log("Failed to parse data to json ... ")
-			return
-		}
-
-		setFollowed([...followed, ...data])
+	async function followingStreamsProvider(from: number, to: number): Promise<StreamInfo[]> {
+		console.log(`Returning following: ${from} - ${to}`)
+		return streams.slice(from, to)
 	}
-
-	async function populateExplore() {
-		console.log("Populating to explore ...")
-
-		let explore_res = await fetch("http://localhost:8002/get_explore")
-		if (explore_res.status != 200) {
-			console.log("Failed to obtain explore streams ... ")
-			return
-		}
-
-		console.log("Successfully obtained to explore streams ... ")
-
-		let data = await explore_res.json()
-		if (data === null) {
-			console.log("Received invalid data as explore streams  ... ")
-			return
-		}
-
-		setToExplore([...toExplore, ...data])
+	async function recommendedStreamsProvider(from: number, to: number): Promise<StreamInfo[]> {
+		console.log(`Returning recommended: ${from} - ${to}`)
+		return streams.slice(from, to)
 	}
-
-	// function genStreamInfo(n: number): StreamInfo {
-	// 	return {
-	// 		title: `title_${n}`,
-	// 		creator: `creator_${n}`,
-	// 		category: "chatting",
-	// 		viewers: n
-	// 	} as StreamInfo
-	// }
+	async function exploreStreamsProvider(from: number, to: number): Promise<StreamInfo[]> {
+		console.log(`Returning explore: ${from} - ${to}`)
+		return streams.slice(from, to)
+	}
 
 	return (
-		<div className="explorePage">
-			{followed.length > 0 ? <PreviewsContainer title={"Following"} streams={followed} /> : null}
-			<PreviewsContainer title={"Explore"} streams={toExplore} />
-		</div>
-	);
+		<div style={
+			{
+				width: "100%",
+				height: "100%",
+				boxSizing: "border-box",
+				border: "2px solid red",
+				padding: "10px",
+				display: "flex",
+				flexDirection: "column",
+				backgroundColor: "black",
+				// padding: "5px"
+			}
+		}>
+
+			<PreviewsList title={"Following"} streamsProvider={followingStreamsProvider} />
+			{/* <PreviewsList title={"Recommended"} streamsProvider={recommendedStreamsProvider} />
+			<PreviewsList title={"Explore"} streamsProvider={exploreStreamsProvider} /> */}
+
+		</div >)
+
 }

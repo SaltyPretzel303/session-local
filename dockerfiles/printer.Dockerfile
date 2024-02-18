@@ -1,7 +1,7 @@
 FROM python 
 
 WORKDIR /app
-RUN pip install flask flask_api flask_restful Werkzeug==2.2
+RUN pip install flask flask_api flask_restful requests Werkzeug==2.2
 
 ADD ./printer/api.py ./api.py
 

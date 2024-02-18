@@ -1,17 +1,24 @@
 #!/bin/bash 
 
-docker-compose up --detach auth-service auth-database stream-registry registry-database
+docker-compose up --detach stream-registry \
+	registry-database \
+	tokens-core \
+	tokens-db \
+	tokens-api 
 
-echo "Auth and registry deployed ... "
+# auth-service \
+# auth-database \
+
+echo "Auth and stream registry servicce deployed ... "
 
 ./utils/cdn/remove_cdn.py
 ./utils/cdn/deploy_cdn.py
 
-echo "CDN deployed ... "
+echo "Cdn instances deployed" 
 
 docker-compose up --detach cdn-proxy
 
-echo "CDN-proxy deoployed ... "
+echo "Cdn proxy deployed."
 
 ./utils/ingest/stop_ingests.py y
 ./utils/ingest/deploy_ingest.py 2 0

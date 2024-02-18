@@ -3,6 +3,7 @@ import string
 
 from flask import Flask, Response, request, session, g
 from flask_api import status
+from flask_cors import CORS
 from flask_restful import Api
 from flask_session import Session
 
@@ -33,8 +34,8 @@ config = AppConfig.get_instance()
 app = Flask(__name__)
 api = Api(app)
 
-# CORS(app, support_credentials=True)
-# CORS(app)
+CORS(app, support_credentials=True)
+CORS(app)
  
 app.secret_key = config["session_secret_key"] 
 app.config["SESSION_TYPE"] = config["session_type"]
@@ -136,14 +137,12 @@ def authenticate():
 
 	print("Processing authenticate request: ")
 
-	print("Session start >>")
-	json_serialize(session)
-	print("<<")
+	print(request.cookies)
 
 	if USER_SESSION_VAR in session:
 		print(f"User was already authenticated ... ")
 		user_data: UserDoc = session[USER_SESSION_VAR]
-		
+
 		res_data = AuthResponse.success(to_public_user(user_data))
 
 		response = Response(status=status.HTTP_200_OK, 
@@ -151,12 +150,15 @@ def authenticate():
 						response=json_serialize(res_data))
 		return response
 
-	if request.data is None:
+	if request.data is None or request.data == b'':
 		print("No data provided.")
 		res_data = AuthResponse.bad_request("No data provided.")
 
 		return json_serialize(res_data), status.HTTP_400_BAD_REQUEST
-	
+
+	print("Received data:")
+	print(request.data)
+
 	if not request.is_json:
 		print("Json data expected.")
 		res_data = AuthResponse.bad_request("Json data required.")
@@ -164,8 +166,6 @@ def authenticate():
 		return json_serialize(res_data), status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
 	
 	try:
-		
-		# auth_request = AuthRequest(**json_parse(request.get_json()))
 		auth_request = AuthRequest(**request.get_json())
 
 		if auth_request is None:
@@ -197,18 +197,12 @@ def authenticate():
 		return json_serialize(res_data), status.HTTP_200_OK
 	
 	print(f"Successfully authenticated {auth_request.username}.")
+	session[USER_SESSION_VAR] = user
 
-	user.last_authenticated = datetime.now()
-	res_data: UserDoc = get_db().save_user(user)
-	session[USER_SESSION_VAR] = res_data
-
-	res_data = AuthResponse.success(to_public_user(res_data))
+	res_data = AuthResponse.success(to_public_user(user))
 	response = Response(status=status.HTTP_200_OK,
 					content_type='application/json',
 					response=json_serialize(res_data))
-	# response.status = status.HTTP_200_OK
-	# response.content_type = "application/json"
-	# response.set_data(json_serialize(res_data))
 
 	return response
 
@@ -225,18 +219,21 @@ def get_key():
 	user: UserDoc = session[USER_SESSION_VAR]
 	key: StreamKeyDoc = get_db().get_key_with_owner(user)
 
+	print(f"KeyOwner: {user.username}")
+
 	if key is None:
 		print("Key not found, will generates new ... ")
 		key = StreamKeyDoc()
 		key.owner = user
 
 	if key.is_expired():
-		print("Key expired, will genreate new ... ")
+		print("Key expired or not initialized, will reinitialize ... ")
 		
 		key.value = gen_stream_key(config["stream_key_len"])
 		key.exp_date = gen_exp_date(config['stream_key_longevity'])
 		
 	get_db().save_key(key)
+	print(f"Returning key: {key.value}")
 
 	res = KeyResponse(status=KeyStatus.SUCCESS, 
 				value=key.value, 
@@ -261,11 +258,12 @@ def match_key_get(req_key: str):
 		res = KeyResponse(status=KeyStatus.FAILED, message="Invalid/Expired key provided ...")
 		return json_serialize(res), status.HTTP_404_NOT_FOUND
 
-	# Every kye is one time use. 
+	# Every key is one time use. 
 	# Match key is used by the ingest instance. 
 	get_db().invalidate_key(key)
 
 	res = KeyResponse(status=KeyStatus.SUCCESS, value=key.owner.username)
+	print(f"Key matched with: {key.owner.username}")
 	return json_serialize(res), status.HTTP_200_OK
 
 def url_decode(data:str):
@@ -273,6 +271,9 @@ def url_decode(data:str):
 
 @app.route("/authorize", methods=["GET"])
 def authorize():
+
+	# I could just do tokens-api/verify call to ensure session for this viewer
+	# exists ... it's something. 
 
 	print("Processing authorization request ... ")
 
@@ -381,4 +382,4 @@ def help():
 	return "Yo", status.HTTP_200_OK
 
 if __name__ == '__main__':
-	app.run(host="0.0.0.0", port='8003')
+	app.run(host="0.0.0.0", port="8003")

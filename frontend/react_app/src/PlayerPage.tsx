@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import Chat from "./components/Chat";
-import { HlsPlayer } from "./components/HlsPlayer";
+import HlsPlayer from "./components/HlsPlayer";
 import { useParams } from "react-router-dom";
-import User from "./data_model/User";
-import { StreamInfo } from "./data_model/StreamInfo";
+import User from "./dataModel/User";
+import { StreamInfo } from "./dataModel/StreamInfo";
 
 const REGION: string = "eu"
 
-export interface PlayerProps {
+type PlayerPageProps = {
 	user: User | null
 }
 
@@ -19,9 +18,9 @@ enum VideoQuality {
 
 const MANIFEST_PATH = "index.m3u8"
 
-export function Player(props: PlayerProps) {
+export function PlayerPage(props: PlayerPageProps) {
 
-	const { streamerName } = useParams();
+	const { streamerName } = useParams<string>();
 	const [streamSrc, setStreamSrc] = useState<string | undefined>(undefined)
 	const [quality, setQuality] = useState<VideoQuality>(VideoQuality.SUBSD)
 
@@ -66,7 +65,7 @@ export function Player(props: PlayerProps) {
 
 				// setStreamSrc(`${info.media_server.full_path}/${creator}_subsd/index.m3u8`)
 				// setStreamSrc(`${info.media_server.full_path}`)
-				setStreamSrc(formUrl(info.media_server.full_path,
+				setStreamSrc(formStreamUrl(info.media_server.full_path,
 					creator,
 					quality,
 					MANIFEST_PATH))
@@ -87,14 +86,24 @@ export function Player(props: PlayerProps) {
 		return `http://localhost:8002/stream_info/${streamer}?region=${region}`
 	}
 
-	function formUrl(path: string, streamer: string, quality: string, manifest: string) {
-
+	function formStreamUrl(path: string, streamer: string, quality: string, manifest: string) {
 		return `${path}/${streamer}_${quality}/${manifest}`
+	}
+
+	// TODO move to config
+	function formPosterUrl(streamer: string): string {
+		return 'http://session-stream-registry:8002/tnial/' + streamer
 	}
 
 	return (
 		<div className="streamPlayer">
-			<HlsPlayer src={streamSrc} />
+			<HlsPlayer src={streamSrc}
+				// streamerName has to defined 
+				posterUrl={formPosterUrl(streamerName || "")}
+				shouldPlay={false}
+				quality={""}
+				abr={false} 
+				muted={false}/>
 			{/* <Chat visible={true} /> */}
 
 			<button onClick={() => setQuality(VideoQuality.HD)}>HD</button>

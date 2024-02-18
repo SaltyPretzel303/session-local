@@ -1,32 +1,73 @@
-import { Navigate, useNavigate } from "react-router-dom";
-import { StreamInfo } from "../data_model/StreamInfo";
-import "../style/StreamPreview.css"
-const logo = require('../thumbnail.jpeg');
+import { useEffect, useState } from "react"
+import { StreamInfo } from "../dataModel/StreamInfo"
+import HlsPlayer from "./HlsPlayer"
 
-export interface StreamPreviewProps {
-	stream: StreamInfo
-	// streamer: string
-	// title: string
-	// viewers: number
-	thumbnail: ImageBitmap | undefined
-	// category 
+type StreamPreviewProps = {
+	info: StreamInfo
 }
 
-export function StreamPreview(props: StreamPreviewProps) {
+export default function StreamPreview(props: StreamPreviewProps) {
+	const focusedBorder = "3px solid white"
+	const normalBorder = "1px solid gray"
 
-	const navigate = useNavigate()
+	const [playing, setPlaying] = useState(false)
+	const [border, setBorder] = useState(normalBorder)
 
-	function streamClick() {
-		navigate('/watch/streamer')
+	function hoverIn() {
+		setPlaying(true)
+		setBorder(focusedBorder)
+	}
+
+	function hoverOut() {
+		setPlaying(false)
+		setBorder(normalBorder)
+	}
+
+	// TODO move to config
+	function formPosterUrl(streamer: string): string {
+		// return 'http://session-stream-registry:8002/tnail/' + streamer
+		return 'http://localhost:8002/tnail/' + streamer
+
 	}
 
 	return (
-		<div className="streamPreview" onClick={streamClick}>
-			<img src={String(logo)} />
-			<div className="infoContainer">
-				<p className="title">{props.stream.title}</p>
-				<p className="streamer">{props.stream.creator}</p>
-				<p className="viewers">{props.stream.viewers}</p>
+		<div
+			onMouseEnter={hoverIn}
+			onMouseLeave={hoverOut}
+			style={
+				{
+					display: "flex",
+					flexDirection: "row",
+					boxSizing: "border-box",
+					margin: "10px",
+					padding: "10px",
+					width: "400px",
+					minWidth: "200px",
+					// height: "100%",
+					border: `${border}`
+				}
+			}>
+
+			<HlsPlayer
+				src={props.info.media_server.full_path}
+				posterUrl={formPosterUrl(props.info.creator)}
+				shouldPlay={playing}
+				quality={"subsd"}
+				abr={false}
+				muted={true} />
+
+			<div style={
+				{
+					display: "flex",
+					flexDirection: "column",
+					marginLeft: "10px"
+				}
+			}>
+
+				<div>{props.info.title}</div>
+				<div>{props.info.creator}</div>
+				<div>{props.info.category}</div>
+				<div>{props.info.viewers}</div>
 			</div>
 		</div>
 	)

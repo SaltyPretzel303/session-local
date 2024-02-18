@@ -5,7 +5,6 @@ from threading import Event
 from requests.api import get
 from datetime import datetime, timedelta
 
-
 POLL_PERIOD = 10
 SINCE_QUERY_URL = "http://session-stream-registry:8002/stream/since"
 TNAILS_SAVE_PATH = "/var/icons/tnails"

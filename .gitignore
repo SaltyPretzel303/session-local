@@ -1,5 +1,6 @@
 docker_share/video.mp4
 *.mp4
+**.mp4
 
 # python stuff 
 

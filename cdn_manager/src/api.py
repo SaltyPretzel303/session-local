@@ -24,6 +24,10 @@ STREAM_REGISTRY_ADDR = 'session-stream-registry:8002'
 ADD_MEDIA_SERVER_PATH = '/add_media_server'
 REMOVE_MEDIA_SERVER_PATH = '/remove_media_server'
 
+@app.route("/ping", methods=["GET"])
+def ping():
+	return "Pong.", status.HTTP_200_OK
+
 @app.route("/initialize", methods=["POST"])
 def initialize():
 	AppConfig.load_config(request.get_json())
