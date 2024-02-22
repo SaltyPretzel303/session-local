@@ -1,53 +1,30 @@
 from dataclasses import dataclass
 import os
+from typing import Callable
 
 @dataclass
 class Config:
-	db_address: str
-	db_port: int
-	db_name: str
-	db_user: str
-	db_password: str
-	streams_info: str
-	auth_service_ip: str
-	auth_service_port: int
-	match_key_path: str
-	authenticate_path: str
-	tnail_path: str
-	tnail_ext: str
+	db_url: str
+	match_key_url: Callable[[str], str]
+	authorize_url: Callable[[str],str]
+	tnail_path: Callable[[str], str]
 
 class AppConfig:
 
 	INSTANCE: Config = None
 
 	DEV_INSTANCE = Config(
-		db_address = "localhost",
-		db_port = 27017	,
-		db_name =  "streams",
-		db_user = "registry_user",
-		db_password = "registry_password",
-		streams_info = "info",
-		auth_service_ip = "localhost",
-		auth_service_port =  8003,
-		match_key_path = "match_key",
-		authenticate_path= "authenticate",
-		tnail_path = "/tnails",
-		tnail_ext = "jpeg"
+		db_url="mongodb://registry_user:registry_password@localhost:27017/streams",
+		match_key_url=lambda key: f"http://localhost:8100/match_key/{key}",
+		authorize_url=lambda user: f"http://localhost:8100/verify/{user}",
+		tnail_path = lambda tnail: f"/tnails/{tnail}.jpeg",
 	)
 
 	PROD_INSTANCE = Config(
-		db_address = "session-registry-db",
-		db_port = 27017,
-		db_name = "streams",
-		db_user = "registry_user",
-		db_password = "registry_password",
-		streams_info = "info",
-		auth_service_ip = "session-auth",
-		auth_service_port = 8003,
-		match_key_path = "match_key",
-		authenticate_path = "authenticate",
-		tnail_path = "/tnails",
-		tnail_ext = "jpeg"
+		db_url="mongodb://registry_user:registry_password@session-registry-db:27017/streams",
+		match_key_url=lambda key: f"http://session-tokens-api:8100/match_key/{key}",
+		authorize_url=lambda user: f"http://session-tokens-api:8100/verify/{user}",
+		tnail_path=lambda tnail: f"/tnails/{tnail}.jpeg",
 	)
 
 	# CONFIG_PATH = "stream_registry/src/app_config.json"

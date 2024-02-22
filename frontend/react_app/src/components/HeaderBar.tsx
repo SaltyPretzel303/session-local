@@ -82,10 +82,9 @@ export default function HeaderBar(props: HeaderBarProps) {
 				hidden={context.loading || !context.doesSessionExist}>
 				LogOut
 			</button>
+			<LoginPopup loginVisible={loginVisible} setLoginVisible={setLoginVisible} />
 
 			{<Spacer size={standardSpacerSize} />}
-
-			<LoginPopup loginVisible={loginVisible} setLoginVisible={setLoginVisible} />
 
 			{/* {<Spacer size={smallSpaceSize} />} */}
 

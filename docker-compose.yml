@@ -41,27 +41,6 @@ services:
       - session-net
     stop_signal: SIGINT
 
-  tokens-core: 
-    container_name: session-tokens-core
-    image: registry.supertokens.io/supertokens/supertokens-postgresql
-    ports: 
-      - "0.0.0.0:8030:3567"
-    networks: 
-      - session-net
-    # stop_signal: SIGINT
-
-  tokens-api:
-    container_name: session-tokens-api
-    build: 
-      context: ./
-      dockerfile: ./dockerfiles/tokens-api.Dockerfile
-    image: session/tokens-api
-    ports: 
-      - "0.0.0.0:8100:8100"
-    networks: 
-      - session-net
-    stop_signal: SIGINT
-
   # Will be replaced with the tokens-api.
   auth-service:
     container_name: session-auth
@@ -165,13 +144,12 @@ services:
     networks: 
       - session-net
 
-  # Will be repalced with the tokens-db.
-  auth-database:
-    container_name: session-auth-db
+  users-db:
+    container_name: session-users-db
     build: 
       context: ./ 
-      dockerfile: ./dockerfiles/auth_db.Dockerfile
-    image: session/auth-db
+      dockerfile: ./dockerfiles/users_db.Dockerfile
+    image: session/users-db
     ports: 
       - "0.0.0.0:37017:27017"
     networks: 

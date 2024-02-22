@@ -147,7 +147,7 @@ try:
 	retry_session.get(f'http://{manager_ip}:8004/ping')
 
 	init_res: Response = post(f'http://{manager_ip}:8004/initialize', json=config)
-	print(f"Initialize response2: {init_res.status_code}")
+	print(f"Initialize response: {init_res.status_code}")
 	
 except:
 	print("Cdn manager failed ot start ...")

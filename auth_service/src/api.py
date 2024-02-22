@@ -259,7 +259,7 @@ def match_key_get(req_key: str):
 		return json_serialize(res), status.HTTP_404_NOT_FOUND
 
 	# Every key is one time use. 
-	# Match key is used by the ingest instance. 
+	# Match key is used by the stream registry in start_stream call. 
 	get_db().invalidate_key(key)
 
 	res = KeyResponse(status=KeyStatus.SUCCESS, value=key.owner.username)

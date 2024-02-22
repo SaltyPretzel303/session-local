@@ -1,11 +1,16 @@
 FROM python
 
-WORKDIR /app
-ADD ./tokens_auth/setup.py ./setup.py
+WORKDIR /app/tokens_api
+ADD ./tokens_api/setup.py ./setup.py
 RUN pip install . 
 
-ADD ./tokens_auth/init.py ./init.py
+ADD ./tokens_api/* ./
+
+WORKDIR /app/shared_model
+ADD ./shared_model ./
+
+WORKDIR /app/
+ENV PYTHONPATH=.
 
 EXPOSE 8100
-
-ENTRYPOINT ["python", "-u", "/app/init.py"]
+ENTRYPOINT ["python", "-u", "/app/tokens_api/api.py"]

@@ -6,7 +6,6 @@ from mongoengine import disconnect as mongo_disconnect
 
 class Db:
 
-
 	def __init__(self, conn_string:str):
 		self.conn_string = conn_string
 		self.connect()

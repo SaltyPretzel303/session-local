@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Router, Routes } from "react-router-dom";
 import SuperTokens from "supertokens-auth-react";
 import ThirdPartyEmailPassword, { Github, Google } from "supertokens-auth-react/recipe/thirdpartyemailpassword";
+import EmailPassword from 'supertokens-auth-react/recipe/emailpassword'
 import Session from "supertokens-auth-react/recipe/session";
 import './style/Home.css'
 
@@ -9,6 +10,7 @@ import Explore from "./Explore";
 import { PlayerPage } from "./PlayerPage";
 import HeaderBar from "./components/HeaderBar";
 import QuickPlay from "./QuickPlay";
+import { validUsername } from './Validators'
 
 export default function Home() {
 
@@ -19,21 +21,18 @@ export default function Home() {
 			websiteDomain: "http://localhost:3000"
 		},
 		recipeList: [
-			ThirdPartyEmailPassword.init({
-				getRedirectionURL: undefined,
-				// 	signInAndUpFeature: {
-				// 		providers: [
-				//			Github.init(),
-				//			Google.init()
-				//		]
-				// 	}
-
-				// Just email+ password for now
-				// signInAndUpFeature: {
-				// 	providers: [
-				// 		Google.init()
-				// 	]
-				// }
+			EmailPassword.init({
+				signInAndUpFeature: {
+					signUpForm: {
+						formFields: [
+							{
+								id: "username",
+								label: "Unique Username",
+								validate: validUsername
+							}
+						]
+					}
+				}
 			}),
 			Session.init({
 				// sessionTokenBackendDomain: ".some.domain.com" 

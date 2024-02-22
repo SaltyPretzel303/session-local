@@ -4,7 +4,7 @@ import argparse
 from dataclasses import dataclass
 import docker
 from docker.types import Mount
-from streamer.streamer import stream 
+from streamer import stream 
 
 DESCRIPTION = "Will deploy specific amount of parameterized streamers."
 
@@ -14,9 +14,10 @@ LOCAL_ARG = 'local'
 CATEGORIES = ['chatting', 'gaming', 'music', 'work']
 STREAMER_BASE_NAME = 'streamer'
 STREAMER_BASE_EMAIL = 'stream_mail'
-PWD_BASE = 'pwd'
+PWD_BASE = 'some_long_pwd'
 
 LOCAL_VIDEO_PATH = '/home/nemanja/Videos/clock.mp4'
+LOCAL_VIDEO_PATH = "/home/nemanja/workspace/session-local/sample.mp4"
 DOCKER_VIDEO_PATH = '/sample.mp4'
 
 DOCKER_IMAGE = "session/streamer"
@@ -28,26 +29,29 @@ COOKIE_BASE_PATH = './cookies'
 class DeployConfig:
 	reg_url: str
 	auth_url: str
+	remove_url: str
 	key_route: str
 	source_file: str
 	ingest_url: str
 	update_url: str
 
 	def local():
-		return DeployConfig(reg_url='http://localhost:8003/register',
-					  auth_url='http://localhost:8003/authenticate',
-					  key_route='http://localhost:8003/get_key',
+		return DeployConfig(reg_url='http://localhost:8100/auth/signup',
+					  auth_url='http://localhost:8100/auth/signin',
+					  remove_url='http://localhost:8100/remove',
+					  key_route='http://localhost:8100/get_key',
 					  source_file=LOCAL_VIDEO_PATH,
 					  ingest_url='rtmp://localhost:9000/ingest',
 					  update_url='http://localhost:8002/update')
 
 	def docker():
-		auth_server = "session-auth"
+		auth_server = "session-tokens-api"
 		ingest_server = "session-ingest-proxy"
 		registry_server = 'session-stream-registry'
-		return DeployConfig(reg_url=f'http://{auth_server}:8003/register',
-					  auth_url=f'http://{auth_server}:8003/authenticate',
-					  key_route=f'http://{auth_server}:8003/get_key',
+		return DeployConfig(reg_url=f'http://{auth_server}:8100/auth/signup',
+					  auth_url=f'http://{auth_server}:8100/auth/signin',
+					  remove_url=f"http://{auth_server}:8100/remove",
+					  key_route=f'http://{auth_server}:8100/get_key',
 					  source_file=DOCKER_VIDEO_PATH,
 					  ingest_url=f'rtmp://{ingest_server}:9000/ingest',
 					  update_url=f'http://{registry_server}:8002/update')
@@ -68,10 +72,10 @@ def setup_arguments():
 	return parser.parse_args()
 
 def get_name(index):
-	return f"{STREAMER_BASE_NAME}_{index}"
+	return f"{STREAMER_BASE_NAME}-{index}"
 
 def get_mail(index):
-	return f"{STREAMER_BASE_EMAIL}_{index}"
+	return f"{STREAMER_BASE_EMAIL}_{index}@mail.com"
 
 def get_pwd(index):
 	return f"{PWD_BASE}_{index}"
@@ -85,15 +89,19 @@ def local_deployment(count: int):
 	procs = []
 
 	for index in range(0, count):
-		new_proc = stream(get_name(index),
-				get_mail(index),
-				get_pwd(index),
-				config.reg_url,
-				config.auth_url,
-				get_cookie_path(index),
-				config.key_route,
-				config.source_file,
-				config.ingest_url)
+		new_proc = stream(username=get_name(index),
+				email=get_mail(index),
+				password=get_pwd(index),
+				reg_route=config.reg_url,
+				auth_route=config.auth_url,
+				remove_route=config.remove_url,
+				# cookie_path=get_cookie_path(index),
+				key_url=config.key_route,
+				source_file=config.source_file,
+				ingest_url=config.ingest_url,
+				update_url=config.update_url,
+				title=get_title(index),
+				category=get_category(index))
 		
 		if new_proc is None:
 			print(f"Failed to start stream for: {get_name(index)}")
@@ -112,7 +120,7 @@ def local_deployment(count: int):
 	return close_method
 
 def get_container_name(index):
-	return f"session_{get_name(index)}"
+	return f"session-{get_name(index)}"
 
 def get_title(index):
 	return f"Generic title for stream: {index}"
@@ -128,6 +136,7 @@ def get_container_entrypoint(index):
 			--file {DOCKER_VIDEO_PATH} \
 			--ingest {config.ingest_url} \
 			--auth_on {config.auth_url} \
+			--remove_on {config.remove_url} \
 			--reg_on {config.reg_url} \
 			--get_key_on {config.key_route} \
 			--cookie_at {get_cookie_path(index)} \
@@ -140,17 +149,12 @@ def docker_deployment(count: int):
 	ids = []
 
 	for index in range(0, count):
-		host_path = "/home/nemanja/workspace/session-local/sample.mp4"
-		video_mount = Mount(target="/sample.mp4", source=host_path)
-
 		volumes = {
-			f"{host_path}": {
-				"bind": "/sample.mp4",
+			f"{LOCAL_VIDEO_PATH}": {
+				"bind": DOCKER_VIDEO_PATH,
 				"mode": "ro"
 			}
 		}
-
-		print(volumes)
 
 		try:
 			entry = get_container_entrypoint(index)

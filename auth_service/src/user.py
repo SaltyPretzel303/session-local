@@ -1,6 +1,7 @@
 from mongoengine import Document, StringField, BinaryField
 
 class User(Document):
+	# tokens id 
 	username = StringField(required=True)
 	email = StringField(required=True)
 	pwd_hash = BinaryField()

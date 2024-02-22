@@ -1,8 +1,7 @@
-import { Dispatch, useState } from 'react'
+import { Dispatch, useEffect, useState } from 'react'
 import Overlay from 'react-modal'
 import config from "../Config"
-import { Stream } from 'stream'
-import { KeyResponse, isSuccess } from '../dataModel/StreamKeyResponse'
+import { KeyResponse, isSuccess, failure as keyFailure } from '../dataModel/StreamKeyResponse'
 
 type StreamKeyPopupProps = {
 	isVisible: boolean
@@ -11,47 +10,69 @@ type StreamKeyPopupProps = {
 
 export default function StreamKeyPopup(props: StreamKeyPopupProps) {
 
-	const [streamKey, setStreamKey] = useState("soPJv92-s")
-	const [expirationDate, setExpirationData] = useState("10.2.2029 14:13")
-	const [keyRevealed, setKeyRevealed] = useState(false)
-	const [loadingKey, setLoadingKey] = useState(false)
+	const [streamKey, setStreamKey] = useState<KeyResponse | undefined>(undefined)
+	const [isLoadingKey, setIsLoadingKey] = useState(false)
+	const [error, setError] = useState<string | undefined>(undefined)
 
-	function revealClick() {
-		// fetch key
-		setLoadingKey(true)
+	useEffect(() => {
+		console.log("Rendering key popup.")
+		if (props.isVisible && streamKey && isExpired(streamKey.exp_date)) {
+			console.log("Key expired, clearing previous data.")
+			setStreamKey(undefined)
+			setError("Key expired, request new.")
+		}
 
-		setTimeout(() => {
-			console.log("Resolved.")
-			setLoadingKey(false)
-			setKeyRevealed(true)
-		}, 2000);
+	}, [props.isVisible])
 
+	function isExpired(expDate: string) {
+		return (new Date(expDate)) < new Date()
 	}
 
-	async function fetchKey() {
+	async function revealClick() {
+		setIsLoadingKey(true)
+		let keyResponse = await fetchKey(config.streamKeyUrl)
+
+		if (!isSuccess(keyResponse.status)) {
+			setError(keyResponse.message)
+
+			setIsLoadingKey(false)
+			setStreamKey(undefined)
+			setError(keyResponse.message)
+
+			return
+		}
+
+		setStreamKey(keyResponse)
+		setIsLoadingKey(false)
+		setError(undefined)
+	}
+
+	async function fetchKey(keyUrl: string): Promise<KeyResponse> {
 		console.log("Will request stream key.")
-		fetch(config.streamKeyUrl)
+		return fetch(keyUrl)
 			.then(async (res) => {
 				if (res.status != 200) {
-					console.log("Got non 200 code for stream key")
-					return
+					console.log("Got non 200 code for stream key.")
+					keyFailure("Failed to obtain stream key")
 				}
 
-				let jsonStr = await res.json()
-				let resp: KeyResponse = JSON.parse(jsonStr)
+				// console.log("Response: ")
+				// console.log(await res.text())
 
-				if (!isSuccess(resp.status)) {
-					console.log("Key response failed with: " + resp.message)
-					return
-				}
-
-				setStreamKey(resp.value)
-				setExpirationData(resp.exp_data)
+				return (await res.json()) as KeyResponse
+			})
+			.catch((err) => {
+				console.log("Error while fetching stream key: " + err)
+				return keyFailure("Failed to obtain stream key.")
 			})
 	}
 
+	function formatDate(strDate: string): string {
+		return (new Date(strDate)).toLocaleString("de-CH")
+	}
+
 	function StreamKey() {
-		if (loadingKey) {
+		if (isLoadingKey) {
 			return (
 				<img
 					style={{
@@ -63,9 +84,9 @@ export default function StreamKeyPopup(props: StreamKeyPopupProps) {
 					src={"loading.gif"} />
 			)
 		} else {
-			if (keyRevealed) {
+			if (streamKey) {
 				return (
-					<p>{streamKey}</p>
+					<p>{streamKey.value}</p>
 				)
 			} else {
 				return (
@@ -116,6 +137,8 @@ export default function StreamKeyPopup(props: StreamKeyPopupProps) {
 					you streaming client (obs or similar software).
 				</p>
 
+				{/* Error message  */}
+				{error && <p style={{ color: "red" }}>{error}</p>}
 
 				{/* Stream key container */}
 				<div
@@ -139,11 +162,20 @@ export default function StreamKeyPopup(props: StreamKeyPopupProps) {
 
 				</div>
 
-				<p>Key will expire at: {expirationDate}</p>
-				<p style={{ fontWeight: "bold" }}>Do not share this key !!!</p>
+				{/* Expiration date and DoNotShare message */}
+				{streamKey &&
+					<div style={{
+						display: "flex",
+						flexDirection: "column"
+					}}>
+
+						<p>Key will expire at: {formatDate(streamKey?.exp_date)}</p>
+						<p style={{ fontWeight: "bold" }}>Do not share this key !!!</p>
+					</div>
+				}
 			</div>
 
-		</Overlay>
+		</Overlay >
 
 	)
 }

@@ -37,13 +37,7 @@ def json_serialize(content) -> str:
 
 def get_db() -> Db:
 	if 'db' not in g:
-		config = AppConfig.get_instance()
-		address = config.db_address
-		port = config.db_port
-		db = config.db_name
-		user = config.db_user
-		pwd = config.db_password
-		g.db = Db(f"mongodb://{user}:{pwd}@{address}:{port}/{db}")
+		g.db = Db(AppConfig.get_instance().db_url)
 
 	return g.db
 
@@ -52,11 +46,6 @@ def close_db():
 	db = g.pop('g', None)
 	if db is not None:
 		db.close()
-
-
-def get_db_url() -> str:
-	config = AppConfig.get_instance()
-	return f"mongodb://{config.db_address}:{config.db_port}/{config.db_table}"
 
 
 @app.route('/by_creator/<creator>', methods=['GET'])
@@ -71,7 +60,11 @@ def get_by_creator(creator: str):
 
 @app.route('/update', methods=['POST'])
 def update():
-	print("Received update request .. ")
+	print("Received update request.")
+	print("HEADER")
+	print("===========")
+	print(request.headers)
+	print("===========")
 
 	content_type = request.headers.get('Content-type')
 	if content_type != JSON_CONTENT_TYPE:
@@ -88,18 +81,24 @@ def update():
 		return "Error while parsing update request. ", status.HTTP_400_BAD_REQUEST
 
 	try:
-		auth_res: Response = post(url=form_auth_url(), cookies=request.cookies)
-		print(f"Auth stat_code: {auth_res}")
+		url = AppConfig.get_instance().authorize_url(update_request.username)
+		auth_res: Response = get(url=url, cookies=request.cookies)
+
+		if auth_res is None: 
+			raise Exception("Auth response is None.")
+
 		if auth_res.status_code != 200:
-			raise Exception("Failed to authenticate ... ")
-	except:
-		print("User not authenticated ... ")
-		return "User not authenticated ... ", status.HTTP_401_UNAUTHORIZED
+			raise Exception(f"Auth status code: {auth_res.status_code}")
+		
+	except Exception as e :
+		print(f"Failed to authorize user: {e}")
+		return "Authorization failed.", status.HTTP_401_UNAUTHORIZED
+
+	print("User authorized.")
 
 	auth_data = auth_res.json()
-	print(auth_data)
 
-	res = get_db().update(auth_data['user']['username'], update_request)
+	res = get_db().update(update_request.username, update_request)
 
 	if res is None:
 		print("Failed to update stream info ... ")
@@ -107,13 +106,6 @@ def update():
 	
 	return json_serialize(res), status.HTTP_200_OK
 			
-def form_auth_url():
-	config = AppConfig.get_instance()
-	auth_ip = config.auth_service_ip
-	auth_port = config.auth_service_port
-	auth_path = config.authenticate_path
-	return  f"http://{auth_ip}:{auth_port}/{auth_path}"
-
 @app.route("/by_category/<category>", methods=['GET'])
 def get_by_category(category: str):
 	print(f"by_category request: {category}")
@@ -141,12 +133,16 @@ def start_stream():
 	print(f"Source: {ingest_ip}")
 
 	try:
-		print("Sending match request to auth service.")
-		match_res = get(form_match_key_url(key))
-		print("Received auth service response.")
+		print(f"Requesting key match for: {key}.")
+		match_res = get(AppConfig.get_instance().match_key_url(key))
+
+		if match_res is None: 
+			raise Exception("Match key response is None.")
 
 		if match_res.status_code != 200:
-			raise Exception(f"Auth service returned: {match_res.status_code}")
+			raise Exception(f"Match key status code: {match_res.status_code}")
+		
+		print("Key successfully matched.")
 
 		match_data = match_res.json()
 
@@ -272,14 +268,15 @@ def get_tnail(streamer: str):
 	print(f"Requested tnail for: {streamer}")
 
 	if streamer is None or streamer == "":
-		return "", status.HTTP_400_BAD_REQUEST
+		return "Provide streamer name.", status.HTTP_400_BAD_REQUEST
 
 	if not is_live(streamer):
-		return "", status.HTTP_404_NOT_FOUND
+		return "Streamer is not live.", status.HTTP_404_NOT_FOUND
 
+	config = AppConfig.get_instance()
 	if streamer not in tnails or is_expired(tnails[streamer]):
 		print("Thumbnail expired, will generate new.")
-		gen_res = generate_thumbnail(streamer, form_tnail_path(streamer))
+		gen_res = generate_thumbnail(streamer, config.tnail_path(streamer))
 		if not gen_res:
 			print(f"Failed to generate thumbnail for: {streamer}.")
 		else:
@@ -288,7 +285,8 @@ def get_tnail(streamer: str):
 			print("Tnail generated, will expiration date: {exp_date}")
 			
 	
-	path = form_tnail_path(streamer)
+	path = config.tnail_path(streamer)
+
 	# With checks above this will never be true ... ? 
 	if not os.path.exists(path):
 		print(f"Tnail for requested streamer doesn't exists: {path}")
@@ -296,10 +294,6 @@ def get_tnail(streamer: str):
 
 	print(f"Sending tnail for {streamer}")
 	return send_file(path_or_file=path, mimetype="image/jpeg")
-
-def form_tnail_path(streamer: str):
-	c = AppConfig.get_instance()
-	return f"{c.tnail_path}/{streamer}.{c.tnail_ext}"
 
 def is_expired(expiration_date: datetime):
 	return expiration_date is None or datetime.now() > expiration_date
@@ -337,9 +331,9 @@ def after_request(resp):
 
 def gen_stream_info(ind: int):
 	return StreamInfo(f"title_{ind}", 
-				f"creator_{ind}", 
-				f"chatting",
-				MediaServerInfo("127.0.0.1", 10000, "live","http://localhost:10000/live/streamer_subsd/index.m3u8") )
+			f"creator_{ind}", 
+			f"chatting",
+			MediaServerInfo("127.0.0.1", 10000, "live","http://localhost:10000/live/streamer_subsd/index.m3u8") )
 
 def ip_to_int(ip: str):
 	print(f"ip: {ip} to: {int(ip_address(ip))}")
@@ -347,13 +341,6 @@ def ip_to_int(ip: str):
 
 def int_to_ip(ip: int):
 	return str(ip_address(ip))
-
-def form_match_key_url(key:str):
-	config = AppConfig.get_instance()
-	ip = config.auth_service_ip
-	port = config.auth_service_port
-	match_key_path = config.match_key_path
-	return f'http://{ip}:{port}/{match_key_path}/{key}'
 
 # IT IS REQUIRED that data is str and not byte or byte[] !!!
 # To translate byte/byte[] to string use .decode() method. 

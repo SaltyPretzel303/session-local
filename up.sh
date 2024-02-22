@@ -7,7 +7,7 @@ docker-compose up --detach stream-registry \
 	tokens-api 
 
 # auth-service \
-# auth-database \
+# users-database \
 
 echo "Auth and stream registry servicce deployed ... "
 
