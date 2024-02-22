@@ -22,7 +22,7 @@ from app_config import AppConfig
 
 
 JSON_CONTENT_TYPE = 'application/json'
-CDN_MANAGER_ADDR = "session-cdn-manager:8004"
+CDN_MANAGER_ADDR = "cdn-manager.session:8004"
 MATCH_REGION_PATH = "/match_region"
 
 app = Flask(__name__)
@@ -303,8 +303,9 @@ def generate_thumbnail(creator: str, path: str)->bool:
 	info:StreamInfo = get_db().get_stream(creator)
 	quality = "subsd"
 	try:
+		# Why is this hardcoded
 		ffmpeg\
-			.input(f"http://session-cdn-eu:10000/live/{info.creator}_{quality}/index.m3u8")\
+			.input(f"http://cdn-eu.session:10000/live/{info.creator}_{quality}/index.m3u8")\
 			.filter('scale', 300, -1) \
 			.output(path, vframes=1)\
 			.global_args('-y')\

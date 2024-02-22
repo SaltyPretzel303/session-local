@@ -92,7 +92,7 @@ export function PlayerPage(props: PlayerPageProps) {
 
 	// TODO move to config
 	function formPosterUrl(streamer: string): string {
-		return 'http://session-stream-registry:8002/tnial/' + streamer
+		return 'http://stream-registry.session:8002/tnial/' + streamer
 	}
 
 	return (

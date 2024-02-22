@@ -120,7 +120,7 @@ init(
 		website_base_path="/"
 	),
 	supertokens_config=SupertokensConfig(
-		connection_uri="http://session-tokens-core:3567",
+		connection_uri="http://tokens-core.session:3567",
 	),
 	framework='flask',
 	recipe_list=[
@@ -137,9 +137,11 @@ init(
 		# 	   functions=override_default_emailpassword
 		# 	)
 		# ),
-		session.init({
-			sessionTokenFrontendDomain: ".example.com"
-		})
+		session.init(
+		# 	{
+		# 	sessionTokenFrontendDomain: ".example.com"
+		# }
+		)
 	],
 	# debug=True,
 	mode='asgi' # use wsgi if you are running using gunicorn
@@ -152,7 +154,7 @@ CORS(
 	app=app,
 	origins=[
 		"http://localhost:3000",
-		"http://session-stream-registry:8002"
+		"http://stream-registry.session:8002"
 	],
 	supports_credentials=True,
 	allow_headers=["Content-Type"] + get_all_cors_headers(),

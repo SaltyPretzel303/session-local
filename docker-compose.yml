@@ -29,7 +29,7 @@ services:
     image: session/nginx-rtmp 
 
   frontend:
-    container_name: session-frontend
+    container_name: frontend.session
     build: 
       context: ./
       dockerfile: ./dockerfiles/frontend.Dockerfile
@@ -41,24 +41,8 @@ services:
       - session-net
     stop_signal: SIGINT
 
-  # Will be replaced with the tokens-api.
-  auth-service:
-    container_name: session-auth
-    build: 
-      context: ./
-      dockerfile: ./dockerfiles/auth_service.Dockerfile
-    image: session/auth-service
-    ports:
-      - "0.0.0.0:8003:8003"
-    networks:
-      - session-net
-    stop_signal: SIGINT
-    # Flask will quit the app on SIGINT. 
-    # Docker (by default) sends SIGTERM and if that doesn't work 
-    # SIGKILL will kill the process.
-
   ingest-proxy:
-    container_name: session-ingest-proxy
+    container_name: ingest-proxy.session
     build: 
       context: ./
       dockerfile: dockerfiles/ingest_proxy.Dockerfile
@@ -70,7 +54,7 @@ services:
       - session-net
 
   ingest-instance:
-    container_name: session-ingest
+    container_name: ingest.session
     build:
       context: ./
       dockerfile: dockerfiles/ingest.Dockerfile
@@ -85,7 +69,7 @@ services:
     #   - ./ingest/nginx.config:/etc/nginx/nginx.conf
 
   stream-registry:
-    container_name: session-stream-registry
+    container_name: stream-registry.session
     build: 
       context: ./
       dockerfile: ./dockerfiles/stream_registry.Dockerfile
@@ -100,7 +84,7 @@ services:
     # SIGKILL will kill the process.
 
   cdn-proxy:
-    container_name: session-cdn-proxy
+    container_name: cdn-proxy.session
     build:
       context: ./
       dockerfile: ./dockerfiles/cdn_proxy.Dockerfile
@@ -111,7 +95,7 @@ services:
       - session-net
 
   cdn-instance:
-    container_name: session-cdn
+    container_name: cdn.session
     build:
       context: ./
       dockerfile: ./dockerfiles/cdn_instance.Dockerfile
@@ -123,7 +107,7 @@ services:
       - session-net 
 
   cdn-manager:
-    container_name: session-cdn-manager
+    container_name: cdn-manager.session
     build:
       context: ./
       dockerfile: ./dockerfiles/cdn_manager.Dockerfile
@@ -134,7 +118,7 @@ services:
       - session-net 
 
   registry-database:
-    container_name: session-registry-db
+    container_name: registry-db.session
     build: 
       context: ./
       dockerfile: ./dockerfiles/registry_db.Dockerfile
@@ -145,7 +129,7 @@ services:
       - session-net
 
   users-db:
-    container_name: session-users-db
+    container_name: users-db.session
     build: 
       context: ./ 
       dockerfile: ./dockerfiles/users_db.Dockerfile
@@ -158,7 +142,7 @@ services:
   # Note: If you are assigning a custom name to your db service on the line below, 
   # make sure it does not contain underscores
   tokens-db:
-    container_name: session-tokens-db
+    container_name: tokens-db.session
     image: 'postgres:latest'
     environment:
       POSTGRES_USER: supertokens_user 
@@ -176,7 +160,7 @@ services:
       retries: 5
 
   tokens-core:
-    container_name: session-tokens-core
+    container_name: tokens-core.session
     image: registry.supertokens.io/supertokens/supertokens-postgresql:7.0
     depends_on:
       tokens-db:
@@ -184,7 +168,7 @@ services:
     ports:
       - 3567:3567
     environment:
-      POSTGRESQL_CONNECTION_URI: "postgresql://supertokens_user:somePassword@session-tokens-db:5432/supertokens"
+      POSTGRESQL_CONNECTION_URI: "postgresql://supertokens_user:somePassword@tokens-db.session:5432/supertokens"
     networks:
       - session-net
     # restart: unless-stopped
@@ -196,7 +180,7 @@ services:
       retries: 5
 
   tokens-api: 
-    container_name: session-tokens-api
+    container_name: tokens-api.session
     build:
       context: ./
       dockerfile: ./dockerfiles/tokens-api.Dockerfile
@@ -207,9 +191,20 @@ services:
       - session-net
     stop_signal: SIGINT
 
+  # Just a bot
+  streamer: 
+    container_name: streamer.session
+    build: 
+      context: ./
+      dockerfile: ./dockerfiles/streamer.Dockerfile
+    image: session/streamer
+    
+    networks: 
+      - session-net
+    stop_signal: SIGINT
 
   # Api for printing headers, cookies and request payload 
-  #  used just for debugging 
+  # used just for debugging 
   printer: 
     container_name: printer
     build:
@@ -221,16 +216,3 @@ services:
     networks:
       - session-net
     stop_signal: SIGINT
-  
-  streamer: 
-    container_name: streamer
-    build: 
-      context: ./
-      dockerfile: ./dockerfiles/streamer.Dockerfile
-    image: session/streamer
-    
-    networks: 
-      - session-net
-    stop_signal: SIGINT
-
-    

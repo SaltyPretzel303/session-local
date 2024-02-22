@@ -21,9 +21,9 @@ class AppConfig:
 	)
 
 	PROD_INSTANCE = Config(
-		db_url="mongodb://registry_user:registry_password@session-registry-db:27017/streams",
-		match_key_url=lambda key: f"http://session-tokens-api:8100/match_key/{key}",
-		authorize_url=lambda user: f"http://session-tokens-api:8100/verify/{user}",
+		db_url="mongodb://registry_user:registry_password@registry-db.session:27017/streams",
+		match_key_url=lambda key: f"http://tokens-api.session:8100/match_key/{key}",
+		authorize_url=lambda user: f"http://tokens-api.session:8100/verify/{user}",
 		tnail_path=lambda tnail: f"/tnails/{tnail}.jpeg",
 	)
 

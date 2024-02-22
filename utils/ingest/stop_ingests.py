@@ -13,7 +13,6 @@ if len(argv)>1 and argv[1]=="y":
 	print("Remove flag set ... ")
 	REMOVE_FLAG=True
 
-INGEST_PREFIX='session-ingest-'
 INGEST_LABEL="ingest_instance"
 
 d_api = APIClient()

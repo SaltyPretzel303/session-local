@@ -20,7 +20,7 @@ QUAL_HD = "hd"
 QUAL_SD = "sd"
 QUAL_SUBSD = "subsd"
 
-STREAM_REGISTRY_ADDR = 'session-stream-registry:8002'
+STREAM_REGISTRY_ADDR = 'stream-registry.session:8002'
 ADD_MEDIA_SERVER_PATH = '/add_media_server'
 REMOVE_MEDIA_SERVER_PATH = '/remove_media_server'
 

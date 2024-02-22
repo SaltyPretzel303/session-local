@@ -15,7 +15,7 @@ from retry_requests import retry
 regions =  {
 		"eu": [
 			{
-				"ip":"session-cdn",
+				"ip":"cdn.session",
 				"hls_port": 10000,
 				"hc_port":10000,
 				"hls_path":"live",
@@ -24,7 +24,7 @@ regions =  {
 		],
 		"na": [
 			{
-				"ip":"session-cdn",
+				"ip":"cdn.session",
 				"hls_port": 10000,
 				"hc_port":10000,
 				"hls_path":"live",
@@ -33,7 +33,7 @@ regions =  {
 		],
 		"as": [
 			{
-				"ip":"session-cdn",
+				"ip":"cdn.session",
 				"hls_port": 10000,
 				"hc_port":10000,
 				"hls_path":"live",
@@ -45,7 +45,7 @@ regions =  {
 regions =  {
 		"eu": [
 			{
-				"ip":"session-cdn",
+				"ip":"cdn.session",
 				"hls_port": 10000,
 				"hc_port":10000,
 				"hls_path":"live",
@@ -62,7 +62,6 @@ BASE_HLS_PORT = 10000
 INNER_HLS_PORT = 10000
 # MEDIA_PATH = "live"
 
-CDN_PREFIX = "session-cdn-"
 CDN_LABEL = "cdn_instance"
 
 # BUILD_CONTEXT = '../../'
@@ -72,7 +71,7 @@ CDN_IMAGE_TAG = 'session/cdn'
 MANAGER_IMAGE_TAG = 'session/cdn-manager'
 # MANGER_DOCKERFILE = 'dockerfiles/cdn_manager.Dockerfile'
 # MANAGER_CONFIG_PATH = '../../cdn_manager/src/app_config.json'
-MANAGER_CONT_NAME = 'session-cdn-manager'
+MANAGER_CONT_NAME = 'cdn-manager.session'
 MANAGER_LABEL = 'cdn_manager'
 MANAGER_API_PORT = 8004
 
@@ -103,9 +102,12 @@ manager = dckr.containers.run(image=MANAGER_IMAGE_TAG,
 m_container = dckr.containers.get(manager.id)
 manager_ip = m_container.attrs["NetworkSettings"]["Networks"][NETWORK]["IPAddress"]
 
+def form_name(region):
+	return f"cdn-{region}.session"
+
 index=0
 for region_key in regions:
-	c_name = f"{CDN_PREFIX}{region_key}"
+	c_name = form_name(region_key)
 	out_hls_port = BASE_HLS_PORT + index
 	out_rtmp_port = BASE_RTMP_PORT + index
 	

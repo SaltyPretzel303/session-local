@@ -45,9 +45,9 @@ class DeployConfig:
 					  update_url='http://localhost:8002/update')
 
 	def docker():
-		auth_server = "session-tokens-api"
-		ingest_server = "session-ingest-proxy"
-		registry_server = 'session-stream-registry'
+		auth_server = "tokens-api.session"
+		ingest_server = "ingest-proxy.session"
+		registry_server = 'stream-registry.session'
 		return DeployConfig(reg_url=f'http://{auth_server}:8100/auth/signup',
 					  auth_url=f'http://{auth_server}:8100/auth/signin',
 					  remove_url=f"http://{auth_server}:8100/remove",
@@ -120,7 +120,7 @@ def local_deployment(count: int):
 	return close_method
 
 def get_container_name(index):
-	return f"session-{get_name(index)}"
+	return f"{get_name(index)}.session"
 
 def get_title(index):
 	return f"Generic title for stream: {index}"
@@ -133,7 +133,7 @@ def get_container_entrypoint(index):
 	return f"python3 -u /streamer.py --name {get_name(index)} \
 			--email {get_mail(index)} \
 			--pwd {get_pwd(index)} \
-			--file {DOCKER_VIDEO_PATH} \
+			--file {config.source_file} \
 			--ingest {config.ingest_url} \
 			--auth_on {config.auth_url} \
 			--remove_on {config.remove_url} \

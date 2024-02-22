@@ -239,7 +239,7 @@ if __name__ == '__main__':
 			remove_route=args[REMOVE_ROUTE_ARG],
 			key_url=args[GET_KEY_ROUTE_ARG],
 			source_file=args[SOURCE_FILE_ARG],
-			ingest_url=args[SOURCE_FILE_ARG],
+			ingest_url=args[INGEST_ARG],
 			update_url=args[UPDATE_PATH_ARG],
 			title=args[TITLE_ARG],
 			category=args[CATEGORY_ARG])

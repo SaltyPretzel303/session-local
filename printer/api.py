@@ -20,7 +20,7 @@ def after_request(resp):
 
 	return resp
 
-auth_api = 'http://session-tokens-api:8100/appid-react_app/recipe/session/verify'
+auth_api = 'http://tokens-api.session:8100/appid-react_app/recipe/session/verify'
 
 @app.route('/verify', methods=["GET"])
 def verify():
