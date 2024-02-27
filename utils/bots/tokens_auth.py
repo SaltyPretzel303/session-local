@@ -90,6 +90,7 @@ def get_signin_header():
 	# Experimentally proven that emailpassword works.
 	# return {'rid': 'session'}
 	return {
+		# 'origin': 'session.com',
 		'rid': 'emailpassword',
 		'st-auth-mode': 'cookie',
 	} 
@@ -134,7 +135,9 @@ def tokens_get_key(s: Session, url: str)->StreamKey:
 
 	key_res = None
 	try:
-		key_res = s.get(url=url)
+		key_res = s.get(url=url
+				#   headers={'origin': 'session.com'}
+				  )
 
 		if key_res is None: 
 			raise Exception("Key response is None.")
@@ -160,3 +163,14 @@ def tokens_get_key(s: Session, url: str)->StreamKey:
 def tokens_update_stream(url:str):
 
 	return None
+
+def tokens_full_auth(username, email, password, remove_at, signup_at, signin_at):
+	tokens_remove_user(username, remove_at)
+
+	signup_res = tokens_signup(username, email, password, signup_at)
+	if not signup_res:
+		return None
+	
+	return tokens_signin(email, password, signin_at)
+
+

@@ -12,5 +12,5 @@ ADD ./shared_model ./
 WORKDIR /app/
 ENV PYTHONPATH=.
 
-EXPOSE 8100
+EXPOSE 80
 ENTRYPOINT ["python", "-u", "/app/tokens_api/api.py"]

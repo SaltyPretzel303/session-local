@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import pickle
-import sys
 import subprocess
 from ffpyplayer.player import  MediaPlayer 
 from requests import post, get, Response, Session
@@ -14,8 +13,8 @@ USERNAME = "user_1"
 EMAIL = "email_1"
 PASSWORD = "pwd_1"
 
-REGISTER_URL = "http://localhost:8003/register"
-AUTH_URL = "http://localhost:8003/authenticate"
+REGISTER_URL = "http://session.com/auth/signup"
+AUTH_URL = "http://session.com/auth/signin"
 
 VIEWER_SESSION_PATH = "./viewer_session"
 VIEWER_COOKIE_PATH = "./viewer_cookie"
@@ -24,10 +23,8 @@ PLAYER_WIDTH = 500
 PLAYER_HEIGHT = int(PLAYER_WIDTH*0.56)
 
 DEFAULT_STREAM_NAME = "user0"
-# QUALITY_EXT = "hd"
 QUALITY_EXT = "subsd"
 STREAM_URL = "http://localhost:10000/live/"
-# STREAM_URL = "http://localhost/watch/live/"
 
 def authenticate(username, email, password):
 	register_data = {
@@ -36,7 +33,7 @@ def authenticate(username, email, password):
 		"email": email
 	}
 
-	print(f"Registering: {register_data['username']} ... ")
+	print(f"Registering: {register_data['username']}.")
 
 	reg_response: Response = post(REGISTER_URL, json=register_data)
 	

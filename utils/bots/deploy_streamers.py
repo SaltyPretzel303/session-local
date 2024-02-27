@@ -1,60 +1,20 @@
 #!/usr/bin/python 
 
 import argparse
-from dataclasses import dataclass
 import docker
-from docker.types import Mount
 from streamer import stream 
+from deploy_config import DeployConfig, LOCAL_VIDEO_PATH
 
 DESCRIPTION = "Will deploy specific amount of parameterized streamers."
+DOCKER_IMAGE = "session/streamer"
 
-COUNT_ARG = "count"
+COUNT_ARG = 'count'
 LOCAL_ARG = 'local'
 
 CATEGORIES = ['chatting', 'gaming', 'music', 'work']
 STREAMER_BASE_NAME = 'streamer'
 STREAMER_BASE_EMAIL = 'stream_mail'
 PWD_BASE = 'some_long_pwd'
-
-LOCAL_VIDEO_PATH = '/home/nemanja/Videos/clock.mp4'
-LOCAL_VIDEO_PATH = "/home/nemanja/workspace/session-local/sample.mp4"
-DOCKER_VIDEO_PATH = '/sample.mp4'
-
-DOCKER_IMAGE = "session/streamer"
-DOCKER_STREAMER_LABEL = 'session_streamer'
-
-COOKIE_BASE_PATH = './cookies'
-
-@dataclass
-class DeployConfig:
-	reg_url: str
-	auth_url: str
-	remove_url: str
-	key_route: str
-	source_file: str
-	ingest_url: str
-	update_url: str
-
-	def local():
-		return DeployConfig(reg_url='http://localhost:8100/auth/signup',
-					  auth_url='http://localhost:8100/auth/signin',
-					  remove_url='http://localhost:8100/remove',
-					  key_route='http://localhost:8100/get_key',
-					  source_file=LOCAL_VIDEO_PATH,
-					  ingest_url='rtmp://localhost:9000/ingest',
-					  update_url='http://localhost:8002/update')
-
-	def docker():
-		auth_server = "tokens-api.session"
-		ingest_server = "ingest-proxy.session"
-		registry_server = 'stream-registry.session'
-		return DeployConfig(reg_url=f'http://{auth_server}:8100/auth/signup',
-					  auth_url=f'http://{auth_server}:8100/auth/signin',
-					  remove_url=f"http://{auth_server}:8100/remove",
-					  key_route=f'http://{auth_server}:8100/get_key',
-					  source_file=DOCKER_VIDEO_PATH,
-					  ingest_url=f'rtmp://{ingest_server}:9000/ingest',
-					  update_url=f'http://{registry_server}:8002/update')
 
 
 def setup_arguments():
@@ -80,9 +40,6 @@ def get_mail(index):
 def get_pwd(index):
 	return f"{PWD_BASE}_{index}"
 
-def get_cookie_path(index):
-	return f"{COOKIE_BASE_PATH}_{get_name(index)}"
-
 def local_deployment(count: int):
 	config = DeployConfig.local()
 
@@ -95,7 +52,6 @@ def local_deployment(count: int):
 				reg_route=config.reg_url,
 				auth_route=config.auth_url,
 				remove_route=config.remove_url,
-				# cookie_path=get_cookie_path(index),
 				key_url=config.key_route,
 				source_file=config.source_file,
 				ingest_url=config.ingest_url,
@@ -120,10 +76,10 @@ def local_deployment(count: int):
 	return close_method
 
 def get_container_name(index):
-	return f"{get_name(index)}.session"
+	return f"{get_name(index)}.session.com"
 
 def get_title(index):
-	return f"Generic title for stream: {index}"
+	return f"Generic but not default title for stream: {index}"
 
 def get_category(index):
 	return CATEGORIES[index % len(CATEGORIES)]
@@ -139,7 +95,6 @@ def get_container_entrypoint(index):
 			--remove_on {config.remove_url} \
 			--reg_on {config.reg_url} \
 			--get_key_on {config.key_route} \
-			--cookie_at {get_cookie_path(index)} \
 			--title '{get_title(index)}' \
 			--category {get_category(index)} \
 			--update_on {config.update_url}"
@@ -148,10 +103,12 @@ def docker_deployment(count: int):
 	dckr = docker.from_env()
 	ids = []
 
+	config = DeployConfig.docker()
+
 	for index in range(0, count):
 		volumes = {
 			f"{LOCAL_VIDEO_PATH}": {
-				"bind": DOCKER_VIDEO_PATH,
+				"bind": config.source_file,
 				"mode": "ro"
 			}
 		}

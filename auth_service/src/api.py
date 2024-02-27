@@ -372,7 +372,7 @@ def help():
 
 	return "yo yo", status.HTTP_200_OK
 
-	get_res:Response = get("http://stream-registry.session:8002/get_explore")
+	get_res:Response = get("http://stream-registry.session.com:8002/get_explore")
 
 	if get_res is None: 
 		print("Response is None.")

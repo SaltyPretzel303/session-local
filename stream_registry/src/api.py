@@ -4,7 +4,7 @@ from ipaddress import ip_address
 import os
 import ffmpeg
 
-from flask import Flask, Response, g, request, send_file
+from flask import Flask, Request, Response, g, request, send_file
 from flask_api import status
 from flask_restful import Api
 from requests import get, post
@@ -19,11 +19,10 @@ from shared_model.update_request import UpdateRequest
 from db import Db
 
 from app_config import AppConfig
-
+from stream_registry.src.stream_data import StreamData
+from ipaddress import ip_address
 
 JSON_CONTENT_TYPE = 'application/json'
-CDN_MANAGER_ADDR = "cdn-manager.session:8004"
-MATCH_REGION_PATH = "/match_region"
 
 app = Flask(__name__)
 api = Api(app)
@@ -47,6 +46,11 @@ def close_db():
 	if db is not None:
 		db.close()
 
+def map_stream_data(data: StreamData)->StreamInfo:
+	return StreamInfo(title=data.title,
+				   creator=data.creator,
+				   category=data.category,
+				   media_server=MediaServerInfo())
 
 @app.route('/by_creator/<creator>', methods=['GET'])
 def get_by_creator(creator: str):
@@ -60,11 +64,7 @@ def get_by_creator(creator: str):
 
 @app.route('/update', methods=['POST'])
 def update():
-	print("Received update request.")
-	print("HEADER")
-	print("===========")
-	print(request.headers)
-	print("===========")
+	print("Processing update stream request.")
 
 	content_type = request.headers.get('Content-type')
 	if content_type != JSON_CONTENT_TYPE:
@@ -96,8 +96,6 @@ def update():
 
 	print("User authorized.")
 
-	auth_data = auth_res.json()
-
 	res = get_db().update(update_request.username, update_request)
 
 	if res is None:
@@ -108,6 +106,7 @@ def update():
 			
 @app.route("/by_category/<category>", methods=['GET'])
 def get_by_category(category: str):
+	
 	print(f"by_category request: {category}")
 
 	from_ind = request.args.get(key="from", type=int)
@@ -115,15 +114,31 @@ def get_by_category(category: str):
 
 	streams = get_db().get_by_category(category, from_ind, to_ind)
 	if streams is None:
-		return "No such category ... ", status.HTTP_200_OK
+		return "No such category.", status.HTTP_404_NOT_FOUND
 
 	return json_serialize(streams), status.HTTP_200_OK
+
+@app.route("/all", methods=['GET'])
+def get_all():
+
+	print("Processing get all streams request.")
+
+	from_ind = request.args.get(key="from", type=int, default=0)
+	to_ind = request.args.get(key="to", type=int, default=2)
+
+	streams_data = get_db().get_all(from_ind, to_ind)
+	if streams_data is None: 
+		print("Failed to obtain requested streams.")
+		return "Failed.", status.HTTP_500_INTERNAL_SERVER_ERROR
+
+	mapped = list(map(map_stream_data, streams_data))
+	return json_serialize(mapped), status.HTTP_200_OK
 
 # This is used by the ingest instance so therefore
 # request.ip should be the ingest instance's ip.
 @app.route("/start_stream", methods=["POST"])
 def start_stream():
-	print("Start stream request ... ")
+	print("Processing start stream request.")
 
 	args = url_decode(request.get_data().decode())
 	key = args.get("name")
@@ -210,7 +225,6 @@ def remove_media_server():
 
 	return "Success ... ", status.HTTP_200_OK
 
-
 @app.route("/stream_info/<streamer>", methods=["GET"])
 def get_stream_info(streamer: str):
 
@@ -226,26 +240,24 @@ def get_stream_info(streamer: str):
 	if not stream_data.is_public:
 		print("This is not public stream ... ")
 		return "No such stream ... ", status.HTTP_404_NOT_FOUND
-
-	match_res = get(f"http://{CDN_MANAGER_ADDR}/{MATCH_REGION_PATH}/{region}")
-
-	if match_res.status_code != status.HTTP_200_OK:
-		print(f"Failed to match region {region} ... ")
-		return "Failed to match region ...", match_res.status_code
 	
-	print(f"RegionServer: {match_res.json()}")
+	match_reg_res = get(AppConfig.get_instance().match_region_url(region))
 
-	print(f"StreamServers: {stream_data.media_servers}")
-	print(f"StreamServers: {list(map(int_to_ip,stream_data.media_servers))}")
+	if match_reg_res.status_code != status.HTTP_200_OK:
+		print(f"Failed to match region {region} ... ")
+		return "Failed to match region.", match_reg_res.status_code
+	
+	print(f"RegionServer: {match_reg_res.json()}")
+	print(f"StreamServers: {list(map(int_to_ip, stream_data.media_servers))}")
 
-	region_info = MediaServerInfo(**match_res.json())
+	region_info = MediaServerInfo(**match_reg_res.json())
 
 	server = region_info if ip_to_int(region_info.ip) in stream_data.media_servers else None
 
 	stream_info = StreamInfo(title=stream_data.title,
-						  creator=stream_data.creator,
-						  category=stream_data.category,
-						  media_server = server)
+						creator=stream_data.creator,
+						category=stream_data.category,
+						media_server=server)
 
 	return json_serialize(stream_info), status.HTTP_200_OK
 
@@ -276,7 +288,7 @@ def get_tnail(streamer: str):
 	config = AppConfig.get_instance()
 	if streamer not in tnails or is_expired(tnails[streamer]):
 		print("Thumbnail expired, will generate new.")
-		gen_res = generate_thumbnail(streamer, config.tnail_path(streamer))
+		gen_res = generate_thumbnail(streamer, config.tnail_url(streamer))
 		if not gen_res:
 			print(f"Failed to generate thumbnail for: {streamer}.")
 		else:
@@ -285,7 +297,7 @@ def get_tnail(streamer: str):
 			print("Tnail generated, will expiration date: {exp_date}")
 			
 	
-	path = config.tnail_path(streamer)
+	path = config.tnail_url(streamer)
 
 	# With checks above this will never be true ... ? 
 	if not os.path.exists(path):
@@ -305,7 +317,7 @@ def generate_thumbnail(creator: str, path: str)->bool:
 	try:
 		# Why is this hardcoded
 		ffmpeg\
-			.input(f"http://cdn-eu.session:10000/live/{info.creator}_{quality}/index.m3u8")\
+			.input(f"http://cdn-eu.session.com:10000/live/{info.creator}_{quality}/index.m3u8")\
 			.filter('scale', 300, -1) \
 			.output(path, vframes=1)\
 			.global_args('-y')\
@@ -324,8 +336,9 @@ def is_live(streamer: str):
 
 @app.after_request
 def after_request(resp):
+	# Not sure if this is required.
 	resp.headers.add("Access-Control-Allow-Credentials","true")
-	resp.headers.add("Access-Control-Allow-Origin","http://localhost:3000")
+	resp.headers.add("Access-Control-Allow-Origin","http://session.com")
 	resp.headers.add("Access-Control-Allow-Headers","Content-type")
 
 	return resp
@@ -343,7 +356,7 @@ def ip_to_int(ip: str):
 def int_to_ip(ip: int):
 	return str(ip_address(ip))
 
-# IT IS REQUIRED that data is str and not byte or byte[] !!!
+# Data MUST be str, not byte or byte[] !!!
 # To translate byte/byte[] to string use .decode() method. 
 def url_decode(data:str):
 	return { pair.split("=")[0]:pair.split("=")[1]  for pair in data.split("&")}
@@ -360,4 +373,4 @@ def stop_stream():
 	return "Stream removed ... ", status.HTTP_200_OK
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port='8002') 
+	app.run(host='0.0.0.0', port='80') 

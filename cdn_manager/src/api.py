@@ -20,7 +20,7 @@ QUAL_HD = "hd"
 QUAL_SD = "sd"
 QUAL_SUBSD = "subsd"
 
-STREAM_REGISTRY_ADDR = 'stream-registry.session:8002'
+STREAM_REGISTRY_ADDR = 'stream-registry.session.com'
 ADD_MEDIA_SERVER_PATH = '/add_media_server'
 REMOVE_MEDIA_SERVER_PATH = '/remove_media_server'
 
@@ -32,20 +32,20 @@ def ping():
 def initialize():
 	AppConfig.load_config(request.get_json())
 
-	return "Configuration loaded ... ", status.HTTP_200_OK
+	return "Configuration loaded.", status.HTTP_200_OK
 
 @app.route("/match_region/<region>", methods=["GET"])
 def match_region(region:str):
 	config = AppConfig.instance
 
 	if region not in config:
-		return "Region not available ... ", status.HTTP_404_NOT_FOUND
+		return "Region not available.", status.HTTP_404_NOT_FOUND
 	
 	info = None
 	if is_available(config[region][0]):
 		info = config[region][0]
 	else:
-		print(f"Region's ({region}) main instance is not available ... ")
+		print(f"Region's ({region}) main instance is not available.")
 
 		alt_instance = next(filter(is_available, config[region][1:]), None)
 
@@ -53,7 +53,7 @@ def match_region(region:str):
 			info = alt_instance
 
 	if info is None:
-		return "Failed to match region ...", status.HTTP_503_SERVICE_UNAVAILABLE
+		return "Failed to match region.", status.HTTP_503_SERVICE_UNAVAILABLE
 	
 	server_info = MediaServerInfo(ip=info.ip,
 						  port=info.hls_port,
@@ -70,18 +70,17 @@ def add_media_server():
 	content_name = args.get("name")
 	instance_ip = request.remote_addr
 	
-
 	(creator, quality) = split_name_qual(content_name) 
 	if creator is None or quality is None: 
 		return "Name and quality in wrong format ...", status.HTTP_500_INTERNAL_SERVER_ERROR
 	
-	print(f"Content: {content_name} at: {instance_ip}")
+	print(f"Streamer: {creator} qual: {quality} at: {instance_ip}")
 
 	req = MediaServerRequest(content_name=creator,
 						quality=quality,
 						media_server=instance_ip)
 	
-	req_data = encode(req,unpicklable=False)
+	req_data = encode(req, unpicklable=False)
 	try:
 		print("Doing post towars registry.")
 		add_res = post(url=f"http://{STREAM_REGISTRY_ADDR}/{ADD_MEDIA_SERVER_PATH}", json=req_data)
@@ -96,15 +95,14 @@ def add_media_server():
 	return "Noted ...", status.HTTP_200_OK
 
 def split_name_qual(value: str):
+	# Ah ... yes ... regex ... lovely 
 	pattern = f"(.+)_({QUAL_HD}|{QUAL_SD}|{QUAL_SUBSD})$"
 	res = re.search(pattern, value)
 
 	if res is None:
 		return (None, None)
 	
-	return (res[1],res[2])
-
-
+	return (res[1], res[2])
 
 @app.route("/remove_media_server", methods=["POST"])
 def remove_media_server():
@@ -163,4 +161,4 @@ if __name__ == '__main__':
 
 		AppConfig.load_config(argv[1])
 
-	app.run(host="0.0.0.0", port='8004')
+	app.run(host="0.0.0.0", port='80')

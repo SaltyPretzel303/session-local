@@ -15,27 +15,27 @@ from retry_requests import retry
 regions =  {
 		"eu": [
 			{
-				"ip":"cdn.session",
-				"hls_port": 10000,
-				"hc_port":10000,
+				"ip":"cdn.session.com",
+				"hls_port": 80,
+				"hc_port": 80,
 				"hls_path":"live",
 				"hc_path":"health_check"
 			}
 		],
 		"na": [
 			{
-				"ip":"cdn.session",
-				"hls_port": 10000,
-				"hc_port":10000,
+				"ip":"cdn.session.com",
+				"hls_port": 80,
+				"hc_port": 80,
 				"hls_path":"live",
 				"hc_path":"health_check"
 			}
 		],
 		"as": [
 			{
-				"ip":"cdn.session",
-				"hls_port": 10000,
-				"hc_port":10000,
+				"ip":"cdn.session.com",
+				"hls_port": 80,
+				"hc_port": 80,
 				"hls_path":"live",
 				"hc_path":"health_check"
 			}
@@ -45,9 +45,9 @@ regions =  {
 regions =  {
 		"eu": [
 			{
-				"ip":"cdn.session",
-				"hls_port": 10000,
-				"hc_port":10000,
+				"ip":"cdn.session.com",
+				"hls_port": 80,
+				"hc_port": 80,
 				"hls_path":"live",
 				"hc_path":"health_check"
 			}
@@ -59,7 +59,7 @@ NETWORK = "session-net"
 BASE_RTMP_PORT = 11000
 INNER_RTMP_PORT = 11000
 BASE_HLS_PORT = 10000
-INNER_HLS_PORT = 10000
+INNER_HLS_PORT = 80
 # MEDIA_PATH = "live"
 
 CDN_LABEL = "cdn_instance"
@@ -71,9 +71,10 @@ CDN_IMAGE_TAG = 'session/cdn'
 MANAGER_IMAGE_TAG = 'session/cdn-manager'
 # MANGER_DOCKERFILE = 'dockerfiles/cdn_manager.Dockerfile'
 # MANAGER_CONFIG_PATH = '../../cdn_manager/src/app_config.json'
-MANAGER_CONT_NAME = 'cdn-manager.session'
+MANAGER_CONT_NAME = 'cdn-manager.session.com'
 MANAGER_LABEL = 'cdn_manager'
 MANAGER_API_PORT = 8004
+MANAGER_INNER_PORT = 80
 
 # PRODUCTION_STAGE = 'prod'
 
@@ -89,21 +90,21 @@ if len(old_cdns)>0:
 
 	exit(1)
 
-manager = dckr.containers.run(image=MANAGER_IMAGE_TAG,
-					detach=True,
-					ports={
-						MANAGER_API_PORT: ("0.0.0.0", MANAGER_API_PORT)
-					},
-					network=NETWORK,
-					name=MANAGER_CONT_NAME,
-					labels=[MANAGER_LABEL],
-					stop_signal='SIGINT')
+# manager = dckr.containers.run(image=MANAGER_IMAGE_TAG,
+# 					detach=True,
+# 					ports={
+# 						MANAGER_INNER_PORT: ("0.0.0.0", MANAGER_API_PORT)
+# 					},
+# 					network=NETWORK,
+# 					name=MANAGER_CONT_NAME,
+# 					labels=[MANAGER_LABEL],
+# 					stop_signal='SIGINT')
 
-m_container = dckr.containers.get(manager.id)
-manager_ip = m_container.attrs["NetworkSettings"]["Networks"][NETWORK]["IPAddress"]
+# m_container = dckr.containers.get(manager.id)
+# manager_ip = m_container.attrs["NetworkSettings"]["Networks"][NETWORK]["IPAddress"]
 
 def form_name(region):
-	return f"cdn-{region}.session"
+	return f"cdn-{region}.session.com"
 
 index=0
 for region_key in regions:
@@ -136,21 +137,22 @@ for region_key in regions:
 print("Deployed CDNs")
 print(jsonpickle.encode(regions, unpicklable=False, indent=4))
 
-config = jsonpickle.encode(regions,
-						unpicklable=False, 
-						separators=(",",":"))\
-					.replace("\"","\\\"")
+# config = jsonpickle.encode(regions,
+# 						unpicklable=False, 
+# 						separators=(",",":"))\
+# 					.replace("\"","\\\"")
 
 config = jsonpickle.encode(regions, unpicklable=False)
 
 retry_session = retry(retries=5, backoff_factor=0.2)
+manager_ip = "session.com:8004"
 try:
-	print("Waiting for cdn manager.")
-	retry_session.get(f'http://{manager_ip}:8004/ping')
+	print(f"Waiting for cdn manager on: {manager_ip}")
+	retry_session.get(f'http://{manager_ip}/ping')
 
-	init_res: Response = post(f'http://{manager_ip}:8004/initialize', json=config)
+	init_res: Response = post(f'http://{manager_ip}/initialize', json=config)
 	print(f"Initialize response: {init_res.status_code}")
 	
 except:
-	print("Cdn manager failed ot start ...")
-	print("Or I should wait a bit/lot more.")
+	print("Cdn manager failed ot start.")
+	print("Or I should just wait a bit/lot more.")

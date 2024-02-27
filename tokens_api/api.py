@@ -6,7 +6,7 @@ import jsonpickle
 
 from config import config
 
-from flask import Response, g
+from flask import Response, g, request
 from flask import Flask, abort
 from flask_cors import CORS
 from flask_api import status
@@ -114,13 +114,17 @@ async def validate_username(username: str, tenant: str):
 init(
 	app_info=InputAppInfo(
 		app_name="react_app",
-		api_domain="http://localhost:8004",
-		api_base_path="/auth",
-		website_domain="http://localhost:3000",
-		website_base_path="/"
+		# Has to be exact domain name, can't be patterns (can't start with .) 
+		# like cookie_domain.
+		# Domain name of the service exposing auth api.
+		# https://supertokens.com/docs/emailpassword/common-customizations/sessions/multiple-api-endpoints
+		api_domain="http://tokens-api.session.com",
+		api_base_path="/auth", # I thinks this is per documentation.
+		website_domain="http://session.com",
+		website_base_path="/" # default is /auth, don't know why
 	),
 	supertokens_config=SupertokensConfig(
-		connection_uri="http://tokens-core.session:3567",
+		connection_uri="http://tokens-core.session.com:3567",
 	),
 	framework='flask',
 	recipe_list=[
@@ -138,9 +142,13 @@ init(
 		# 	)
 		# ),
 		session.init(
-		# 	{
-		# 	sessionTokenFrontendDomain: ".example.com"
-		# }
+			# Also this can't be single word ...
+			cookie_domain='.session.com',
+			# cookie_secure=True
+			# For local development, you should not set the cookieDomain to an
+			# IP address based domain, or .localhost - browsers will reject
+			# these cookies. Instead, you should alias localhost to a named
+			# domain and use that. 
 		)
 	],
 	# debug=True,
@@ -153,8 +161,16 @@ TokensMiddleware(app)
 CORS(
 	app=app,
 	origins=[
-		"http://localhost:3000",
-		"http://stream-registry.session:8002"
+		"http://session.com", # This should be gateway ... ? 
+		# "http://localhost:3000",
+		# "http://session.com:3000",
+
+		# "http://session.com:[0-9]+",
+		# "http://session.com",
+		# "http://stream-registry.session.com:[0-9]+",
+		# "http://stream-registry.session.com"
+		# "http://localhost:3000",
+		# "http://stream-registry.session.com:8002"
 	],
 	supports_credentials=True,
 	allow_headers=["Content-Type"] + get_all_cors_headers(),
@@ -174,7 +190,7 @@ def gen_stream_key(len) -> StreamKeyDoc:
 def gen_exp_date(longevity) -> datetime:
 	return datetime.now() + timedelta(seconds=longevity)
 
-@app.route("/get_key", methods=["GET"])
+@app.route("/auth/get_key", methods=["GET"])
 @verify_session()
 def get_key():
 	print("Processing get key request.")
@@ -291,4 +307,4 @@ def authorize(username):
 
 
 if __name__ == "__main__":
-	app.run(host="0.0.0.0", port=8100)
+	app.run(host="0.0.0.0", port=80)

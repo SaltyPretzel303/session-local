@@ -12,10 +12,12 @@ export default function Explore(props: ExploreProps) {
 		console.log(`Returning following: ${from} - ${to}`)
 		return streams.slice(from, to)
 	}
+
 	async function recommendedStreamsProvider(from: number, to: number): Promise<StreamInfo[]> {
 		console.log(`Returning recommended: ${from} - ${to}`)
 		return streams.slice(from, to)
 	}
+
 	async function exploreStreamsProvider(from: number, to: number): Promise<StreamInfo[]> {
 		console.log(`Returning explore: ${from} - ${to}`)
 		return streams.slice(from, to)

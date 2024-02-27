@@ -20,7 +20,7 @@ def after_request(resp):
 
 	return resp
 
-auth_api = 'http://tokens-api.session:8100/appid-react_app/recipe/session/verify'
+auth_api = 'http://tokens-api.session.com:8100/appid-react_app/recipe/session/verify'
 
 @app.route('/verify', methods=["GET"])
 def verify():
@@ -72,4 +72,4 @@ def key_match(path):
 	return resp
 
 if __name__ == '__main__':
-	app.run(host="0.0.0.0", port='8010')
+	app.run(host="0.0.0.0", port='80')

@@ -16,9 +16,12 @@ export default function Home() {
 
 	SuperTokens.init({
 		appInfo: {
-			apiDomain: "http://localhost:8100",
 			appName: "react_app",
-			websiteDomain: "http://localhost:3000"
+			apiDomain: "http://session.com",
+			apiBasePath: "/auth",
+			// websiteDomain: "http://session.com:3000"
+			websiteDomain: "http://session.com",
+			websiteBasePath: "/"
 		},
 		recipeList: [
 			EmailPassword.init({
@@ -34,29 +37,21 @@ export default function Home() {
 					}
 				}
 			}),
-			Session.init({
-				// sessionTokenBackendDomain: ".some.domain.com" 
-				// If multi domain is set on the backend, this field should
-				// have the same value.
-			})
+			Session.init(
+				{
+					sessionTokenBackendDomain: ".session.com"
+					// If multi domain is set on the backend, this field MUST
+					// have the same value as cookie_domain in session.init()
+				}
+			)
 
 		]
 	});
 
-	async function onEmailLogin(context: ThirdPartyEmailPassword.OnHandleEventContext) {
-		console.log("Handling onEmailLogin.")
-		if (context.action === "SESSION_ALREADY_EXISTS") {
-
-		} else if (context.action === "SUCCESS") {
-
-			console.log("Authentication success, doing print request.")
-
-		}
-	}
-
 	return (
 
 		<SuperTokensWrapper>
+
 			<HeaderBar />
 
 			<BrowserRouter>
@@ -66,6 +61,7 @@ export default function Home() {
 					<Route path="/play" element={<QuickPlay />} />
 				</Routes>
 			</BrowserRouter>
+
 		</SuperTokensWrapper >
 
 	)

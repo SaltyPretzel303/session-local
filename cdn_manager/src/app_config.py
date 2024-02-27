@@ -8,21 +8,21 @@ class AppConfig:
 	instance = {
 		"eu": [
 			InstanceConf(ip="localhost",
-				hls_port=10000,
+				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
 				hc_path="health_check")
 		],
 		"na": [
 			InstanceConf(ip="localhost",
-				hls_port=10001,
+				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
 				hc_path="health_check")
 		],
 		"as": [
 			InstanceConf(ip="localhost",
-				hls_port=10002,
+				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
 				hc_path="health_check")

@@ -9,7 +9,7 @@ ADD cdn_manager/src/ ./src/
 WORKDIR /app/
 ADD shared_model/ ./shared_model
 
-EXPOSE 8004
+EXPOSE 80
 
 ENV PYTHONPATH=.
 

@@ -25,7 +25,6 @@ AUTH_ROUTE_ARG = "auth_on"
 REG_ROUTE_ARG = "reg_on"
 GET_KEY_ROUTE_ARG = 'get_key_on'
 UPDATE_PATH_ARG = 'update_on'
-COOKIE_PATH_ARG = "cookie_at"
 
 def setup_arg_parser():
 	
@@ -61,27 +60,23 @@ def setup_arg_parser():
 
 	parser.add_argument(f'--{REMOVE_ROUTE_ARG}', 
 						action='store', 
-						default='http://localhost:8100/remove')
+						default='http://session.com/auth/remove')
 
 	parser.add_argument(f'--{AUTH_ROUTE_ARG}', 
 						action='store', 
-						default='http://localhost:8100/auth/signin')
+						default='http://session.com/auth/signin')
 
 	parser.add_argument(f'--{REG_ROUTE_ARG}', 
 						action='store', 
-						default='http://localhost:8100/auth/signup')
+						default='http://session.com/auth/signup')
 
 	parser.add_argument(f'--{GET_KEY_ROUTE_ARG}',
 						action='store',
-						default='http://localhost:8100/get_key')
+						default='http://session.com/auth/get_key')
 
 	parser.add_argument(f'--{UPDATE_PATH_ARG}',
 						action='store',
-						default='http://localhost:8002/update')
-
-	parser.add_argument(f'--{COOKIE_PATH_ARG}',
-						action='store',
-						default='./publisher_session')
+						default='http://session.com/stream/update')
 
 	return parser.parse_args()
 
@@ -143,7 +138,6 @@ def authenticate(username,
 	print("SignIn successfull (session obtained).")
 
 	return session
-
 
 def get_update_request(username, title, category, is_public):
 	return {
@@ -248,36 +242,6 @@ if __name__ == '__main__':
 		print("Streaming failed, exiting.")
 		exit(1)
 
-	# session = authenticate(username=args[NAME_ARG],
-	# 				email=args[MAIL_ARG],
-	# 				password=args[PASSWORD_ARG],
-	# 				remove_route=args[REMOVE_ROUTE_ARG],
-	# 				reg_route=args[REG_ROUTE_ARG],
-	# 				auth_route=args[AUTH_ROUTE_ARG])
-
-	# if session is None: 
-	# 	print("Authentication failed.")
-	# 	exit(1)
-
-	# proc = publish_stream(session=session,
-	# 				key_url=args[GET_KEY_ROUTE_ARG],
-	# 				source_file=args[SOURCE_FILE_ARG],
-	# 				ingest_url=args[INGEST_ARG])
-
-	# if proc is None:
-	# 	print("Failed start publishing.")
-	# 	exit(1)
-
-	# update_args = (5, 
-	# 			session, 
-	# 			args[UPDATE_PATH_ARG], 
-	# 			args[TITLE_ARG], 
-	# 			args[CATEGORY_ARG])
-	
-	# update_thread = Thread(target=delayed_update, args=update_args)
-	# update_thread.start()
-
-	
 	def signal_handler(sig, frame):
 		print("Processing singal.")
 

@@ -7,20 +7,6 @@ networks:
     # external: true
 
 services:
-  # client-gateway:
-  #   container_name: session-client-gateway
-  #   build:
-  #     context: ./
-  #     dockerfile: ./dockerfiles/client_gateway.Dockerfile
-  #   image: session/client-gateway
-  #   ports:
-  #     - "0.0.0.0:8000:8000"
-  #   networks: 
-  #     - session-net
-  #   stop_signal: SIGINT
-    # Flask will quit the app on SIGINT. 
-    # Docker (by default) sends SIGTERM and if that doesn't work 
-    # SIGKILL will kill the process.
 
   nginx-rtmp: 
     build: 
@@ -28,22 +14,40 @@ services:
       dockerfile: ./dockerfiles/nginx_rtmp.Dockerfile
     image: session/nginx-rtmp 
 
+  frontend-base: 
+    build: 
+      context: ./
+      dockerfile: ./dockerfiles/frontend_base.Dockerfile
+    image: session/frontend_base
+
+  gateway:
+    container_name: session.com
+    build: 
+      context: ./
+      dockerfile: ./dockerfiles/gateway.Dockerfile
+    image: session/gateway
+    ports: 
+      - 0.0.0.0:80:80
+    networks: 
+      - session-net
+    stop_signal: SIGINT
+  
   frontend:
-    container_name: frontend.session
+    container_name: frontend.session.com
     build: 
       context: ./
       dockerfile: ./dockerfiles/frontend.Dockerfile
     image: session/frontend
     ports:
-      - "0.0.0.0:80:80"
-      # - "0.0.0.0:3000:80"
+      # - "0.0.0.0:80:80"
+      - "0.0.0.0:3000:80"
     networks:
       - session-net
     stop_signal: SIGINT
 
   ingest-proxy:
-    container_name: ingest-proxy.session
-    build: 
+    container_name: ingest-proxy.session.com
+    build:
       context: ./
       dockerfile: dockerfiles/ingest_proxy.Dockerfile
     image: session/ingest-proxy 
@@ -54,7 +58,7 @@ services:
       - session-net
 
   ingest-instance:
-    container_name: ingest.session
+    container_name: ingest.session.com
     build:
       context: ./
       dockerfile: dockerfiles/ingest.Dockerfile
@@ -69,13 +73,13 @@ services:
     #   - ./ingest/nginx.config:/etc/nginx/nginx.conf
 
   stream-registry:
-    container_name: stream-registry.session
+    container_name: stream-registry.session.com
     build: 
       context: ./
       dockerfile: ./dockerfiles/stream_registry.Dockerfile
     image: session/stream-registry
     ports:
-      - "0.0.0.0:8002:8002"
+      - "0.0.0.0:8002:80"
     networks: 
       - session-net
     stop_signal: SIGINT
@@ -84,7 +88,7 @@ services:
     # SIGKILL will kill the process.
 
   cdn-proxy:
-    container_name: cdn-proxy.session
+    container_name: cdn-proxy.session.com
     build:
       context: ./
       dockerfile: ./dockerfiles/cdn_proxy.Dockerfile
@@ -95,30 +99,30 @@ services:
       - session-net
 
   cdn-instance:
-    container_name: cdn.session
+    container_name: cdn.session.com
     build:
       context: ./
       dockerfile: ./dockerfiles/cdn_instance.Dockerfile
     image: session/cdn
     ports:
-      - "0.0.0.0:11000:11000"
-      - "0.0.0.0:10000:10000"
+      - "0.0.0.0:11000:11000" # rtmp server
+      - "0.0.0.0:10000:80" # hls server
     networks:
       - session-net 
 
   cdn-manager:
-    container_name: cdn-manager.session
+    container_name: cdn-manager.session.com
     build:
       context: ./
       dockerfile: ./dockerfiles/cdn_manager.Dockerfile
     image: session/cdn-manager
     ports:
-      - "0.0.0.0:8004:8004"
+      - "0.0.0.0:8004:80"
     networks:
       - session-net 
 
   registry-database:
-    container_name: registry-db.session
+    container_name: registry-db.session.com
     build: 
       context: ./
       dockerfile: ./dockerfiles/registry_db.Dockerfile
@@ -129,7 +133,7 @@ services:
       - session-net
 
   users-db:
-    container_name: users-db.session
+    container_name: users-db.session.com
     build: 
       context: ./ 
       dockerfile: ./dockerfiles/users_db.Dockerfile
@@ -142,7 +146,7 @@ services:
   # Note: If you are assigning a custom name to your db service on the line below, 
   # make sure it does not contain underscores
   tokens-db:
-    container_name: tokens-db.session
+    container_name: tokens-db.session.com
     image: 'postgres:latest'
     environment:
       POSTGRES_USER: supertokens_user 
@@ -160,7 +164,7 @@ services:
       retries: 5
 
   tokens-core:
-    container_name: tokens-core.session
+    container_name: tokens-core.session.com
     image: registry.supertokens.io/supertokens/supertokens-postgresql:7.0
     depends_on:
       tokens-db:
@@ -168,7 +172,7 @@ services:
     ports:
       - 3567:3567
     environment:
-      POSTGRESQL_CONNECTION_URI: "postgresql://supertokens_user:somePassword@tokens-db.session:5432/supertokens"
+      POSTGRESQL_CONNECTION_URI: "postgresql://supertokens_user:somePassword@tokens-db.session.com:5432/supertokens"
     networks:
       - session-net
     # restart: unless-stopped
@@ -180,25 +184,35 @@ services:
       retries: 5
 
   tokens-api: 
-    container_name: tokens-api.session
+    container_name: tokens-api.session.com
     build:
       context: ./
       dockerfile: ./dockerfiles/tokens-api.Dockerfile
     image: session/tokens-api
     ports: 
-      - "0.0.0.0:8100:8100"
+      - "0.0.0.0:8100:80"
     networks: 
       - session-net
     stop_signal: SIGINT
 
   # Just a bot
-  streamer: 
-    container_name: streamer.session
-    build: 
+  streamer:
+    container_name: streamer.session.com
+    build:
       context: ./
       dockerfile: ./dockerfiles/streamer.Dockerfile
     image: session/streamer
-    
+    networks: 
+      - session-net
+    stop_signal: SIGINT
+
+  # Another bot
+  viewer:
+    container_name: viewer.session.com
+    build: 
+      context: ./
+      dockerfile: ./dockerfiles/viewer.Dockerfile
+    image: session/viewer
     networks: 
       - session-net
     stop_signal: SIGINT
@@ -212,7 +226,7 @@ services:
       dockerfile: ./dockerfiles/printer.Dockerfile
     image: session/printer
     ports:
-      - "0.0.0.0:8010:8010"
+      - "0.0.0.0:8010:80"
     networks:
       - session-net
     stop_signal: SIGINT

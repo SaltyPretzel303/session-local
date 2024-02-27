@@ -8,7 +8,7 @@ class Config:
 	username_field: str
 
 config = Config(
-		users_db_conn_string="mongodb://session_user:session_pwd@users-db.session:27017/session_auth",
+		users_db_conn_string="mongodb://session_user:session_pwd@users-db.session.com:27017/session_auth",
 		stream_key_len=10,
 		stream_key_longevity=20,
 		username_field="username"

@@ -25,7 +25,7 @@ export default function StreamPreview(props: StreamPreviewProps) {
 
 	// TODO move to config
 	function formPosterUrl(streamer: string): string {
-		// return 'http://stream-registry.session:8002/tnail/' + streamer
+		// return 'http://stream-registry.session.com:8002/tnail/' + streamer
 		return 'http://localhost:8002/tnail/' + streamer
 
 	}

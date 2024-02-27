@@ -1,4 +1,5 @@
 # from typing import dict
+from typing import List
 from stream_data import StreamData
 from shared_model.update_request import UpdateRequest
 from stream_data import StreamData
@@ -17,7 +18,7 @@ class Db:
 	def get_by_creator(self, creator: str) -> StreamData:
 		return StreamData.objects(creator=creator).first()
 
-	def get_by_category(self, cat: StreamCategory, start: int, end: int) -> [StreamData]:
+	def get_by_category(self, cat: StreamCategory, start: int, end: int) -> List[StreamData]:
 		return StreamData.objects(category=cat)
 
 	def save_empty(self, creator: str, ingest_ip: str, stream_key: str) -> StreamData:
@@ -65,3 +66,5 @@ class Db:
 	def get_stream(self, streamer) -> StreamData:
 		return StreamData.objects(creator=streamer).first()
 
+	def get_all(self, from_page, page_cnt):
+		return StreamData.objects().skip(from_page).limit(page_cnt)
