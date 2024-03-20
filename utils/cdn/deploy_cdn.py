@@ -1,9 +1,9 @@
 #!/usr/bin/python 
 
-from asyncio import sleep
+import os
 import docker 
 import jsonpickle
-from requests import Response, post, get
+from requests import Response, post
 from retry_requests import retry
 
 # For each region specified in regions json/dict create one cdn server instance.
@@ -12,10 +12,21 @@ from retry_requests import retry
 # Could not find soultion to handle build errors or stop the deploy process
 # if error occur. docker_api.build(...) returns very odd stream_helper ...
 
+# Edit /etc/hosts to act as a dns server for all of these instances.
+#########
+# 172.19.0.20	eu-0-cdn.session.com
+# 172.19.0.21	na-0-cdn.session.com
+# 172.19.0.22	as-0-cdn.session.com
+# 127.0.0.1	session.com
+#########
+# Add this ^ at the top of /etc/hosts.
+# If new cdn instances are added, domain name mappings should be added to 
+# the /etc/hosts as well.
 regions =  {
 		"eu": [
 			{
-				"ip":"cdn.session.com",
+				"ip":"172.19.0.20",
+				"domainName": "eu-0-cdn.session.com",
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
@@ -24,7 +35,8 @@ regions =  {
 		],
 		"na": [
 			{
-				"ip":"cdn.session.com",
+				"ip":"172.19.0.21",
+				"domainName": "na-0-cdn.session.com",
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
@@ -33,7 +45,8 @@ regions =  {
 		],
 		"as": [
 			{
-				"ip":"cdn.session.com",
+				"ip":"172.19.0.22",
+				"domainName": "as-0-cdn.session.com",
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
@@ -45,7 +58,8 @@ regions =  {
 regions =  {
 		"eu": [
 			{
-				"ip":"cdn.session.com",
+				"ip":"172.19.0.20",
+				"domainName": "eu-0-cdn.session.com",
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
@@ -55,60 +69,36 @@ regions =  {
 	}
 
 NETWORK = "session-net"
-# IP_SUBNET_PREFIX = "172.23.2."
+IP_SUBNET_PREFIX = "172.19.0."
+STARTING_IP = 20
 BASE_RTMP_PORT = 11000
 INNER_RTMP_PORT = 11000
 BASE_HLS_PORT = 10000
 INNER_HLS_PORT = 80
-# MEDIA_PATH = "live"
 
 CDN_LABEL = "cdn_instance"
-
-# BUILD_CONTEXT = '../../'
 CDN_IMAGE_TAG = 'session/cdn'
-# CDN_DOCKERFILE = 'dockerfiles/cdn.Dockerfile'
 
-MANAGER_IMAGE_TAG = 'session/cdn-manager'
-# MANGER_DOCKERFILE = 'dockerfiles/cdn_manager.Dockerfile'
-# MANAGER_CONFIG_PATH = '../../cdn_manager/src/app_config.json'
-MANAGER_CONT_NAME = 'cdn-manager.session.com'
-MANAGER_LABEL = 'cdn_manager'
-MANAGER_API_PORT = 8004
-MANAGER_INNER_PORT = 80
-
-# PRODUCTION_STAGE = 'prod'
+MANAGER_IP = "session.com:8004"
 
 dckr = docker.from_env()
 
-old_cdns = dckr.containers.list(filters={"label": [CDN_LABEL, MANAGER_LABEL]}, all=True)
+old_instances = dckr.containers.list(filters={"label": [CDN_LABEL]}, all=True)
 
-if len(old_cdns)>0:
-	print("Some CDN instances are still running (or still not removed) ... ")
-	print("Stop or remove them before proceeding  ... ")
-	for c in old_cdns:
+if len(old_instances)>0:
+	print("Some CDN instances are still running (or are not removed).")
+	print("Stop/remove them before proceeding.")
+
+	for c in old_instances:
 		print(f"{c.name} --> {c.status}")
 
 	exit(1)
 
-# manager = dckr.containers.run(image=MANAGER_IMAGE_TAG,
-# 					detach=True,
-# 					ports={
-# 						MANAGER_INNER_PORT: ("0.0.0.0", MANAGER_API_PORT)
-# 					},
-# 					network=NETWORK,
-# 					name=MANAGER_CONT_NAME,
-# 					labels=[MANAGER_LABEL],
-# 					stop_signal='SIGINT')
+def gen_ip(index):
+	return f"{IP_SUBNET_PREFIX}{STARTING_IP+index}"
 
-# m_container = dckr.containers.get(manager.id)
-# manager_ip = m_container.attrs["NetworkSettings"]["Networks"][NETWORK]["IPAddress"]
-
-def form_name(region):
-	return f"cdn-{region}.session.com"
-
-index=0
-for region_key in regions:
-	c_name = form_name(region_key)
+def deploy_with_api(region_key, index):
+	container_name = region[region_key][0]['domainName']
 	out_hls_port = BASE_HLS_PORT + index
 	out_rtmp_port = BASE_RTMP_PORT + index
 	
@@ -119,7 +109,7 @@ for region_key in regions:
 							INNER_RTMP_PORT: ("0.0.0.0", out_rtmp_port)
 						},
 						network=NETWORK,
-						name=c_name,
+						name=container_name,
 						labels=[CDN_LABEL],
 						stop_signal="SIGINT")
 
@@ -128,31 +118,49 @@ for region_key in regions:
 	container = dckr.containers.get(container.id)
 	ip = container.attrs["NetworkSettings"]["Networks"][NETWORK]["IPAddress"]
 	regions[region_key][0]["ip"] = ip
-	# regions[region_key][0]["hls_port"] = BASE_HLS_PORT
-	# regions[region_key][0]["hc_port"] = BASE_HLS_PORT
-	# Tn this case hc server is hosted on the same http server as the hls server. 
 	
-	index = index+1
+	return
 
-print("Deployed CDNs")
-print(jsonpickle.encode(regions, unpicklable=False, indent=4))
+def deploy_with_shell(region_conf):
+	# Using shell is allowing me to assing ip to each container, which will 
+	# allow me to have single /etc/hosts. Static DNS in some way.
+	c_name = region_conf['domainName']
+	out_hls_port = BASE_HLS_PORT + index
+	out_rtmp_port = BASE_RTMP_PORT + index
+	ip = region_conf['ip']
 
-# config = jsonpickle.encode(regions,
-# 						unpicklable=False, 
-# 						separators=(",",":"))\
-# 					.replace("\"","\\\"")
+	cmd = f'docker run --name {c_name} \
+			--network {NETWORK} \
+			--ip {ip} \
+			--publish 0.0.0.0:{out_hls_port}:{INNER_HLS_PORT} \
+			--publish 0.0.0.0:{out_rtmp_port}:{INNER_RTMP_PORT} \
+			--label {CDN_LABEL} \
+			--stop-signal SIGINT \
+			--detach  {CDN_IMAGE_TAG}'
+
+	os.system(cmd)
+
+	return
+
+index=0
+for region_key in regions:
+	for region in regions[region_key]:
+		print(f"Deploying region: {region}")
+		deploy_with_shell(region)
+		index = index+1
+
+print("CDNS deployed, will initialize manager.")
 
 config = jsonpickle.encode(regions, unpicklable=False)
 
 retry_session = retry(retries=5, backoff_factor=0.2)
-manager_ip = "session.com:8004"
 try:
-	print(f"Waiting for cdn manager on: {manager_ip}")
-	retry_session.get(f'http://{manager_ip}/ping')
+	print(f"Waiting for cdn manager on: {MANAGER_IP}")
+	retry_session.get(f'http://{MANAGER_IP}/ping')
 
-	init_res: Response = post(f'http://{manager_ip}/initialize', json=config)
-	print(f"Initialize response: {init_res.status_code}")
+	init_res: Response = post(f'http://{MANAGER_IP}/initialize', json=config)
+	print(f"Initialize status code: {init_res.status_code}")
 	
 except:
-	print("Cdn manager failed ot start.")
-	print("Or I should just wait a bit/lot more.")
+	print("Failed to initialize cdn manager with deployed cdn instances.")
+	print("Cdn manager may be down.")

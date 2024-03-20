@@ -1,4 +1,3 @@
-#!/usr/bin/python 
 
 from dataclasses import dataclass
 from requests import Session, get, post
@@ -159,10 +158,6 @@ def tokens_get_key(s: Session, url: str)->StreamKey:
 		print(f"Error in key request: {e}")
 		return None
 	
-
-def tokens_update_stream(url:str):
-
-	return None
 
 def tokens_full_auth(username, email, password, remove_at, signup_at, signin_at):
 	tokens_remove_user(username, remove_at)

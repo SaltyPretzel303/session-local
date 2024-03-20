@@ -7,10 +7,9 @@ docker-compose up --detach stream-registry \
 	tokens-db \
 	tokens-api \
 	cdn-manager \
-	frontend \
-	gateway 
+	frontend 
 
-echo "Auth, stream registry, frontend and gateway services deployed."
+echo "Auth, stream registry and frontend services deployed."
 
 ./utils/cdn/remove_cdn.py
 ./utils/cdn/deploy_cdn.py
@@ -30,5 +29,9 @@ echo "Cdn proxy deployed."
 echo "Ingest deployed."
 
 docker-compose up --detach ingest-proxy 
-
 echo "Ingest proxy deoployed."
+# Has to be deoployed after ingest instances deployed.
+# (same reason as for cdn-proxy)
+
+docker-compose up --detach gateway
+echo "Gateway deployed."

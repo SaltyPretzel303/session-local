@@ -36,6 +36,13 @@ def verify():
 		print("Received invalid response.")
 		return "", status.HTTP_200_OK
 
+@app.route("/cookies", methods=['GET'])
+def cookie_path():
+
+	print("COOKIES:")
+	print(request.cookies)
+
+	return 'Success.', status.HTTP_200_OK
 
 @app.route("/host",methods=["GET"])
 def return_host():

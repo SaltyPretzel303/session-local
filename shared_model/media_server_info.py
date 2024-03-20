@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 @dataclass
 class MediaServerInfo:
-	ip: str
-	port: int
-	media_path: str
-	full_path: str
+	quality: str
+	access_url: str
+	# ^ Full access url, ready for hls player. 
+	# format: rtmp://ip:port/live/streamer_quality/index.m3u8

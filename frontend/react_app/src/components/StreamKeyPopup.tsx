@@ -1,7 +1,7 @@
 import { Dispatch, useEffect, useState } from 'react'
 import Overlay from 'react-modal'
 import config from "../Config"
-import { KeyResponse, isSuccess, failure as keyFailure } from '../dataModel/StreamKeyResponse'
+import { KeyResponse, isKeySuccess, failure as keyFailure } from '../Datas'
 
 type StreamKeyPopupProps = {
 	isVisible: boolean
@@ -32,7 +32,7 @@ export default function StreamKeyPopup(props: StreamKeyPopupProps) {
 		setIsLoadingKey(true)
 		let keyResponse = await fetchKey(config.streamKeyUrl)
 
-		if (!isSuccess(keyResponse.status)) {
+		if (!isKeySuccess(keyResponse.status)) {
 			setError(keyResponse.message)
 
 			setIsLoadingKey(false)

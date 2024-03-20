@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
-import { StreamInfo } from "../dataModel/StreamInfo"
+import { StreamInfo } from "../Datas"
 import HlsPlayer from "./HlsPlayer"
+import config from "../Config"
 
 type StreamPreviewProps = {
 	info: StreamInfo
@@ -23,11 +24,8 @@ export default function StreamPreview(props: StreamPreviewProps) {
 		setBorder(normalBorder)
 	}
 
-	// TODO move to config
 	function formPosterUrl(streamer: string): string {
-		// return 'http://stream-registry.session.com:8002/tnail/' + streamer
-		return 'http://localhost:8002/tnail/' + streamer
-
+		return config.tnailUrl(streamer)
 	}
 
 	return (
@@ -49,7 +47,7 @@ export default function StreamPreview(props: StreamPreviewProps) {
 			}>
 
 			<HlsPlayer
-				src={props.info.media_server.full_path}
+				src={props.info.media_servers[0].access_url}
 				posterUrl={formPosterUrl(props.info.creator)}
 				shouldPlay={playing}
 				quality={"subsd"}
@@ -64,10 +62,10 @@ export default function StreamPreview(props: StreamPreviewProps) {
 				}
 			}>
 
-				<div>{props.info.title}</div>
-				<div>{props.info.creator}</div>
-				<div>{props.info.category}</div>
-				<div>{props.info.viewers}</div>
+				<div style={{ fontWeight: 'bolder' }}>{props.info.title}</div>
+				<div>Creator: {props.info.creator}</div>
+				<div>Category: {props.info.category}</div>
+				<div>Viewers: {props.info.viewers}</div>
 			</div>
 		</div>
 	)

@@ -4,7 +4,7 @@ setup(
     name='tokens_api',
     install_requires=['flask[async]',
                     # 'flask_api',
-                    # 'flask_restful',
+                    'flask_restful',
 					'flask_cors',
 					'mongoengine',
 					'flask_api',

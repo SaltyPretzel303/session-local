@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import HlsPlayer from "./components/HlsPlayer";
 import { useParams } from "react-router-dom";
-import User from "./dataModel/User";
-import { StreamInfo } from "./dataModel/StreamInfo";
+import { UserInfo } from "./Datas";
+import { StreamInfo } from "./Datas";
+import config from './Config'
 
-const REGION: string = "eu"
+// const REGION: string = "eu"
 
 type PlayerPageProps = {
-	user: User | null
+	getUser: () => Promise<UserInfo | undefined>
 }
 
 enum VideoQuality {
@@ -20,30 +21,28 @@ const MANIFEST_PATH = "index.m3u8"
 
 export function PlayerPage(props: PlayerPageProps) {
 
-	const { streamerName } = useParams<string>();
+	const [user, setUser] = useState<UserInfo | undefined>()
+
+	const { streamer } = useParams<string>()
 	const [streamSrc, setStreamSrc] = useState<string | undefined>(undefined)
 	const [quality, setQuality] = useState<VideoQuality>(VideoQuality.SUBSD)
 
 	useEffect(() => {
+		console.log(`Launching player for: ${streamer}`)
 
-		console.log(`Launching player for: ${streamerName}`)
+		props.getUser().then((data) => setUser(data))
 
-		if (props.user == null) {
-			console.log("App has no valid user, please authenticate.")
-			return;
-		}
-
-		if (!streamerName) {
+		if (!streamer) {
 			console.log("No channel provided.")
 			return;
 		}
 
-		// Just because streamerName is string | undefined and not just string ...
-		let creator: string = streamerName
+		// streamerName is string | undefined
+		let creator: string = streamer
 
 		async function fetchStreamData() {
 			try {
-				let resp = await fetch(formGetInfoUrl(creator, REGION))
+				let resp = await fetch(config.streamInfoUrl(creator, config.region))
 
 				if (!resp) {
 					throw "Stream info fetch result empty ... "
@@ -56,7 +55,7 @@ export function PlayerPage(props: PlayerPageProps) {
 				let txtData = await resp.text()
 				console.log("Stream info fetched: " + txtData)
 
-				let info = JSON.parse(txtData) as StreamInfo
+				let info: StreamInfo = JSON.parse(txtData)
 
 				// let info = await resp.json() as StreamInfo
 
@@ -65,10 +64,13 @@ export function PlayerPage(props: PlayerPageProps) {
 
 				// setStreamSrc(`${info.media_server.full_path}/${creator}_subsd/index.m3u8`)
 				// setStreamSrc(`${info.media_server.full_path}`)
-				setStreamSrc(formStreamUrl(info.media_server.full_path,
-					creator,
-					quality,
-					MANIFEST_PATH))
+				// setStreamSrc(formStreamUrl(info.media_servers[0].access_url,
+				// 	creator,
+				// 	quality,
+				// 	MANIFEST_PATH))
+				// TODO filter available servers ... ? 
+				// setStreamSrc(info.media_servers[0].access_url)
+				setStreamSrc("http://cdn.session.com/live/streamer-0_subsd/index.m3u8")
 
 			} catch (e) {
 				console.log("Failed to fetch stream info: " + e)
@@ -83,27 +85,23 @@ export function PlayerPage(props: PlayerPageProps) {
 	});
 
 	function formGetInfoUrl(streamer: string, region: string) {
-		return `http://localhost:8002/stream_info/${streamer}?region=${region}`
+		return `http://session.com/stream/stream_info/${streamer}?region=${region}`
 	}
 
-	function formStreamUrl(path: string, streamer: string, quality: string, manifest: string) {
-		return `${path}/${streamer}_${quality}/${manifest}`
-	}
 
-	// TODO move to config
-	function formPosterUrl(streamer: string): string {
-		return 'http://stream-registry.session.com:8002/tnial/' + streamer
+	function formPosterUrl(streamer: string | undefined): string {
+		return streamer ? config.tnailUrl(streamer) : config.notFoundTnailUrl()
 	}
 
 	return (
 		<div className="streamPlayer">
 			<HlsPlayer src={streamSrc}
-				// streamerName has to defined 
-				posterUrl={formPosterUrl(streamerName || "")}
+				posterUrl={formPosterUrl(streamer)}
 				shouldPlay={false}
 				quality={""}
-				abr={false} 
-				muted={false}/>
+				abr={false}
+				muted={false} />
+
 			{/* <Chat visible={true} /> */}
 
 			<button onClick={() => setQuality(VideoQuality.HD)}>HD</button>

@@ -11,15 +11,11 @@ export default function QuickPlay() {
 
 		const video = videoRef.current
 
-		// if (!video || !hls || !source) {
-		// 	return
-		// }
 		if (!video) {
 			return
 		}
 
 		let config = {
-			// debug: true,
 			xhrSetup: (xhr: XMLHttpRequest, url) => {
 				xhr.withCredentials = true;
 			},
@@ -30,7 +26,7 @@ export default function QuickPlay() {
 		} as HlsConfig;
 
 		hls = new Hls(config)
-		hls.loadSource("http://localhost:10000/live/user0_subsd/index.m3u8")
+		hls.loadSource("http://eu-0-cdn.session.com/live/streamer-0_subsd/index.m3u8")
 		hls.attachMedia(video)
 
 		console.log("Player set up.")

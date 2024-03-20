@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import StreamPreview from "./StreamPreview"
-import { StreamInfo } from "../dataModel/StreamInfo"
+import { StreamInfo } from "../Datas"
 
 type PreviewListProps = {
 	title: string,
@@ -8,39 +8,33 @@ type PreviewListProps = {
 }
 
 type range = {
-	from: number,
-	to: number
+	start: number,
+	count: number
 }
 
 
 export default function PreviewsList(props: PreviewListProps) {
 
-	const visibleCount = 0
+	const visibleCount = 3
 
 	const [streams, setStreams] = useState<StreamInfo[]>([])
-	const [currentRange, setCurrentRange] = useState<range>({ from: 0, to: 0 })
+	const [currentRange, setCurrentRange] = useState<range>({ start: 0, count: 0 })
 
 	useEffect(() => {
+		console.log(`Constructing ${props.title} list.`)
 
-		console.log("Constructing previews list.")
 		async function fetchData() {
-
 			let newStreams = await props.streamsProvider(0, visibleCount)
+			console.log(`Populating ${props.title} list with ${newStreams.length} streams.`)
 
-			if (!newStreams) {
-				console.log(`Failed to fetch streams from: 0 to ${visibleCount}.`)
-				return
-			}
-
-			console.log("Populating preview list.")
 			setStreams(newStreams)
-			setCurrentRange({ from: 0, to: newStreams.length })
+			setCurrentRange({ start: 0, count: newStreams.length })
 		}
 
 		fetchData()
 
 		return () => {
-			console.log("Destroying previews list.")
+			console.log(`Destroying ${props.title} previews list.`)
 		}
 
 	}, [])
@@ -80,45 +74,43 @@ export default function PreviewsList(props: PreviewListProps) {
 	}
 
 	async function scrollNext() {
-		if (streams.length < visibleCount) {
+		if (currentRange.count < visibleCount) {
 			// Last provider call returned the last streams. (no more streams)
 			// Or maybe ask once more ... maybe someone started a stream ...
 			return
 		}
 
-		let newFrom = currentRange.to
-		let newTo = currentRange.to + visibleCount
-		let newStreams = await props.streamsProvider(newFrom, newTo)
+		let newFrom = currentRange.start + currentRange.count
+		let newStreams = await props.streamsProvider(newFrom, visibleCount)
 
-		if (!newStreams) {
-			console.log(`Failed to fetch streams from: ${newFrom} to ${newTo}.`)
+		if (newStreams.length == 0) {
+			console.log(`0 new streams fetched from: ${newFrom}.`)
 			return
 		}
 
 		// TODO some animation would be nice 
 		setStreams(newStreams)
-		setCurrentRange({ from: newFrom, to: newFrom + newStreams.length })
+		setCurrentRange({ start: newFrom, count: newStreams.length })
 	}
 
 	async function scrollBack() {
-		if (currentRange.from == 0) {
+		if (currentRange.start == 0) {
 			console.log("We are at the begining.")
 			return
 		}
 
-		let newFrom = currentRange.from - visibleCount
+		let newFrom = currentRange.start - visibleCount
 		newFrom = newFrom >= 0 ? newFrom : 0
-		let newTo = currentRange.from
 
-		let oldStreams = await props.streamsProvider(newFrom, newTo)
-		if (!oldStreams) {
-			console.log(`Failed to fetch streams from: ${newFrom} to ${newTo}.`)
+		let oldStreams = await props.streamsProvider(newFrom, visibleCount)
+		if (oldStreams.length == 0) {
+			console.log(`0 old streams fetched from: ${newFrom}.`)
 			return
 		}
 
-		// TODO once again i am asking for some animation. 
+		// TODO once again I am asking for some animation. 
 		setStreams(oldStreams)
-		setCurrentRange({ from: newFrom, to: newTo })
+		setCurrentRange({ start: newFrom, count: oldStreams.length })
 	}
 
 	return (

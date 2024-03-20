@@ -60,7 +60,7 @@ def setup_arg_parser():
 
 	parser.add_argument(f'--{REMOVE_ROUTE_ARG}', 
 						action='store', 
-						default='http://session.com/auth/remove')
+						default='http://session.com/user/remove')
 
 	parser.add_argument(f'--{AUTH_ROUTE_ARG}', 
 						action='store', 

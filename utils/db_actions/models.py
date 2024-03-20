@@ -4,27 +4,27 @@ from mongoengine import Document
 from mongoengine import StringField, ListField, BinaryField, ReferenceField
 from mongoengine import DateTimeField
 
-class User(Document):
-    username = StringField()
-    email = StringField()
-    pwd_hash = BinaryField()
+class UserDoc(Document):
+	meta={'collection': 'user'}
 
-class FollowRecord(Document):
-	user = ReferenceField(User)
-	following = ListField(ReferenceField(User)) 
+	tokens_id = StringField()
+	username = StringField(required=True)
+	email = StringField(required=True)
 
-	def follower_ids(self):
-		return list(map(lambda userRef: userRef['id'], self.following))
-
-def hash_pwd(pwd: str):
-	return hashpw(pwd.encode(), gensalt())
 
 class StreamKeyDoc(Document):
-	meta={'collection': 'stream_key'}
+	meta = {'collection': 'streamKey'}
 
 	value = StringField(required=True)
 	exp_date = DateTimeField()
-	owner = ReferenceField(User)
+	owner = ReferenceField(UserDoc)
 
 	def is_expired(self) -> bool:
 		return self.exp_date is None or datetime.now() > self.exp_date
+	
+class FollowingDoc(Document):
+	meta = {'collection':'following'}
+
+	owner = ReferenceField(UserDoc)
+	following = ReferenceField(UserDoc)
+	followed_at = DateTimeField()

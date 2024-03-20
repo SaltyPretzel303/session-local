@@ -6,4 +6,7 @@ class MediaServerRequest:
 	quality: str
 	# Quality will be kinda ignored since VBR is resolved between
 	# player and cdn instance itself.
-	media_server: str
+	media_server_ip: str
+	region: str
+	media_url: str
+

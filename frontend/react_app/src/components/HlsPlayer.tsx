@@ -1,5 +1,6 @@
 import Hls, { CMCDController, EMEControllerConfig, HlsConfig } from "hls.js"
 import React, { useEffect, useRef, useState } from "react"
+import { MediaServer } from "../Datas"
 
 
 type HlsPlayerProps = {
@@ -21,7 +22,9 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 
 		const videoElement = videoRef.current;
 		if (!videoElement || !props.src) {
-			return;
+			console.log("HlsPlayer not initialized")
+			console.log("Missing src or no video element.")
+			return
 		}
 
 		if (videoElement.canPlayType("application/vnd.apple.mpegurl")) {
@@ -37,7 +40,6 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 				},
 			} as HlsConfig;
 
-			// const hls = new Hls(config)
 			hls = new Hls(config)
 			hls.loadSource(props.src)
 			hls.attachMedia(videoElement)
@@ -85,8 +87,8 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 			{
 				border: "1px solid purple",
 				boxSizing: "border-box",
-				width: "150px",
-				height: "100px"
+				width: "100%",
+				height: "100%"
 			}
 		}
 		>
@@ -102,7 +104,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 				poster={props.posterUrl}
 				ref={videoRef}
 				onPause={pauseHandler}
-				autoPlay
+				// autoPlay
 			/>
 		</div>
 	)

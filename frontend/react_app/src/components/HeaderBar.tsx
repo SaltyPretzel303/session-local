@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import LoginPopup from "./LoginPopup";
 import Session, { SessionContextType, signOut } from "supertokens-auth-react/recipe/session";
 import StreamKeyPopup from "./StreamKeyPopup";
+import { UserInfo } from '../Datas'
+import UserInfoPopup from "./UserInfoPopup";
 
 type HeaderBarProps = {
-
+	userProvider: () => Promise<UserInfo | undefined>
 }
 
 const standardSpacerSize = 10
@@ -31,6 +33,7 @@ export default function HeaderBar(props: HeaderBarProps) {
 
 	const [loginVisible, setLoginVisible] = useState(false)
 	const [streamKeyVisible, setStreamKeyVisible] = useState(false)
+	const [userInfoVisible, setUserInfoVisible] = useState(false)
 
 	useEffect(() => {
 		if (context.loading) {
@@ -60,6 +63,10 @@ export default function HeaderBar(props: HeaderBarProps) {
 
 	function streamClick() {
 		setStreamKeyVisible(!streamKeyVisible)
+	}
+
+	function userInfoClick(){
+		setUserInfoVisible(!userInfoVisible)
 	}
 
 	return (
@@ -93,6 +100,11 @@ export default function HeaderBar(props: HeaderBarProps) {
 			<StreamKeyPopup
 				isVisible={streamKeyVisible}
 				setIsVisible={setStreamKeyVisible} />
+
+			<button onClick={userInfoClick}>User</button>
+			<UserInfoPopup isVisible={userInfoVisible}
+				provider={props.userProvider}
+				setVisible={setUserInfoVisible} />
 
 		</div>
 	)

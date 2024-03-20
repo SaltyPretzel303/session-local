@@ -18,7 +18,7 @@ def setup_arg_parser():
 
 	parser.add_argument("--remove_at", 
 					action='store', 
-					default='http://session.com/remove')
+					default='http://session.com/user/remove')
 
 
 	parser.add_argument("--signup_at", 

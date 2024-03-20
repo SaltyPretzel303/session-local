@@ -1,4 +1,3 @@
-import { resolve } from "path";
 import config from './Config'
 
 // export function validEmail(value: string | undefined) {
@@ -19,7 +18,7 @@ export async function validUsername(username: string): Promise<string | undefine
 	}
 
 	try {
-		let res = await fetch(config.getUserUrl(username))
+		let res = await fetch(config.userUrl(username))
 
 		if (res.status == 200) {
 			console.log("User found, username not unique.")

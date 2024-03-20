@@ -5,12 +5,10 @@ from mongoengine import connect, disconnect
 
 USERS_CNT = int(12)
 
-connect(host="mongodb://localhost:27018/session_auth")
+connect(host="mongodb://localhost:37017/session_auth")
 
 def gen_user(ind: int):
-	return User(username=f"user_{ind}",
-			email=f"email_{ind}",
-			pwd_hash=hash_pwd(f"pwd_{ind}"))
+	return User(username=f"user_{ind}", email=f"email_{ind}@ses.com")
 
 print("Inserting users: ")
 

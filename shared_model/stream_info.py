@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 
 from shared_model.media_server_info import MediaServerInfo
 
@@ -7,5 +8,5 @@ class StreamInfo:
     title: str
     creator: str
     category: str
-    media_server: MediaServerInfo
-    # viewers ?
+    media_servers: List[MediaServerInfo]
+    

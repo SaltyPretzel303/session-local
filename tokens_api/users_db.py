@@ -1,6 +1,7 @@
+from typing import List
 import mongoengine
 from config import config
-from tokens_api.db_model import UserDoc, StreamKeyDoc
+from tokens_api.db_model import FollowingDoc, UserDoc, StreamKeyDoc
 
 def connect():
 	host_url = config.users_db_conn_string
@@ -42,14 +43,25 @@ def invalidata_key(key: StreamKeyDoc)->StreamKeyDoc:
 	key.exp_date=None
 	return key.save()
 
-def get_user_by_username(username: str):
-	connect()
-	return UserDoc.objects(username=username).first()
-
 def remove_user_by_username(username: str):
 	connect()
 	user = get_user_by_username(username)
 	return user.delete() if user is not None else None
 
 def remove_user(user: UserDoc):
+	connect()
 	return user.delete()
+
+def remove_follow_rec(user:UserDoc):
+	connect()
+	return FollowingDoc.objects()
+
+# TODO Page this maybe
+def get_following(username: str)->List[FollowingDoc]:
+	connect()
+
+	user_doc = get_user_by_username(username)
+	if user_doc is None: 
+		return None
+	
+	return FollowingDoc.objects(owner=user_doc.id)

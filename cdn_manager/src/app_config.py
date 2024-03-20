@@ -8,6 +8,7 @@ class AppConfig:
 	instance = {
 		"eu": [
 			InstanceConf(ip="localhost",
+				domainName="cdn-0.session.com",
 				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
@@ -15,6 +16,7 @@ class AppConfig:
 		],
 		"na": [
 			InstanceConf(ip="localhost",
+				domainName="cdn-1.session.com",
 				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
@@ -22,6 +24,7 @@ class AppConfig:
 		],
 		"as": [
 			InstanceConf(ip="localhost",
+				domainName="cdn-2.session.com",
 				hls_port=80,
 				hc_port=10000,
 				hls_path="live",

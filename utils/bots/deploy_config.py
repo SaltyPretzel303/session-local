@@ -18,7 +18,7 @@ class DeployConfig:
 	def local():
 		return DeployConfig(reg_url='http://session.com/auth/signup',
 					auth_url='http://session.com/auth/signin',
-					remove_url='http://session.com/remove',
+					remove_url='http://session.com/user/remove',
 					key_route='http://session.com/auth/get_key',
 					source_file=LOCAL_VIDEO_PATH,
 					ingest_url='rtmp://session.com:9000/ingest',
@@ -34,7 +34,7 @@ class DeployConfig:
 		domain = 'session.com'
 		return DeployConfig(reg_url=f'http://{domain}/auth/signup',
 					  auth_url=f'http://{domain}/auth/signin',
-					  remove_url=f"http://{domain}/remove",
+					  remove_url=f"http://{domain}/user/remove",
 					  key_route=f'http://{domain}/auth/get_key',
 					  source_file='/sample.mp4',
 					  ingest_url=f'rtmp://{ingest_server}:9000/ingest',

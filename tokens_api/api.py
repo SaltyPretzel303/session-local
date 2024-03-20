@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import random
 import string
 from typing import Any, Dict, List
+from flask_restful import Api
 import jsonpickle
 
 from config import config
@@ -27,14 +28,17 @@ from supertokens_python.recipe.emailpassword.interfaces import SignInPostOkResul
 from supertokens_python.recipe.emailpassword.interfaces import APIInterface, APIOptions
 from supertokens_python.recipe.session.framework.flask import verify_session
 from supertokens_python.recipe.session import SessionContainer
+from supertokens_python.recipe.session.syncio import get_session
 from supertokens_python.asyncio import delete_user
 
 from supertokens_python import get_all_cors_headers
 from supertokens_python.framework.flask import Middleware as TokensMiddleware
+from shared_model.user import User as PublicUser
+from shared_model.following_info import FollowingInfo
 from shared_model.key_response import KeyResponse, KeyStatus
 from shared_model.stream_key import StreamKey
 from shared_model.user import User
-from tokens_api.db_model import StreamKeyDoc, UserDoc
+from tokens_api.db_model import FollowingDoc, StreamKeyDoc, UserDoc 
 
 import users_db
 
@@ -46,7 +50,7 @@ def override_default_emailpassword(defaultImp: APIInterface)->APIInterface:
 	default_sign_in = defaultImp.sign_in_post
 	default_sign_up = defaultImp.sign_up_post
 
-	# TODO this actually doesn't have to overridden
+	# TODO this actually doesn't have to be overridden
 	async def custom_sign_in(form_fields: List[FormField],
 						  tenant_id: str,
 						  api_options: APIOptions,
@@ -60,7 +64,7 @@ def override_default_emailpassword(defaultImp: APIInterface)->APIInterface:
 									user_context=user_context)
 
 		if not isinstance(result, SignInPostOkResult):
-			print(f"Sign in failed with: {result.to_json()}")
+			print(f"Sign in failed with: {result.status}")
 		else:
 			print("SignIn successfull.")
 
@@ -87,7 +91,7 @@ def override_default_emailpassword(defaultImp: APIInterface)->APIInterface:
 								user_context)
 		
 		if not isinstance(result, SignUpPostOkResult):
-			print(f"Tokens signup failed with")
+			print(f"Tokens signup failed with: {result.status}")	
 			return result
 		
 		print("Signup successfull")
@@ -95,8 +99,7 @@ def override_default_emailpassword(defaultImp: APIInterface)->APIInterface:
 					username=username_field.value,
 					email=result.user.email)
 		users_db.save_user(new_user)
-		# TODO handle db errors ... 
-
+		
 		return result
 
 	defaultImp.sign_in_post = custom_sign_in
@@ -157,23 +160,25 @@ init(
 
 app = Flask(__name__)
 TokensMiddleware(app)
+api = Api(app)
 
 CORS(
 	app=app,
-	origins=[
-		"http://session.com", # This should be gateway ... ? 
-		# "http://localhost:3000",
-		# "http://session.com:3000",
+	origins = 'http://session.com',
+	# origins=[
+	# 	"http://session.com", # This should be gateway ... ? 
+	# 	# "http://localhost:3000",
+	# 	# "http://session.com:3000",
 
-		# "http://session.com:[0-9]+",
-		# "http://session.com",
-		# "http://stream-registry.session.com:[0-9]+",
-		# "http://stream-registry.session.com"
-		# "http://localhost:3000",
-		# "http://stream-registry.session.com:8002"
-	],
+	# 	# "http://session.com:[0-9]+",
+	# 	# "http://session.com",
+	# 	# "http://stream-registry.session.com:[0-9]+",
+	# 	# "http://stream-registry.session.com"
+	# 	# "http://localhost:3000",
+	# 	# "http://stream-registry.session.com:8002"
+	# ],
 	supports_credentials=True,
-	allow_headers=["Content-Type"] + get_all_cors_headers(),
+	allow_headers=["Content-Type", "someField", "cookies"] + get_all_cors_headers(),
 )
 
 # This is required since if this is not there, then OPTIONS requests for
@@ -201,6 +206,8 @@ def get_key():
 
 	# I guess this has to be not None as well.
 	user = users_db.get_user_by_tokens_id(tokens_id)
+	print("Found user : ")
+	print(user.to_json() if user is not None else "User is None.")
 	key = users_db.get_key_for_user(user)
 
 	if key is None:
@@ -254,16 +261,24 @@ def to_publick_key(model: StreamKeyDoc)->StreamKey:
 	return StreamKey(value=model.value,
 				  exp_data=model.exp_date.isoformat())
 
+def to_public_follow_record(record: FollowingDoc)->FollowingInfo:
+	return FollowingInfo(username=record.owner.username,
+					following=record.following.username, 
+					from_date=record.followed_at)
+
 @app.route("/get_user/<username>", methods=["GET"])
 def get_user(username:str):
 	response = Response()
 
 	try:
-		user:UserDoc = users_db.get_user_by_username(username)
+		user_data = users_db.get_user_by_username(username)
 
-		if user is not None: 
+		if user_data is not None: 
+			public_data = PublicUser(username=user_data.username,
+									email=user_data.email)
+			
 			response.status_code=status.HTTP_200_OK
-			response.set_data(jsonify(user))
+			response.set_data(jsonify(public_data))
 		else:
 			response.status_code=status.HTTP_404_NOT_FOUND
 
@@ -272,6 +287,31 @@ def get_user(username:str):
 		response.status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
 
 	return response
+
+@app.route("/get_user_from_tokensid/<tokensid>", methods=["GET"])
+def get_user_from_tokensid(tokensid: str):
+	print(f"Processing get user from tokensid for: {tokensid}")
+
+	user_data = users_db.get_user_by_tokens_id(tokensid)
+	if user_data is None:
+		print("No user for such token.")
+		return 'No such user', status.HTTP_404_NOT_FOUND
+
+	public_data = PublicUser(username=user_data.username,
+						email=user_data.email)
+	return jsonify(to_public_user(public_data)), status.HTTP_200_OK
+
+@app.route("/get_following/<username>", methods=["GET"])
+def get_following(username: str):
+	print(f"Processing get following request for: {username}")
+
+	follow_data = users_db.get_following(username)
+	if follow_data is None:
+		print(f"Following query failed for: {username}")
+		return "Query failed.", status.HTTP_500_INTERNAL_SERVER_ERROR
+
+	public_data = list(map(to_public_follow_record, follow_data))
+	return jsonify(public_data), status.HTTP_200_OK
 
 # not protected, used just for bots
 @app.route("/remove/<username>", methods=["GET"])
@@ -284,26 +324,47 @@ async def remove_user(username: str):
 	print(f"Found user: {user.to_json()}")
 
 	await delete_user(user.tokens_id) # returns None
-	print("User removed from custom db.")
-	users_db.remove_user(user)
 	print("User removed from tokens db.")
+
+	users_db.remove_follow_rec(user)
+	print("Follow records removed.")
+
+	users_db.remove_user(user)
+	print("User removed from session db.")
 
 	return "Should be success.", status.HTTP_200_OK
 
-@app.route("/verify/<username>", methods=["GET"])
-@verify_session()
-def authorize(username):
+@app.route("/verify", methods=["GET"])
+# @verify_session()
+def authorize():
+	print(f"Authorizing.")
+
+	# TODO skip the session check if request is coming from stream-registry...
+
+	print("==== header ====")
+	print(request.headers)
+	print("==== header ====")
+
+	return "Fake authorization.", status.HTTP_200_OK
+
+	# session = get_session()
 
 	session: SessionContainer = g.supertokens
-	tokens_id = session.get_user_id()	
+	tokens_id = session.get_user_id()
+
+	stream_name = request.headers.get("X-Stream-Username")
 
 	# User has to be not None, if session exists there has to be 
 	# a valid user associated with it.
 	user = users_db.get_user_by_tokens_id(tokens_id)
-	if user.username == username:
-		return "ok", status.HTTP_200_OK
-	else:
-		return "not authorized", status.HTTP_401_UNAUTHORIZED
+	if user is None: 
+		print("Not authorized, token ip might be wrong/missing.")
+		return "No such user.", status.HTTP_404_NOT_FOUND
+
+	# Check stream limits. (these are not yet implemented)
+
+	print("Authorized: " + user.username)
+	return "Authorized.", status.HTTP_200_OK
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class InstanceConf:
 	ip: str
+	domainName: str
 	hls_port: int
 	hc_port: int
 	hls_path: str

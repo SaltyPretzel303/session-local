@@ -7,5 +7,3 @@ https://stackoverflow.com/questions/73820302/transcode-webm-to-rtmp
 Symmary: ffmpeg -re -i sample.webm -c:v h264 -c:a aac -f flv "rtmp://example.com/live"
 Pay attention to => -c:v h264 -c:a aac
 
-
-

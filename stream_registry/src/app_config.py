@@ -6,8 +6,9 @@ from typing import Callable
 class Config:
 	db_url: str
 	match_key_url: Callable[[str], str]
-	authorize_url: Callable[[str],str]
-	tnail_url: Callable[[str], str]
+	authorize_url: str
+	tnail_path: Callable[[str], str]
+	unavailable_path: str
 	match_region_url: Callable[[str], str]
 
 class AppConfig:
@@ -17,17 +18,19 @@ class AppConfig:
 	DEV_INSTANCE = Config(
 		db_url="mongodb://registry_user:registry_password@localhost:27017/streams",
 		match_key_url=lambda key: f"http://localhost:8100/match_key/{key}",
-		authorize_url=lambda user: f"http://localhost:8100/verify/{user}",
-		tnail_url = lambda tnail: f"/tnails/{tnail}.jpeg",
-		match_region_url = lambda region: f"http://localhost:8004/match_region/{region}"
+		authorize_url="http://localhost:8100/verify",
+		tnail_path=lambda streamer: f"./app/tnails/{streamer}.jpeg",
+		unavailable_path="tnails/unavailable.png",
+		match_region_url=lambda region: f"http://localhost:8004/match_region/{region}"
 	)
 
 	PROD_INSTANCE = Config(
 		db_url="mongodb://registry_user:registry_password@registry-db.session.com:27017/streams",
 		match_key_url=lambda key: f"http://tokens-api.session.com/match_key/{key}",
-		authorize_url=lambda user: f"http://tokens-api.session.com/verify/{user}",
-		tnail_url=lambda tnail: f"/tnails/{tnail}.jpeg",
-		match_region_url = lambda region: f"http://cdn-manager.session.com/match_region/{region}"
+		authorize_url="http://tokens-api.session.com/verify",
+		tnail_path=lambda streamer: f"/app/tnails/{streamer}.jpg",
+		unavailable_path="tnails/unavailable.png",
+		match_region_url=lambda region: f"http://cdn-manager.session.com/match_region/{region}"
 	)
 
 	# CONFIG_PATH = "stream_registry/src/app_config.json"

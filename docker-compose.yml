@@ -43,7 +43,7 @@ services:
       - "0.0.0.0:3000:80"
     networks:
       - session-net
-    stop_signal: SIGINT
+    stop_signal: SIGKILL
 
   ingest-proxy:
     container_name: ingest-proxy.session.com
@@ -71,6 +71,7 @@ services:
       - session-net
     # volumes: 
     #   - ./ingest/nginx.config:/etc/nginx/nginx.conf
+    stop_signal: SIGINT
 
   stream-registry:
     container_name: stream-registry.session.com
@@ -120,6 +121,7 @@ services:
       - "0.0.0.0:8004:80"
     networks:
       - session-net 
+    stop_signal: SIGINT
 
   registry-database:
     container_name: registry-db.session.com
@@ -182,6 +184,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    # stop_signal: SIGINT
 
   tokens-api: 
     container_name: tokens-api.session.com
