@@ -7,21 +7,19 @@ import jsonpickle
 
 from config import config
 
-from flask import Response, g, request
-from flask import Flask, abort
+import users_db
+
+from flask import Response, g, request, Flask, abort
 from flask_cors import CORS
 from flask_api import status
-from requests import get 
-
-from supertokens_python.recipe import session
 
 from supertokens_python import init, InputAppInfo, SupertokensConfig
-from supertokens_python.recipe import emailpassword
-
-# from supertokens_python.recipe import thirdpartyemailpassword
-# from supertokens_python.recipe.thirdpartyemailpassword.interfaces import RecipeInterface, SignInOkResult, SignUpOkResult
+from supertokens_python import get_all_cors_headers
 
 from supertokens_python.types import GeneralErrorResponse
+
+from supertokens_python.recipe import emailpassword
+from supertokens_python.recipe import session
 from supertokens_python.recipe.emailpassword.types import FormField, InputFormField
 from supertokens_python.recipe.emailpassword import InputSignUpFeature
 from supertokens_python.recipe.emailpassword.interfaces import SignInPostOkResult, SignUpPostOkResult
@@ -29,18 +27,17 @@ from supertokens_python.recipe.emailpassword.interfaces import APIInterface, API
 from supertokens_python.recipe.session.framework.flask import verify_session
 from supertokens_python.recipe.session import SessionContainer
 from supertokens_python.recipe.session.syncio import get_session
+
 from supertokens_python.asyncio import delete_user
 
-from supertokens_python import get_all_cors_headers
 from supertokens_python.framework.flask import Middleware as TokensMiddleware
 from shared_model.user import User as PublicUser
 from shared_model.following_info import FollowingInfo
-from shared_model.key_response import KeyResponse, KeyStatus
+from shared_model.key_response import KeyResponse
 from shared_model.stream_key import StreamKey
 from shared_model.user import User
-from tokens_api.db_model import FollowingDoc, StreamKeyDoc, UserDoc 
 
-import users_db
+from tokens_api.db_model import FollowingDoc, StreamKeyDoc, UserDoc 
 
 def jsonify(obj):
 	return jsonpickle.encode(obj, unpicklable=False)
@@ -335,21 +332,27 @@ async def remove_user(username: str):
 	return "Should be success.", status.HTTP_200_OK
 
 @app.route("/verify", methods=["GET"])
-# @verify_session()
 def authorize():
-	print(f"Authorizing.")
+	print(f"Processing authorization.")
 
-	# TODO skip the session check if request is coming from stream-registry...
+	if 'sessionorigin' in request.headers \
+		and request.headers.get("sessionorigin") == "streamregistry":
 
-	print("==== header ====")
-	print(request.headers)
-	print("==== header ====")
+		print("Verifying StreamRegistry request. Authorized.")
+		return "Authorized.", status.HTTP_200_OK 
+	else:
+		print("Stream registry origin not found, authorizing regular user.")
 
-	return "Fake authorization.", status.HTTP_200_OK
+	# print("==== header ====")
+	# print(request.headers)
+	# print("==== header ====")
 
-	# session = get_session()
+	session = get_session(request)
 
-	session: SessionContainer = g.supertokens
+	if session is None: 
+		print("No session.")
+		return "Not authorized.", status.HTTP_403_FORBIDDEN
+
 	tokens_id = session.get_user_id()
 
 	stream_name = request.headers.get("X-Stream-Username")
@@ -363,7 +366,7 @@ def authorize():
 
 	# Check stream limits. (these are not yet implemented)
 
-	print("Authorized: " + user.username)
+	print(f"Authorized: {user.username} for {stream_name}.")
 	return "Authorized.", status.HTTP_200_OK
 
 

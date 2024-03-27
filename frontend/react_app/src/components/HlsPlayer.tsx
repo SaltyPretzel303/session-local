@@ -45,7 +45,9 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 			hls.attachMedia(videoElement)
 
 			if (props.shouldPlay) {
+				console.log("Stream will be played.")
 				hls.startLoad()
+				// videoElement.play()
 				// videoElement.play()
 				// 	.then((res) => {
 				// 		console.log("Video  successfully started.")
@@ -54,6 +56,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 				// 		console.log("Failed to start video: " + err)
 				// 	})
 			} else {
+				console.log("Stream will not be played.")
 				hls.stopLoad()
 			}
 
@@ -104,7 +107,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 				poster={props.posterUrl}
 				ref={videoRef}
 				onPause={pauseHandler}
-				// autoPlay
+				autoPlay	
 			/>
 		</div>
 	)

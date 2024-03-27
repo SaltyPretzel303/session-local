@@ -160,7 +160,14 @@ export default function PreviewsList(props: PreviewListProps) {
 						border: "2px solid darkgray",
 					}
 				}>
-					{streams.map((stream) => <StreamPreview key={stream.creator} info={stream} />)}
+
+					{
+						streams.map((stream) =>
+							<StreamPreview
+								key={stream.creator}
+								info={stream} />)
+					}
+
 				</div>
 
 				{<ScrollButton dir={"right"} clickHandler={scrollNext} />}

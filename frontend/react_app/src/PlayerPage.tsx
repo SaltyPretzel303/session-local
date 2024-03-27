@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import HlsPlayer from "./components/HlsPlayer";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { UserInfo } from "./Datas";
 import { StreamInfo } from "./Datas";
 import config from './Config'
 
-// const REGION: string = "eu"
-
 type PlayerPageProps = {
 	getUser: () => Promise<UserInfo | undefined>
+	// streamData: StreamInfo | undefined
 }
 
 enum VideoQuality {
@@ -16,8 +15,6 @@ enum VideoQuality {
 	SD = 'sd',
 	SUBSD = 'subsd'
 }
-
-const MANIFEST_PATH = "index.m3u8"
 
 export function PlayerPage(props: PlayerPageProps) {
 
@@ -27,78 +24,78 @@ export function PlayerPage(props: PlayerPageProps) {
 	const [streamSrc, setStreamSrc] = useState<string | undefined>(undefined)
 	const [quality, setQuality] = useState<VideoQuality>(VideoQuality.SUBSD)
 
+	// Data provided using navigate programatically.
+	// Mostly from stream preview.
+	const { state } = useLocation()
+
 	useEffect(() => {
 		console.log(`Launching player for: ${streamer}`)
-
-		props.getUser().then((data) => setUser(data))
 
 		if (!streamer) {
 			console.log("No channel provided.")
 			return;
 		}
 
-		// streamerName is string | undefined
-		let creator: string = streamer
+		if (state) {
+			console.log("Stream data provided.")
+			
+			const { streamData }: { streamData: StreamInfo } = state
+			setStreamSrc(streamData.media_servers[0].access_url)
+		} else {
+			console.log("Will fetch stream data.")
 
-		async function fetchStreamData() {
-			try {
-				let resp = await fetch(config.streamInfoUrl(creator, config.region))
+			// streamerName is string | undefined
+			let creator: string = streamer
+			fetchStreamData(creator)
+		}
 
-				if (!resp) {
-					throw "Stream info fetch result empty ... "
-				}
+		// TODO display some loader or something ... 
+	}, []);
 
-				if (resp.status !== 200) {
-					throw resp.text
-				}
+	async function fetchStreamData(creator: string) {
+		try {
+			let resp = await fetch(config.streamInfoUrl(creator, config.myRegion))
 
-				let txtData = await resp.text()
-				console.log("Stream info fetched: " + txtData)
+			if (!resp) {
+				throw "Stream info fetch result empty ... "
+			}
 
-				let info: StreamInfo = JSON.parse(txtData)
+			if (resp.status !== 200) {
+				throw resp.text
+			}
 
-				// let info = await resp.json() as StreamInfo
+			let txtData = await resp.text()
+			console.log("Stream info fetched: " + txtData)
 
-				// console.log("Received stream info ...")
-				// console.log(info)
+			let info: StreamInfo = JSON.parse(txtData)
 
-				// setStreamSrc(`${info.media_server.full_path}/${creator}_subsd/index.m3u8`)
-				// setStreamSrc(`${info.media_server.full_path}`)
-				// setStreamSrc(formStreamUrl(info.media_servers[0].access_url,
-				// 	creator,
-				// 	quality,
-				// 	MANIFEST_PATH))
-				// TODO filter available servers ... ? 
-				// setStreamSrc(info.media_servers[0].access_url)
-				setStreamSrc("http://cdn.session.com/live/streamer-0_subsd/index.m3u8")
-
-			} catch (e) {
-				console.log("Failed to fetch stream info: " + e)
+			if (info.media_servers.length == 0) {
+				console.log("Stream not available at the moment.")
 				return
 			}
 
+			console.log("Stream source available.")
+			// TODO do some filtering on cnd server or implement fallbacks.
+			setStreamSrc(info.media_servers[0].access_url)
+
+		} catch (e) {
+			console.log("Failed to fetch stream info: " + e)
+			return
 		}
 
-		fetchStreamData()
-
-		// TODO display some loader or something ... 
-	});
-
-	function formGetInfoUrl(streamer: string, region: string) {
-		return `http://session.com/stream/stream_info/${streamer}?region=${region}`
 	}
 
 
 	function formPosterUrl(streamer: string | undefined): string {
-		return streamer ? config.tnailUrl(streamer) : config.notFoundTnailUrl()
+		return streamer ? config.tnailUrl(streamer) : config.notFoundTnailUrl
 	}
 
 	return (
 		<div className="streamPlayer">
 			<HlsPlayer src={streamSrc}
 				posterUrl={formPosterUrl(streamer)}
-				shouldPlay={false}
-				quality={""}
+				shouldPlay={true}
+				quality={quality}
 				abr={false}
 				muted={false} />
 

@@ -215,8 +215,7 @@ async def get_tnail(request: Request, streamer: str='unavailable'):
 		print("Thumbnail expired, will generate new.")
 
 		gen_result = await generate_thumbnail(streamer, 
-						config.tnail_path(streamer), 
-						request.cookies)
+									config.tnail_path(streamer))
 
 		if not gen_result:
 			print(f"Failed to generate thumbnail for: {streamer}.")
@@ -233,11 +232,15 @@ async def get_tnail(request: Request, streamer: str='unavailable'):
 	print(f"Returning tnail for {streamer}.")
 	return FileResponse(path=config.tnail_path(streamer), media_type="image/jpg")
 
+def flatten_cookies(cookies):
+	return f"Cookie: sAccessToken={cookies['sAccessToken']}"
+	return ",".join([f"{key}:{cookies[key]}" for key in cookies])
+
 def is_expired(expiration_date: datetime):
 	return expiration_date is None or datetime.now() > expiration_date
 
-async def generate_thumbnail(streamer, path, cookies):
-	print(f"Generate tnail for: {streamer} at: {path} with: {cookies}")
+async def generate_thumbnail(streamer, path):
+	print(f"Generate tnail for: {streamer} at: {path}")
 	stream_data:StreamData = get_db().get_stream(streamer)
 
 	found_valid = False
@@ -245,15 +248,14 @@ async def generate_thumbnail(streamer, path, cookies):
 
 	while (server:=next(servers, None)) and not found_valid: 
 		try:
-			# "http://eu-0-cdn.session.com/live/streamer-0_subsd/index.m3u8",
-			
 			print(f"Pulling from: {server.media_url}")
 			proc = await asyncio.create_subprocess_exec(
 				"ffmpeg",
+				# Replace SessionOrigin field with some secret, or somehow
+				# authenticate registry service.
+				"-headers", "sessionorigin: streamregistry",
 				"-i",
 				server.media_url,
-				"-headers", "someField: someValue",
-				"-headers", f"{cookies}",
 				"-vframes", "1",
 				'-update', '1',
 				path,

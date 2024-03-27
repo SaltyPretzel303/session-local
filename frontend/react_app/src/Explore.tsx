@@ -9,11 +9,12 @@ type ExploreProps = {
 
 export default function Explore(props: ExploreProps) {
 
-	async function fetchStream(creator: string): Promise<StreamInfo | undefined> {
+	async function fetchStreamInfo(creator: string):
+		Promise<StreamInfo | undefined> {
 
 		let data: StreamInfo | undefined = undefined
 		try {
-			let res = await fetch(config.streamInfoUrl(creator, config.region))
+			let res = await fetch(config.streamInfoUrl(creator, config.myRegion))
 
 			if (res.status != 200) {
 				throw Error(`Status: ${res.status} msg: ${await res.text()}`)
@@ -28,12 +29,13 @@ export default function Explore(props: ExploreProps) {
 		return data
 	}
 
-	async function fetchFollowing(username: string): Promise<FollowingInfo[]> {
-		let data: FollowingInfo[] = []
+	async function fetchFollowingChannels(username: string):
+		Promise<FollowingInfo[]> {
 
+		let data: FollowingInfo[] = []
 		try {
 			let res = await fetch(config.followingUrl(username))
-			
+
 			if (res.status != 200) {
 				throw Error(`Status: ${res.status} msg: ${await res.text()}.`)
 			}
@@ -47,7 +49,9 @@ export default function Explore(props: ExploreProps) {
 		return data
 	}
 
-	async function followingStreamsProvider(start: number, count: number): Promise<StreamInfo[]> {
+	async function followingStreamsProvider(start: number, count: number):
+		Promise<StreamInfo[]> {
+
 		console.log(`Requested following streams from: ${start} cnt: ${count}`)
 
 		let user = await props.getUser()
@@ -57,16 +61,16 @@ export default function Explore(props: ExploreProps) {
 			return []
 		}
 
-		let following_data = await fetchFollowing(user.username)
+		let followingChannels = await fetchFollowingChannels(user.username)
 
-		if (!following_data) {
+		if (!followingChannels) {
 			console.log("Following data empty.")
 			return []
 		}
 
 		let streams: StreamInfo[] = await Promise.all(
-			following_data
-				.map(async f => await fetchStream(f.following))
+			followingChannels
+				.map(async f => await fetchStreamInfo(f.following))
 				.filter(f => f != undefined) as any
 			// offline streams will be undefined
 		)
@@ -75,12 +79,20 @@ export default function Explore(props: ExploreProps) {
 		return streams
 	}
 
-	async function recommendedStreamsProvider(from: number, count: number): Promise<StreamInfo[]> {
-		let streams = await fetch("http://session.com/stream/all")
+	async function recommendedStreamsProvider(from: number, count: number):
+		Promise<StreamInfo[]> {
+
+		console.log(`Requested recommended streams from: ${from} count: ${count}`)
+
+		let streams = await fetch(config.allStreamsUrl(from, count, config.myRegion))
+		if (!streams || streams.status != 200) {
+			console.log(`Failed to fetch recommended streams from: ${from}`)
+			return []
+		}
+
 		let data = await streams.json() as StreamInfo[]
 
-		console.log("Reccommended streams: ")
-		console.log(data)
+		console.log(`Fetched ${data.length} recommended streams.`)
 
 		return data
 	}

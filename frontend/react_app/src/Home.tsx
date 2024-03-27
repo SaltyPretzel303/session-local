@@ -2,8 +2,8 @@ import { BrowserRouter, Route, Router, Routes } from "react-router-dom";
 import SuperTokens from "supertokens-auth-react";
 import ThirdPartyEmailPassword, { Github, Google } from "supertokens-auth-react/recipe/thirdpartyemailpassword";
 import EmailPassword, { OnHandleEventContext } from 'supertokens-auth-react/recipe/emailpassword'
-import Session, { SessionAuth, useSessionContext } from "supertokens-auth-react/recipe/session";
-import './style/Home.css'
+import Session, { SessionAuth, signOut } from "supertokens-auth-react/recipe/session";
+// import './style/Home.css'
 
 import { SuperTokensWrapper } from "supertokens-auth-react";
 import Explore from "./Explore";
@@ -30,7 +30,7 @@ export default function Home() {
 		},
 		recipeList: [
 			EmailPassword.init({
-				// onHandleEvent: postLogin,
+				onHandleEvent: postLogin,
 				signInAndUpFeature: {
 					signUpForm: {
 						formFields: [
@@ -55,16 +55,26 @@ export default function Home() {
 		]
 	});
 
-	// async function postLogin(context: OnHandleEventContext) {
-	// 	if (context.action === "SUCCESS") {
-	// 		if (context.isNewRecipeUser && context.user.loginMethods.length === 1) {
-	// 			console.log("Sig in/up successfull.")
-	// 			setUserData({ tokensId: context.user.id, data: undefined })
-	// 		}
-	// 	}
+
+	async function postLogin(context: OnHandleEventContext) {
+		if (context.action === "SUCCESS") {
+			if (context.isNewRecipeUser && context.user.loginMethods.length === 1) {
+				console.log("Sig in/up successfull.")
+				getUser()
+			}
+		}
+	}
+
+	// Two ways to check does session exists.
+	// if (!context.loading && context.doesSessionExist){
+	// 		^ this one allowed only inside <SupertokensWrapper (or context ... ?)>
+	// }
+	// if (await Session.doesSessionExist()){
+
 	// }
 
-	async function userDataProvider(): Promise<UserInfo | undefined> {
+	// maybe move this in to the config (already moved, just use it)
+	async function getUser(): Promise<UserInfo | undefined> {
 		if (userInfo != undefined) {
 			console.log("User data already fetched, returning.")
 			return userInfo
@@ -79,9 +89,8 @@ export default function Home() {
 
 		let userTokensId = await Session.getUserId()
 		let infoUrl = config.userFromTokensIdUrl(userTokensId)
-		let requestInit = { method: 'GET' } as RequestInit
 
-		let response = await fetch(infoUrl, requestInit)
+		let response = await fetch(infoUrl, { method: 'GET' })
 
 		if (response.status != 200) {
 			console.log("Return status not 200: " + await response.text)
@@ -95,15 +104,46 @@ export default function Home() {
 		return userInfo
 	}
 
+	async function logout() {
+		if (!Session.doesSessionExist()) {
+			console.log("No active session.")
+			return
+		}
+
+		console.log("Will perform signout.")
+		await signOut()
+		console.log("Signout done.")
+		
+		setUserInfo(undefined)
+	}
+
 	return (
 
 		<SuperTokensWrapper>
 
-			<HeaderBar userProvider={userDataProvider} />
+			<HeaderBar
+				loggedIn={userInfo != undefined}
+				userProvider={getUser}
+				logoutHandler={logout} />
+
 			<BrowserRouter>
 				<Routes>
-					<Route path="/" element={<Explore getUser={userDataProvider} />} />
-					<Route path="/watch/:streamer" element={<PlayerPage getUser={userDataProvider} />} />
+					<Route path="/"
+						element={
+							<Explore
+								getUser={getUser} />
+						}
+					/>
+
+					<Route path="/watch/:streamer"
+						element={
+							<PlayerPage
+								getUser={getUser}
+							// streamData={undefined} 
+							/>
+						}
+					/>
+
 					<Route path="/play" element={<QuickPlay />} />
 					<Route path="/do" element={<DoFetch />} />
 				</Routes>

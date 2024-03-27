@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { StreamInfo } from "../Datas"
 import HlsPlayer from "./HlsPlayer"
 import config from "../Config"
+import { useNavigate } from "react-router-dom"
 
 type StreamPreviewProps = {
 	info: StreamInfo
@@ -13,6 +14,7 @@ export default function StreamPreview(props: StreamPreviewProps) {
 
 	const [playing, setPlaying] = useState(false)
 	const [border, setBorder] = useState(normalBorder)
+	const navigate = useNavigate()
 
 	function hoverIn() {
 		setPlaying(true)
@@ -28,10 +30,19 @@ export default function StreamPreview(props: StreamPreviewProps) {
 		return config.tnailUrl(streamer)
 	}
 
+	function clickHandler() {
+		console.log("Navigating to watch with data: ")
+		console.log(props.info)
+
+		navigate("/watch/" + props.info.creator, { state: { streamData: props.info } })
+	}
+
 	return (
 		<div
 			onMouseEnter={hoverIn}
 			onMouseLeave={hoverOut}
+			onClick={clickHandler}
+
 			style={
 				{
 					display: "flex",

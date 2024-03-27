@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import LoginPopup from "./LoginPopup";
-import Session, { SessionContextType, signOut } from "supertokens-auth-react/recipe/session";
-import StreamKeyPopup from "./StreamKeyPopup";
 import { UserInfo } from '../Datas'
 import UserInfoPopup from "./UserInfoPopup";
 
 type HeaderBarProps = {
+	loggedIn: boolean
 	userProvider: () => Promise<UserInfo | undefined>
+	logoutHandler: () => void
 }
 
 const standardSpacerSize = 10
-const smallSpaceSize = 1
 
 function Spacer({ size }: { size: number }) {
 	return (
@@ -29,45 +28,8 @@ export default function HeaderBar(props: HeaderBarProps) {
 		border: "2px solid black"
 	};
 
-	let context = Session.useSessionContext()
-
 	const [loginVisible, setLoginVisible] = useState(false)
-	const [streamKeyVisible, setStreamKeyVisible] = useState(false)
 	const [userInfoVisible, setUserInfoVisible] = useState(false)
-
-	useEffect(() => {
-		if (context.loading) {
-			return
-		}
-	}, [context])
-
-	async function logoutClick() {
-		if (!context.loading && context.doesSessionExist) {
-			console.log("Will perform user signout.")
-			await signOut()
-			console.log("User signed out.")
-		} else {
-			if (context.loading) {
-				console.log("Session is still loading")
-			} else {
-				console.log("Session is not loading")
-				if (context.doesSessionExist) {
-					console.log("Session exists")
-				} else {
-					console.log("Session does not exist")
-				}
-			}
-			console.log("No session to sign out.")
-		}
-	}
-
-	function streamClick() {
-		setStreamKeyVisible(!streamKeyVisible)
-	}
-
-	function userInfoClick(){
-		setUserInfoVisible(!userInfoVisible)
-	}
 
 	return (
 		<div style={headerStyle}>
@@ -76,35 +38,28 @@ export default function HeaderBar(props: HeaderBarProps) {
 
 			{<Spacer size={standardSpacerSize} />}
 
-			<button
+			{!props.loggedIn && <button
 				style={{ width: "10vw" }}
-				onClick={() => setLoginVisible(true)}
-				hidden={context.loading || context.doesSessionExist} >
+				onClick={() => setLoginVisible(true)}>
 				Sign In
-			</button>
+			</button>}
 
-			<button
-				style={{ width: "10vw" }}
-				onClick={logoutClick}
-				hidden={context.loading || !context.doesSessionExist}>
-				LogOut
-			</button>
-			<LoginPopup loginVisible={loginVisible} setLoginVisible={setLoginVisible} />
+			<LoginPopup
+				loginVisible={loginVisible}
+				setLoginVisible={setLoginVisible}
+			/>
 
-			{<Spacer size={standardSpacerSize} />}
+			{props.loggedIn && <button
+				onClick={() => setUserInfoVisible(true)}>
+				User
+			</button>}
 
-			{/* {<Spacer size={smallSpaceSize} />} */}
-
-			{/* Grey out this button if not loggedIn  */}
-			<button onClick={streamClick}>Stream</button>
-			<StreamKeyPopup
-				isVisible={streamKeyVisible}
-				setIsVisible={setStreamKeyVisible} />
-
-			<button onClick={userInfoClick}>User</button>
 			<UserInfoPopup isVisible={userInfoVisible}
-				provider={props.userProvider}
-				setVisible={setUserInfoVisible} />
+				getUser={props.userProvider}
+				setVisible={setUserInfoVisible}
+				logoutHandler={props.logoutHandler}
+			/>
+
 
 		</div>
 	)
