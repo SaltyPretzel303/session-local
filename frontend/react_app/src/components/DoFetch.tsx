@@ -1,7 +1,8 @@
 export default function DoFetch() {
 
 	async function doFetch() {
-		let url = "http://cdn.session.com/live/streamer-0_subsd/index.m3u8"
+		let url = 'http://session.com/user/fetch'
+		// let url = "http://cdn.session.com/live/streamer-0_subsd/index.m3u8"
 		// let url = "http://172.19.0.10/live/streamer-0_subsd/index.m3u8"
 		// let url = "http://session.com/live/streamer-0_subsd/index.m3u8"
 		// let url = "http://some.domain.com/live/streamer-0_subsd/index.m3u8"
@@ -14,6 +15,7 @@ export default function DoFetch() {
 			}
 
 			console.log("SUCCESS for: " + url)
+			console.log(res.headers)
 
 		} catch (e) {
 			console.log("FAILED for: " + url)

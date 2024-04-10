@@ -4,6 +4,7 @@ WORKDIR /app/react_app
 ADD frontend/react_app/package.json \
 	frontend/react_app/package-lock.json \
 	frontend/react_app/tsconfig.json \
+	frontend/react_app/tailwind.config.js \
 	./
 
 RUN npm install 

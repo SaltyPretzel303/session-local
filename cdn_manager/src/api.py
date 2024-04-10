@@ -90,8 +90,6 @@ def filter_region_with_ip(ip: str)->Tuple[str, InstanceConf]:
 	return (None, None)
 
 def form_media_url(server:InstanceConf, content:str, quality:str):
-	ip = server.ip 
-	port = server.hls_port 
 	# Enforce use of domainName instead of ip:port since suprtokens will look
 	# at domain root and decide to send credentials or not.
 	hls_path = server.hls_path
@@ -166,28 +164,26 @@ def remove_media_server():
 
 	(creator, quality) = split_name_qual(content_name) 
 	if creator is None or quality is None: 
-		return "name and quality in wrong format ...", status.HTTP_500_INTERNAL_SERVER_ERROR
+		return "Name and quality in wrong format.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
 	(region, instance) = filter_region_with_ip(instance_ip)
 	if region is None: 
 		print("This instance is not the part of cdn.")
 		return "Failed to match region.", status.HTTP_404_NOT_FOUND
 
-	req = MediaServerRequest(content_name=creator,
+	req_data = MediaServerRequest(content_name=creator,
 						quality=quality,
 						media_server_ip=instance_ip,
 						region=region,
 						media_url=form_media_url(instance, content_name, quality))
 	
-	req_data = encode(req,unpicklable=False)
-
-	add_res = post(url=f"http://{STREAM_REGISTRY_ADDR}/{REMOVE_MEDIA_SERVER_PATH}", json=req_data)
+	add_res = post(url=f"http://{STREAM_REGISTRY_ADDR}/{REMOVE_MEDIA_SERVER_PATH}", json=req_data.__dict__)
 	
 	if add_res is None or add_res.status_code != status.HTTP_200_OK:
-		print("Failed to remove media server ... ")
-		return "Failure ... ", status.HTTP_500_INTERNAL_SERVER_ERROR
+		print("Failed to remove media server.")
+		return "Failure. ", status.HTTP_500_INTERNAL_SERVER_ERROR
 	
-	return "Noted ...", status.HTTP_200_OK
+	return "Success.", status.HTTP_200_OK
 
 def form_hls_path(inst: InstanceConf):
 	return f"http://{inst.ip}:{inst.hls_port}/{inst.hls_path}"

@@ -10,6 +10,7 @@ class Config:
 	tnail_path: Callable[[str], str]
 	unavailable_path: str
 	match_region_url: Callable[[str], str]
+	followingUrl: str
 
 class AppConfig:
 
@@ -21,7 +22,8 @@ class AppConfig:
 		authorize_url="http://localhost:8100/verify",
 		tnail_path=lambda streamer: f"./app/tnails/{streamer}.jpeg",
 		unavailable_path="tnails/unavailable.png",
-		match_region_url=lambda region: f"http://localhost:8004/match_region/{region}"
+		match_region_url=lambda region: f"http://localhost:8004/match_region/{region}",
+		followingUrl="http://localhost:8100/get_following"
 	)
 
 	PROD_INSTANCE = Config(
@@ -30,7 +32,8 @@ class AppConfig:
 		authorize_url="http://tokens-api.session.com/verify",
 		tnail_path=lambda streamer: f"/app/tnails/{streamer}.jpg",
 		unavailable_path="tnails/unavailable.png",
-		match_region_url=lambda region: f"http://cdn-manager.session.com/match_region/{region}"
+		match_region_url=lambda region: f"http://cdn-manager.session.com/match_region/{region}",
+		followingUrl="http://tokens.api.session.com/get_following"
 	)
 
 	# CONFIG_PATH = "stream_registry/src/app_config.json"

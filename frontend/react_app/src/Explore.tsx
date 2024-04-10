@@ -1,13 +1,16 @@
 import PreviewsList from "./components/PreviewList"
-import { FollowingInfo, StreamInfo, UserInfo } from "./Datas"
-import streams from "./StreamData"
+import { FollowingInfo, StreamInfo, UserInfo, StreamsOrdering } from "./Datas"
 import config from './Config'
+import fakeData from './MockupData'
+import { useNavigate } from "react-router-dom"
 
 type ExploreProps = {
 	getUser: () => Promise<UserInfo | undefined>
 }
 
 export default function Explore(props: ExploreProps) {
+
+	const navigate = useNavigate()
 
 	async function fetchStreamInfo(creator: string):
 		Promise<StreamInfo | undefined> {
@@ -34,7 +37,7 @@ export default function Explore(props: ExploreProps) {
 
 		let data: FollowingInfo[] = []
 		try {
-			let res = await fetch(config.followingUrl(username))
+			let res = await fetch(config.followingUrl)
 
 			if (res.status != 200) {
 				throw Error(`Status: ${res.status} msg: ${await res.text()}.`)
@@ -51,8 +54,6 @@ export default function Explore(props: ExploreProps) {
 
 	async function followingStreamsProvider(start: number, count: number):
 		Promise<StreamInfo[]> {
-
-		console.log(`Requested following streams from: ${start} cnt: ${count}`)
 
 		let user = await props.getUser()
 
@@ -82,9 +83,7 @@ export default function Explore(props: ExploreProps) {
 	async function recommendedStreamsProvider(from: number, count: number):
 		Promise<StreamInfo[]> {
 
-		console.log(`Requested recommended streams from: ${from} count: ${count}`)
-
-		let streams = await fetch(config.allStreamsUrl(from, count, config.myRegion))
+		let streams = await fetch(config.allStreamsUrl(from, count, config.myRegion, StreamsOrdering.None))
 		if (!streams || streams.status != 200) {
 			console.log(`Failed to fetch recommended streams from: ${from}`)
 			return []
@@ -92,35 +91,78 @@ export default function Explore(props: ExploreProps) {
 
 		let data = await streams.json() as StreamInfo[]
 
-		console.log(`Fetched ${data.length} recommended streams.`)
-
 		return data
 	}
 
-	async function exploreStreamsProvider(from: number, count: number): Promise<StreamInfo[]> {
+	async function mockupProvider(start: number, count: number) {
+		return fakeData.slice(start, start + count)
+	}
+
+	async function emptyProvider(start: number, count: number) {
 		return []
-		console.log(`Returning explore: ${from} - ${count}`)
-		return streams.slice(from, from + count)
+	}
+
+	async function exploreStreamsProvider(from: number, count: number)
+		: Promise<StreamInfo[]> {
+
+		return []
+	}
+
+	async function allProvider(from: number,
+		count: number,
+		ordering: StreamsOrdering)
+
+		: Promise<StreamInfo[]> {
+
+		let url = config.allStreamsUrl(from, count, config.myRegion, ordering)
+		try {
+			let response = await fetch(url)
+			if (response.status != 200) {
+				let msg = "Returned non 200 code: " + response.status
+				let data = await response.text()
+
+				if (data) {
+					msg += "\nMsg: " + data
+				}
+
+				throw Error(msg)
+			}
+
+			return await response.json() as StreamInfo[]
+
+		} catch (e) {
+			console.log("Failed to fetch all streams: " + e)
+			return []
+		}
+	}
+
+	async function streamClickHandler(stream: StreamInfo) {
+		let user = await props.getUser()
+		if (!user) {
+			console.log("Authenticate to open player page.")
+			// TODO show some popup message or something
+			return
+		}
+
+		console.log("Will navigate to watch: " + stream.creator)
+		navigate("/watch/" + stream.creator, { state: { streamData: stream } })
 	}
 
 	return (
-		<div style={
-			{
-				width: "100%",
-				height: "100%",
-				boxSizing: "border-box",
-				border: "2px solid red",
-				padding: "10px",
-				display: "flex",
-				flexDirection: "column",
-				backgroundColor: "black",
-				// padding: "5px"
-			}
-		}>
+		<div className='flex flex-col h-full p-3'>
 
-			<PreviewsList title={"Following"} streamsProvider={followingStreamsProvider} />
-			<PreviewsList title={"Recommended"} streamsProvider={recommendedStreamsProvider} />
-			<PreviewsList title={"Explore"} streamsProvider={exploreStreamsProvider} />
+			<PreviewsList title={"Following"}
+				streamsProvider={followingStreamsProvider}
+				streamClickHandler={streamClickHandler} />
+
+			<PreviewsList title={"Recommended"}
+				streamsProvider={recommendedStreamsProvider}
+				streamClickHandler={streamClickHandler} />
+
+			{/* add other categories instead of streams  */}
+			<PreviewsList title={"Explore"}
+				streamsProvider={allProvider}
+				streamClickHandler={streamClickHandler} />
 
 		</div >)
 

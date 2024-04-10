@@ -4,8 +4,11 @@ import { UserInfo } from '../Datas'
 import UserInfoPopup from "./UserInfoPopup";
 
 type HeaderBarProps = {
+	loginVisible: boolean
+	setLoginVisible: React.Dispatch<boolean>
+	forcedLogin: boolean
 	loggedIn: boolean
-	userProvider: () => Promise<UserInfo | undefined>
+	getUser: () => Promise<UserInfo | undefined>
 	logoutHandler: () => void
 }
 
@@ -19,43 +22,61 @@ function Spacer({ size }: { size: number }) {
 
 export default function HeaderBar(props: HeaderBarProps) {
 
-	const headerStyle = {
-		height: "5vh",
-		padding: "10px",
-		display: "flex",
-		flexDirection: "row" as "row",
-		justifyContent: "center",
-		border: "2px solid black"
-	};
-
-	const [loginVisible, setLoginVisible] = useState(false)
+	// const [loginVisible, setLoginVisible] = useState(false)
 	const [userInfoVisible, setUserInfoVisible] = useState(false)
+	const [profileLabel, setProfileLabel] = useState<string>('Profile')
+
+	useEffect(() => {
+		if (props.loggedIn) {
+			loadProfileLabel()
+		}
+
+
+	}, [props.loggedIn])
+
+	async function loadProfileLabel() {
+		let user = await props.getUser()
+		if (user == undefined) {
+			return
+		}
+
+		setProfileLabel(user.username)
+	}
 
 	return (
-		<div style={headerStyle}>
+		<div
+			className="flex flex-row h-full
+				justify-center
+				p-2
+				bg-blue-900
+				text-white font-bold"
+		>
 
-			<input placeholder="Search" style={{ width: "40vw" }}></input>
+			<input placeholder="Search"
+				className='basis-1/4 rounded-full placeholder p-2' />
 
 			{<Spacer size={standardSpacerSize} />}
 
 			{!props.loggedIn && <button
-				style={{ width: "10vw" }}
-				onClick={() => setLoginVisible(true)}>
+				className='basis-1/8 bg-purple-600 p-2 rounded-full'
+				onClick={() => props.setLoginVisible(true)}>
 				Sign In
 			</button>}
 
 			<LoginPopup
-				loginVisible={loginVisible}
-				setLoginVisible={setLoginVisible}
+				loginVisible={props.loginVisible}
+				setLoginVisible={props.setLoginVisible}
+				forcedLogin={props.forcedLogin}
 			/>
 
 			{props.loggedIn && <button
+				className='basis-1/8 bg-orange-500 p-2 rounded-full'
 				onClick={() => setUserInfoVisible(true)}>
-				User
+				{profileLabel}
 			</button>}
 
 			<UserInfoPopup isVisible={userInfoVisible}
-				getUser={props.userProvider}
+				getUser={props.getUser}
 				setVisible={setUserInfoVisible}
 				logoutHandler={props.logoutHandler}
 			/>

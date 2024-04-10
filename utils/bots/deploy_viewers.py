@@ -19,7 +19,6 @@ def setup_argument_parser():
 
 	return parser.parse_args()
 
-
 def get_username(base, ind):
 	return f"{base}_{ind}"
 
@@ -81,6 +80,8 @@ if __name__ == '__main__':
 	args = setup_argument_parser()
 
 	deploy_method = local_deployment if args.local else docker_deployment
+
+	streams = ['']
 
 	stop_method = deploy_method(args)
 

@@ -1,9 +1,10 @@
 import { BrowserRouter, Route, Router, Routes } from "react-router-dom";
 import SuperTokens from "supertokens-auth-react";
-import ThirdPartyEmailPassword, { Github, Google } from "supertokens-auth-react/recipe/thirdpartyemailpassword";
 import EmailPassword, { OnHandleEventContext } from 'supertokens-auth-react/recipe/emailpassword'
-import Session, { SessionAuth, signOut } from "supertokens-auth-react/recipe/session";
-// import './style/Home.css'
+import { SessionAuth } from "supertokens-auth-react/recipe/session";
+import Session from 'supertokens-auth-react/recipe/session'
+// import Session from 'supertokens-auth-react/recipe/emailpassword'
+import { signOut } from "supertokens-auth-react/recipe/emailpassword"
 
 import { SuperTokensWrapper } from "supertokens-auth-react";
 import Explore from "./Explore";
@@ -15,10 +16,14 @@ import { useEffect, useState } from "react";
 import { UserInfo } from './Datas'
 import config from './Config'
 import DoFetch from "./components/DoFetch";
+import RecipeEventWithSessionContext from "supertokens-auth-react/recipe/session";
+// "supertokens-auth-react/recipe/session/types";
 
 export default function Home() {
 
 	const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined)
+	const [loginVisible, setLoginVisible] = useState(false)
+	const [forcedLogin, setForcedLogin] = useState(false)
 
 	SuperTokens.init({
 		appInfo: {
@@ -46,19 +51,29 @@ export default function Home() {
 			Session.init(
 				{
 					sessionTokenFrontendDomain: ".session.com",
-					// sessionTokenBackendDomain: ".session.com"
 					// If multi domain is set on the backend, this field MUST
 					// have the same value as cookie_domain in session.init()
+
+					// sessionTokenBackendDomain: ".session.com"
+					// ^ Not documented for emailpassword login, avoid.
 				}
 			)
 
 		]
 	});
 
+	// signOut()
+	// 	.then(() => {
+	// 		console.log("Signout done")
+	// 	})
+	// 	.catch((err) => {
+	// 		console.log("Failed to signout: " + err)
+	// 	})
 
 	async function postLogin(context: OnHandleEventContext) {
 		if (context.action === "SUCCESS") {
 			if (context.isNewRecipeUser && context.user.loginMethods.length === 1) {
+				// ^ from documentation 
 				console.log("Sig in/up successfull.")
 				getUser()
 			}
@@ -73,7 +88,6 @@ export default function Home() {
 
 	// }
 
-	// maybe move this in to the config (already moved, just use it)
 	async function getUser(): Promise<UserInfo | undefined> {
 		if (userInfo != undefined) {
 			console.log("User data already fetched, returning.")
@@ -85,23 +99,24 @@ export default function Home() {
 			return undefined
 		}
 
-		console.log("Session exits, will try to fetch user.")
+		console.log("Session exists, will try to fetch user.")
 
 		let userTokensId = await Session.getUserId()
-		let infoUrl = config.userFromTokensIdUrl(userTokensId)
 
+		let infoUrl = config.userFromTokensIdUrl(userTokensId)
 		let response = await fetch(infoUrl, { method: 'GET' })
 
 		if (response.status != 200) {
-			console.log("Return status not 200: " + await response.text)
+			console.log("Return status: " + response.status
+				+ " msg: " + await response.text())
 			return undefined
 		}
 
-		setUserInfo(await response.json() as UserInfo)
+		let info = await response.json() as UserInfo
 
-		// return await response.json() as UserInfo 
-		// ^^ Will have the same effect just with the type annotation.
-		return userInfo
+		setUserInfo(info)
+
+		return info
 	}
 
 	async function logout() {
@@ -113,43 +128,57 @@ export default function Home() {
 		console.log("Will perform signout.")
 		await signOut()
 		console.log("Signout done.")
-		
+
 		setUserInfo(undefined)
 	}
 
 	return (
 
-		<SuperTokensWrapper>
+		// root
+		<div className='flex flex-col h-screen w-screen'>
 
-			<HeaderBar
-				loggedIn={userInfo != undefined}
-				userProvider={getUser}
-				logoutHandler={logout} />
+			<div className='h-14 w-full'>
+				<HeaderBar
+					loginVisible={loginVisible}
+					setLoginVisible={setLoginVisible}
+					forcedLogin={forcedLogin}
+					loggedIn={userInfo != undefined}
+					getUser={getUser}
+					logoutHandler={logout} />
+			</div>
 
-			<BrowserRouter>
-				<Routes>
-					<Route path="/"
-						element={
-							<Explore
-								getUser={getUser} />
-						}
-					/>
+			<div className='h-full w-full'>
+				<SuperTokensWrapper>
 
-					<Route path="/watch/:streamer"
-						element={
-							<PlayerPage
-								getUser={getUser}
-							// streamData={undefined} 
+					<BrowserRouter>
+						<Routes>
+
+							<Route path="/"
+								element={
+									<Explore
+										getUser={getUser} />
+								}
 							/>
-						}
-					/>
 
-					<Route path="/play" element={<QuickPlay />} />
-					<Route path="/do" element={<DoFetch />} />
-				</Routes>
-			</BrowserRouter>
+							<Route path="/watch/:streamer"
+								element={
+									<PlayerPage
+										user={userInfo}
+										getUser={getUser}
+									// getUser is redundant and only used 
+									// so that it can be navigated back to /
+									/>
+								}
+							/>
 
-		</SuperTokensWrapper >
+							// mockups
+							<Route path="/play" element={<QuickPlay />} />
+							<Route path="/do" element={<DoFetch />} />
+						</Routes>
+					</BrowserRouter>
 
+				</SuperTokensWrapper >
+			</div>
+		</div>
 	)
 }

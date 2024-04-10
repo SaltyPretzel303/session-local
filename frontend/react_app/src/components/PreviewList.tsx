@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react"
 import StreamPreview from "./StreamPreview"
-import { StreamInfo } from "../Datas"
+import { StreamInfo, StreamsOrdering } from "../Datas"
 
 type PreviewListProps = {
 	title: string,
-	streamsProvider: (from: number, to: number) => Promise<StreamInfo[]>
+	streamsProvider: (from: number,
+		to: number,
+		ordering: StreamsOrdering) => Promise<StreamInfo[]>
+	streamClickHandler: (stream: StreamInfo) => void
 }
 
 type range = {
@@ -15,27 +18,27 @@ type range = {
 
 export default function PreviewsList(props: PreviewListProps) {
 
-	const visibleCount = 3
+	const visibleCount = 1
 
 	const [streams, setStreams] = useState<StreamInfo[]>([])
 	const [currentRange, setCurrentRange] = useState<range>({ start: 0, count: 0 })
 
 	useEffect(() => {
-		console.log(`Constructing ${props.title} list.`)
-
 		async function fetchData() {
-			let newStreams = await props.streamsProvider(0, visibleCount)
-			console.log(`Populating ${props.title} list with ${newStreams.length} streams.`)
+			let newStreams = await props.streamsProvider(0,
+				visibleCount,
+				StreamsOrdering.Views)
+
+			if (newStreams.length > 0) {
+				console.log(`Populating ${props.title} list with ${newStreams.length} streams.`)
+			}
+
 
 			setStreams(newStreams)
 			setCurrentRange({ start: 0, count: newStreams.length })
 		}
 
 		fetchData()
-
-		return () => {
-			console.log(`Destroying ${props.title} previews list.`)
-		}
 
 	}, [])
 
@@ -46,28 +49,14 @@ export default function PreviewsList(props: PreviewListProps) {
 
 	function ScrollButton(props: scrollProps) {
 
-		const focusedBorder = "2px solid green"
-		const normalBorder = "0px"
-
-		const [border, setBorder] = useState(normalBorder)
-
 		return (
 			<button
-				onMouseEnter={() => setBorder(focusedBorder)}
-				onMouseLeave={() => setBorder(normalBorder)}
+				className='border border-black 
+					w-14 h-28 
+					rounded-full mx-4
+					text-xl font-bold'
+				onClick={props.clickHandler}>
 
-				onClick={props.clickHandler}
-				style={
-					{
-						border: border,
-						height: "100%",
-						width: "100px",
-						justifyContent: "center",
-						fontSize: "40px",
-						marginRight: "10px",
-						marginLeft: "10px"
-					}
-				}>
 				{props.dir === "left" ? "<" : ">"}
 			</button>
 		)
@@ -81,14 +70,15 @@ export default function PreviewsList(props: PreviewListProps) {
 		}
 
 		let newFrom = currentRange.start + currentRange.count
-		let newStreams = await props.streamsProvider(newFrom, visibleCount)
+		let newStreams = await props.streamsProvider(newFrom,
+			visibleCount,
+			StreamsOrdering.Views)
 
 		if (newStreams.length == 0) {
 			console.log(`0 new streams fetched from: ${newFrom}.`)
 			return
 		}
 
-		// TODO some animation would be nice 
 		setStreams(newStreams)
 		setCurrentRange({ start: newFrom, count: newStreams.length })
 	}
@@ -102,7 +92,10 @@ export default function PreviewsList(props: PreviewListProps) {
 		let newFrom = currentRange.start - visibleCount
 		newFrom = newFrom >= 0 ? newFrom : 0
 
-		let oldStreams = await props.streamsProvider(newFrom, visibleCount)
+		let oldStreams = await props.streamsProvider(newFrom,
+			visibleCount,
+			StreamsOrdering.Views)
+
 		if (oldStreams.length == 0) {
 			console.log(`0 old streams fetched from: ${newFrom}.`)
 			return
@@ -114,63 +107,40 @@ export default function PreviewsList(props: PreviewListProps) {
 	}
 
 	return (
-		<div style={
-			{
-				// width: "100%",
-				height: "25vh",
-				boxSizing: "border-box",
-				// border: "2px dashed black",
-				margin: "10px",
-				padding: "10px",
-				backgroundColor: "silver",
-				display: "flex",
-				flexDirection: "column",
-				justifyContent: "flex-start"
-			}
-		}>
-			<h1 style={
-				{
-					margin: 0,
-					marginLeft: "30px",
-					padding: 0,
-					// border: "2px solid red",
-					textAlign: "start",
-					font: "40px Monospace"
-				}
-			}>{props.title}</h1>
+		<div className='flex flex-col 
+			border-y-4 border-blue-950 
+			p-2 my-3 h-60'>
 
-			<div style={
-				{
-					display: "flex",
-					flexDirection: "row"
-				}
-			}>
+			<h1 className='h-10 ml-24 
+				font-bold
+				text-blue-950 text-2xl'>{props.title}</h1>
+
+			<div className='flex flex-row
+				items-center justify-center
+				h-full box-border border-2 border-red-400'>
+
 				{<ScrollButton dir={"left"} clickHandler={scrollBack} />}
 
-				<div style={
-					{
-						boxSizing: "border-box",
-						height: "100%",
-						width: "100%",
-						display: "flex",
-						flexDirection: "row",
-						flexWrap: "nowrap",
-						overflowY: "visible", // just so that errors are visible
-						overflowX: "scroll",
-						border: "2px solid darkgray",
-					}
-				}>
+				{/* streams container */}
+				<div className='flex flex-row 
+						h-full basis-10/12 
+						justify-center
+						box-border p-2
+						border-2 border-blue-900
+						'>
 
 					{
 						streams.map((stream) =>
 							<StreamPreview
 								key={stream.creator}
-								info={stream} />)
+								info={stream}
+								onClick={props.streamClickHandler} />)
 					}
 
 				</div>
 
 				{<ScrollButton dir={"right"} clickHandler={scrollNext} />}
+
 			</div>
 
 

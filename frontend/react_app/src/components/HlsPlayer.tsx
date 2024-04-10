@@ -1,6 +1,5 @@
-import Hls, { CMCDController, EMEControllerConfig, HlsConfig } from "hls.js"
+import Hls, { BufferEOSData, CMCDController, EMEControllerConfig, Events, HlsConfig } from "hls.js"
 import React, { useEffect, useRef, useState } from "react"
-import { MediaServer } from "../Datas"
 
 
 type HlsPlayerProps = {
@@ -10,6 +9,7 @@ type HlsPlayerProps = {
 	quality: string,
 	abr: boolean // if false, passed quality is forced
 	muted: boolean
+	onDone?: () => void
 }
 
 export default function HlsPlayer(props: HlsPlayerProps) {
@@ -31,8 +31,6 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 			console.log("This browser supports hls stream by default.")
 			videoElement.src = props.src
 		} else if (Hls.isSupported()) {
-			console.log("Will use hls.js to play hls stream.")
-
 			let config = {
 				// debug: true,
 				xhrSetup: (xhr: XMLHttpRequest, url) => {
@@ -46,6 +44,8 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 
 			if (props.shouldPlay) {
 				console.log("Stream will be played.")
+
+				hls.on(Hls.Events.BUFFER_EOS, doneHandler)
 				hls.startLoad()
 				// videoElement.play()
 				// videoElement.play()
@@ -65,7 +65,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 		}
 
 		return () => {
-			console.log("Calling hlsPlayer destructor.")
+			console.log("Destroying hlsPlayer.")
 			if (hls) {
 				hls.detachMedia()
 				hls.destroy()
@@ -74,6 +74,12 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 
 	}, [props]);
 
+	function doneHandler(event: Events.BUFFER_EOS, data: BufferEOSData) {
+		console.log("Handling stream done in hlsPlayer.")
+		props.onDone?.()
+	}
+
+	// not sure if this one is implemented correctly
 	function pauseHandler() {
 		if (!hls) {
 			console.log("Pause ignored, hls is undefined.")
@@ -86,28 +92,14 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 
 
 	return (
-		<div style={
-			{
-				border: "1px solid purple",
-				boxSizing: "border-box",
-				width: "100%",
-				height: "100%"
-			}
-		}
-		>
+		<div className="box-border" >
 			<video
-				style={
-					{
-						border: "solid red 2px",
-						width: "100%",
-						height: "100%"
-					}
-				}
+				className='border-stone-700 w-full h-full'
 				muted={props.muted}
 				poster={props.posterUrl}
 				ref={videoRef}
 				onPause={pauseHandler}
-				autoPlay	
+				autoPlay
 			/>
 		</div>
 	)

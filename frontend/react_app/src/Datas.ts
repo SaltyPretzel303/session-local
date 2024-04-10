@@ -18,6 +18,12 @@ export type MediaServer = {
 	access_url: string
 }
 
+export enum StreamsOrdering {
+	Views,
+	Recommended,
+	None
+}
+
 export type StreamInfo = {
 	title: string
 	creator: string

@@ -37,7 +37,6 @@ export default function UserInfoPopup(props: userInfoProps) {
 		console.log("Will fetch user data.")
 		props.getUser()
 			.then((userData) => {
-				console.log("Data fetched: " + userData)
 				setUserInfo(userData)
 			})
 			.catch((err) => {

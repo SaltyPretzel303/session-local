@@ -1,4 +1,5 @@
-from mongoengine import Document, StringField, ListField, LongField, BooleanField, EmbeddedDocumentField
+from mongoengine import Document, StringField, ListField, LongField
+from mongoengine import BooleanField, EmbeddedDocumentField, IntField
 
 from ipaddress import ip_address
 
@@ -17,10 +18,7 @@ class StreamData(Document):
 
 	is_public = BooleanField(required=True, default=False)
 
-	def update(self, title:str, category:str, is_public: bool):
-		self.title = title
-		self.category = category
-		self.is_public = is_public
+	viewer_count = IntField()
 
 	@staticmethod
 	def empty(streamer:str, ingest_ip:str, stream_key:str):

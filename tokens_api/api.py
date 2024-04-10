@@ -28,6 +28,8 @@ from supertokens_python.recipe.session.framework.flask import verify_session
 from supertokens_python.recipe.session import SessionContainer
 from supertokens_python.recipe.session.syncio import get_session
 
+from supertokens_python.recipe.jwt.interfaces import CreateJwtOkResult
+
 from supertokens_python.asyncio import delete_user
 
 from supertokens_python.framework.flask import Middleware as TokensMiddleware
@@ -80,7 +82,7 @@ def override_default_emailpassword(defaultImp: APIInterface)->APIInterface:
 
 			return GeneralErrorResponse(message="Username not provided.")
 
-		print(f"Username found: {username_field.value}")
+		print(f"Passed username: {username_field.value}")
 
 		result = await default_sign_up(form_fields, 
 								tenant_id, 
@@ -296,15 +298,21 @@ def get_user_from_tokensid(tokensid: str):
 
 	public_data = PublicUser(username=user_data.username,
 						email=user_data.email)
+	print(f"Found user: {jsonify(public_data)}")
 	return jsonify(to_public_user(public_data)), status.HTTP_200_OK
 
-@app.route("/get_following/<username>", methods=["GET"])
-def get_following(username: str):
-	print(f"Processing get following request for: {username}")
+@app.route("/get_following", methods=["GET"])
+@verify_session()
+def get_following():
+	print(f"Processing (session verified) get followed request.")
 
-	follow_data = users_db.get_following(username)
+	session = g.supertokens
+	tokens_id = session.get_user_id()
+	user = users_db.get_user_by_tokens_id(tokens_id)
+
+	follow_data = users_db.get_following(user.username)
 	if follow_data is None:
-		print(f"Following query failed for: {username}")
+		print(f"Following query failed for: {user.username}")
 		return "Query failed.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
 	public_data = list(map(to_public_follow_record, follow_data))
@@ -331,17 +339,20 @@ async def remove_user(username: str):
 
 	return "Should be success.", status.HTTP_200_OK
 
+# TODO Refactor with fastapi so that the method can be async 
+# since it will require viewers count update.
 @app.route("/verify", methods=["GET"])
 def authorize():
 	print(f"Processing authorization.")
 
+	# TODO Use some secret or authorization api instead of fixed key-value.
 	if 'sessionorigin' in request.headers \
 		and request.headers.get("sessionorigin") == "streamregistry":
 
 		print("Verifying StreamRegistry request. Authorized.")
 		return "Authorized.", status.HTTP_200_OK 
-	else:
-		print("Stream registry origin not found, authorizing regular user.")
+	
+	print("Stream registry origin not found, authorizing regular user.")
 
 	# print("==== header ====")
 	# print(request.headers)
@@ -369,6 +380,14 @@ def authorize():
 	print(f"Authorized: {user.username} for {stream_name}.")
 	return "Authorized.", status.HTTP_200_OK
 
+
+@app.route("/fetch", methods=["GET"])
+def fetch_cookie():
+
+	resp = Response()
+	resp.set_cookie(key="some_random_key", value='some_random_value')
+
+	return resp, status.HTTP_200_OK
 
 if __name__ == "__main__":
 	app.run(host="0.0.0.0", port=80)

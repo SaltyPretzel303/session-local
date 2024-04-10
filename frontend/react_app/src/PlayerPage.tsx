@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import HlsPlayer from "./components/HlsPlayer";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { UserInfo } from "./Datas";
 import { StreamInfo } from "./Datas";
 import config from './Config'
 
 type PlayerPageProps = {
+	user: UserInfo | undefined
 	getUser: () => Promise<UserInfo | undefined>
-	// streamData: StreamInfo | undefined
+	// setLoginVisible: React.Dispatch<boolean>
+	// setLoginForced: React.Dispatch<boolean>
 }
 
 enum VideoQuality {
@@ -18,9 +20,7 @@ enum VideoQuality {
 
 export function PlayerPage(props: PlayerPageProps) {
 
-	const [user, setUser] = useState<UserInfo | undefined>()
-
-	const { streamer } = useParams<string>()
+	const { streamer: channel } = useParams<string>()
 	const [streamSrc, setStreamSrc] = useState<string | undefined>(undefined)
 	const [quality, setQuality] = useState<VideoQuality>(VideoQuality.SUBSD)
 
@@ -28,29 +28,64 @@ export function PlayerPage(props: PlayerPageProps) {
 	// Mostly from stream preview.
 	const { state } = useLocation()
 
-	useEffect(() => {
-		console.log(`Launching player for: ${streamer}`)
+	const navigate = useNavigate()
 
-		if (!streamer) {
+	useEffect(() => {
+
+		if (!props.user) {
+			console.log("Authentication required for this page.")
+			// navigate("/", { state: { getUser: props.getUser } })
+			navigate("/")
+		}
+
+		// This logic is moved in stream preview, that way user can't 
+		// navigate to this page if he is not authenticated.
+
+		// props.getUser()
+		// 	.then(async (user) => {
+		// 		console.log("Obtained user in player page is: " + user)
+		// 		if (!user) {
+		// 			console.log("Authentication is required for this page.")
+		// 			props.setLoginForced(false)
+		// 			props.setLoginVisible(true)
+		// 		}
+		// 	})
+		// 	.catch((err) => {
+		// 		console.log("Failed to obtain user in playerPage: " + err)
+		// 	})
+
+		console.log('Launching player for')
+		console.log('\tChannel: ' + channel)
+		console.log('\tViewer: ' + props.user?.username)
+
+		if (!channel) {
 			console.log("No channel provided.")
 			return;
 		}
 
+		setupStreamSrc(channel)
+			.then(() => {
+				console.log("Stream source set, will register viewer.")
+				// addViewer() // fire and forget
+			})
+			.catch((err) => {
+				console.log("Failed to set stream source: " + err)
+			})
+
+	}, [props.user]);
+
+	async function setupStreamSrc(creator: string) {
 		if (state) {
 			console.log("Stream data provided.")
-			
+
 			const { streamData }: { streamData: StreamInfo } = state
 			setStreamSrc(streamData.media_servers[0].access_url)
 		} else {
 			console.log("Will fetch stream data.")
 
-			// streamerName is string | undefined
-			let creator: string = streamer
 			fetchStreamData(creator)
 		}
-
-		// TODO display some loader or something ... 
-	}, []);
+	}
 
 	async function fetchStreamData(creator: string) {
 		try {
@@ -85,25 +120,55 @@ export function PlayerPage(props: PlayerPageProps) {
 
 	}
 
+	// async function addViewer() {
+	// 	try {
+	// 		let res = await fetch(config.addViewerUrl)
+
+	// 		if (!res) {
+	// 			throw Error("Http is undefined. ")
+	// 		}
+
+	// 		if (res.status != 200) {
+	// 			let msg = await res.text
+	// 			throw Error("Non 200 code: " + msg)
+	// 		}
+
+	// 	} catch (e) {
+	// 		console.log("Failed to add viewer: " + e)
+	// 	}
+
+	// }
 
 	function formPosterUrl(streamer: string | undefined): string {
 		return streamer ? config.tnailUrl(streamer) : config.notFoundTnailUrl
 	}
 
-	return (
-		<div className="streamPlayer">
-			<HlsPlayer src={streamSrc}
-				posterUrl={formPosterUrl(streamer)}
-				shouldPlay={true}
-				quality={quality}
-				abr={false}
-				muted={false} />
+	function doneHandler() {
+		console.log("Handling stream done in playerPage.")
+	}
 
+	return (
+		<div className='w-full h-full'>
+			<div className='w-full h-full
+				box-border
+				'>
+				<HlsPlayer src={streamSrc}
+					posterUrl={formPosterUrl(channel)}
+					shouldPlay={true}
+					quality={quality}
+					abr={false}
+					muted={false}
+					onDone={doneHandler} />
+			</div>
 			{/* <Chat visible={true} /> */}
 
-			<button onClick={() => setQuality(VideoQuality.HD)}>HD</button>
-			<button onClick={() => setQuality(VideoQuality.SD)}>SD</button>
-			<button onClick={() => setQuality(VideoQuality.SUBSD)}>SUBSD</button>
+			{/* overlay */}
+			{/* <div className='relative border border-red-800' >
+				<button onClick={() => setQuality(VideoQuality.HD)}>HD</button>
+				<button onClick={() => setQuality(VideoQuality.SD)}>SD</button>
+				<button onClick={() => setQuality(VideoQuality.SUBSD)}>SUBSD</button>
+			</div> */}
+
 
 		</div>)
 }

@@ -6,77 +6,54 @@ import { useNavigate } from "react-router-dom"
 
 type StreamPreviewProps = {
 	info: StreamInfo
+	onClick: (stream: StreamInfo) => void
 }
 
 export default function StreamPreview(props: StreamPreviewProps) {
-	const focusedBorder = "3px solid white"
-	const normalBorder = "1px solid gray"
 
 	const [playing, setPlaying] = useState(false)
-	const [border, setBorder] = useState(normalBorder)
-	const navigate = useNavigate()
 
-	function hoverIn() {
+	function hoverInHandler() {
 		setPlaying(true)
-		setBorder(focusedBorder)
 	}
 
-	function hoverOut() {
+	function hoverOutHandler() {
 		setPlaying(false)
-		setBorder(normalBorder)
 	}
 
 	function formPosterUrl(streamer: string): string {
 		return config.tnailUrl(streamer)
 	}
 
-	function clickHandler() {
-		console.log("Navigating to watch with data: ")
-		console.log(props.info)
-
-		navigate("/watch/" + props.info.creator, { state: { streamData: props.info } })
-	}
-
 	return (
 		<div
-			onMouseEnter={hoverIn}
-			onMouseLeave={hoverOut}
-			onClick={clickHandler}
+			onMouseEnter={hoverInHandler}
+			onMouseLeave={hoverOutHandler}
+			onClick={() => props.onClick(props.info)}
+			className='flex flex-row 
+				p-2 mx-2 box-border h-40 max-w-96
+				border-blue-500 border
+				hover:bg-sky-50'
+		>
 
-			style={
-				{
-					display: "flex",
-					flexDirection: "row",
-					boxSizing: "border-box",
-					margin: "10px",
-					padding: "10px",
-					width: "400px",
-					minWidth: "200px",
-					// height: "100%",
-					border: `${border}`
-				}
-			}>
+			<div className='h-full w-46'>
+				<HlsPlayer
+					src={props.info.media_servers[0].access_url}
+					posterUrl={formPosterUrl(props.info.creator)}
+					shouldPlay={playing}
+					quality={"subsd"}
+					abr={false}
+					muted={true} />
+			</div>
+			<div className='flex flex-col ml-10'>
 
-			<HlsPlayer
-				src={props.info.media_servers[0].access_url}
-				posterUrl={formPosterUrl(props.info.creator)}
-				shouldPlay={playing}
-				quality={"subsd"}
-				abr={false}
-				muted={true} />
+				<div className='font-extrabold text-nowrap'>
+					{props.info.title}</div>
 
-			<div style={
-				{
-					display: "flex",
-					flexDirection: "column",
-					marginLeft: "10px"
-				}
-			}>
-
-				<div style={{ fontWeight: 'bolder' }}>{props.info.title}</div>
 				<div>Creator: {props.info.creator}</div>
 				<div>Category: {props.info.category}</div>
 				<div>Viewers: {props.info.viewers}</div>
+
 			</div>
 		</div>
 	)

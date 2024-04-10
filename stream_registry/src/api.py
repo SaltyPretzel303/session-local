@@ -14,6 +14,7 @@ from requests import get
 
 import jsonpickle
 
+from shared_model.following_info import FollowingInfo
 from shared_model.media_server_request import MediaServerRequest
 from shared_model.media_server_info import MediaServerInfo
 from shared_model.stream_info import StreamInfo
@@ -43,6 +44,16 @@ def jsonify(content) -> str:
 def get_db() -> Db:
 	return Db(AppConfig.get_instance().db_url)
 
+def media_server_dict_to_info(data):
+	return MediaServerInfo(quality=data['quality'], access_url=data['media_url'])
+
+def stream_dict_to_info(data) -> StreamInfo:
+	servers = list(map(media_server_dict_to_info, data['media_servers']))
+	return StreamInfo(title=data['title'],
+				   creator=data['creator'],
+				   category=data['category'],
+				   media_servers=servers)
+
 def stream_data_to_info(data:StreamData)->StreamInfo:
 	servers = list(map(media_server_data_to_info, data.media_servers))
 	return StreamInfo(title=data.title,
@@ -52,55 +63,6 @@ def stream_data_to_info(data:StreamData)->StreamInfo:
 
 def media_server_data_to_info(data: MediaServerData)->MediaServerInfo:
 	return MediaServerInfo(quality=data.quality, access_url=data.media_url)
-
-@app.post('/update')
-async def update(update_data: UpdateRequest, request: Request):
-	print("Processing update stream request.")
-
-	try:
-		auth_url = AppConfig.get_instance().authorize_url
-		auth_res: Response = get(url=auth_url, cookies=request.cookies)
-
-		if auth_res is None: 
-			raise Exception("Auth response is None.")
-
-		if auth_res.status_code != 200:
-			raise Exception(f"Auth status code: {auth_res.status_code}")
-		
-	except Exception as e :
-		print(f"Failed to authorize user: {e}")
-		return "Authorization failed.", status.HTTP_401_UNAUTHORIZED
-
-	print("User authorized.")
-
-	stream_data = get_db().update(update_data.username, update_data)
-
-	if stream_data is None:
-		print("Failed to update stream info.")
-		return "Failed to perform update.", status.HTTP_500_INTERNAL_SERVER_ERROR
-
-	return stream_data_to_info(stream_data)
-			
-@app.get("/by_category/{category}")
-def get_by_category(category: str, region: str='eu', start: int = 0, count:int=3):
-	print(f"Processing get by category request for: {category}")
-
-	streams_data = get_db().get_by_category(category, region, start, count)
-	if streams_data is None:
-		return "No such category.", status.HTTP_404_NOT_FOUND
-	
-	return list(map(stream_data_to_info, streams_data))
-
-@app.get("/all")
-def get_all(region:str="eu", start:int=0, count:int=4):
-	print("Processing get all streams request.")
-
-	streams_data = get_db().get_all(start, count, region)
-	if streams_data is None: 
-		print("Failed to obtain requested streams.")
-		return "Failed.", status.HTTP_500_INTERNAL_SERVER_ERROR
-
-	return list(map(stream_data_to_info, streams_data))
 
 # This is used by the ingest instance so therefore
 # request.ip should be the ingest instance's ip.
@@ -173,6 +135,76 @@ async def remove_media_server(remove_req: MediaServerRequest):
 
 	return Response("Success.")
 
+@app.post('/update')
+async def update(update_data: UpdateRequest, request: Request):
+	print("Processing update stream request.")
+
+	try:
+		auth_url = AppConfig.get_instance().authorize_url
+		auth_res: Response = get(url=auth_url, cookies=request.cookies)
+
+		if auth_res is None: 
+			raise Exception("Auth response is None.")
+
+		if auth_res.status_code != 200:
+			raise Exception(f"Auth status code: {auth_res.status_code}")
+		
+	except Exception as e :
+		print(f"Failed to authorize user: {e}")
+		return "Authorization failed.", status.HTTP_401_UNAUTHORIZED
+
+	print("User authorized.")
+
+	update_success = get_db().update(update_data.username, update_data)
+
+	if update_success:
+		return "Stream updated.", status.HTTP_200_OK
+	else: 
+		return "Failed to stream.", status.HTTP_500_INTERNAL_SERVER_ERROR
+
+@app.get("/continue_view")
+async def add_viewer(request: Request):
+	
+	if request.cookies is None: 
+		print("Adding unauthorized viewer.")
+
+	
+	
+	# if has cookie 
+	# grab user info from tokens-api
+	# else save with ip 
+
+
+	return 
+
+@app.get('/remove_viewer')
+def remove_viewer():
+	# same this as with the add_viewer 
+	return 
+
+@app.get("/all")
+def get_all(region:str="eu", start:int=0, count:int=4, ordering: str = 'None'):
+	print("Processing get all streams request.")
+
+	streams_data = get_db().get_all(start, count, region, ordering)
+
+	if streams_data is None: 
+		print("Failed to obtain requested streams.")
+		return "Failed.", status.HTTP_500_INTERNAL_SERVER_ERROR
+
+	return list(map(stream_dict_to_info, streams_data))
+	# return list(map(stream_data_to_info, streams_data))
+
+@app.get("/by_category/{category}")
+def get_by_category(category: str, region: str='eu', start: int = 0, count:int=3):
+	print(f"Processing get by category request for: {category}")
+
+	streams_data = get_db().get_by_category(category, region, start, count)
+	if streams_data is None:
+		return "No such category.", status.HTTP_404_NOT_FOUND
+	
+	return list(map(stream_data_to_info, streams_data))
+
 @app.get("/stream_info/{streamer}")
 def get_stream_info(streamer: str, region:str = 'eu'):
 	print(f"Processing get stream info request for: {streamer} in: {region}")
@@ -187,6 +219,34 @@ def get_stream_info(streamer: str, region:str = 'eu'):
 		return "No such stream.", status.HTTP_404_NOT_FOUND
 	
 	return JSONResponse(jsonify(stream_data_to_info(stream_data)))
+
+@app.get("/get_following")
+async def get_following(request: Request,
+						region: str="eu", 
+						start:int=0, 
+						count:int=4, 
+						ordering: str = 'None') -> List[StreamInfo]:
+	
+	print("Processing get following streams request. ")
+
+	config = AppConfig.get_instance()
+	following_data: List[FollowingInfo] = []
+	try: 
+		followed_res = get(config.followingUrl, cookies=request.cookies)
+		if followed_res is None:
+			raise Exception("Request failed.")
+		
+		if followed_res.status_code != 200:
+			raise Exception(followed_res.text)
+
+		following_data = followed_res.json()
+
+	except Exception as e:
+		print(f"Failed to obtain followed channels: {e}")
+		return "Failed to obtain followed channels.", followed_res.status_code
+
+	following_data = map(lambda f: f.following, following_data)
+
 
 @app.get("/get_recommended/{username}")
 def get_recommended(username: str):

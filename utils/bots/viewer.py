@@ -30,6 +30,7 @@ def setup_arg_parser():
 					default='http://session.com/auth/signin')
 
 	# stream_registry_at
+	# rename to stream_info_at
 	parser.add_argument('--reg_at', 
 					action='store',
 					default='http://session.com/stream/stream_info')
@@ -45,7 +46,7 @@ def setup_arg_parser():
 	return parser.parse_args()
 
 def form_headers(s: Session):
-	return f"'Cookie: sAccessToken={s.cookies['sAccessToken']}'"
+	return f"Cookie: sAccessToken={s.cookies['sAccessToken']}"
 
 def form_play_stream_cmd(headers, width, height, stream_url)->str:
 	return [ 'ffplay',
@@ -59,25 +60,26 @@ def form_play_stream_cmd(headers, width, height, stream_url)->str:
 
 def form_waste_stream_cmd(headers, stream_url):
 	return [
-		'ffmpeg', '-i', stream_url,
+		'ffmpeg', 
 		'-headers', headers,
+		'-i', stream_url,
 		'-loglevel', 'error',
 		'-f', 'null',
 		'-'
+		# '-headers', headers,
 	]
 
 def get_stream_url(registry_at, stream_name, quality):
-	reg_url = f"{registry_at}/{stream_name}"
-	info_res = get(reg_url)
+	registry_url = f"{registry_at}/{stream_name}"
+	info_res = get(registry_url)
 
 	if info_res is None or info_res.status_code != 200:
 		print("Failed to obtain stream info.")
 		return None
 	
 	print("Media/cdn server info obtained.")
-	
-	cdn_url = info_res.json()['media_server']['full_path']
-	return f"{cdn_url}/{stream_name}_{quality}/index.m3u8"
+	print("Quality ignored.")
+	return info_res.json()['media_servers'][0]['access_url']
 
 def gen_username(base, index):
 	return f"{base}_proc_{index}"

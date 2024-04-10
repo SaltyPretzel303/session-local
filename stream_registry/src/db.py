@@ -27,13 +27,49 @@ class Db:
 	def close(self):
 		disconnect()
 	
-	def get_all(self, from_ind, cnt, region):
-		datas = StreamData.objects(media_servers__region=region)\
-			.skip(from_ind)\
-			.limit(cnt)
-		
-		return filter_region_streams(datas, region)
+	def fetch_analytics(viewer: str):
+		return []
 
+	def recommended_sort_pipeline():
+		return [{'$match': {}}]
+
+	def views_sort_pipeline():
+		return [{'$match': {}}]
+
+	def no_sort_pipeline():
+		return [{'$match': {}}]
+
+	def from_stage(ind: int):
+		return {'$skip': ind}
+
+	def count_stage(count: int):
+		return {'$limit': count}
+
+	def dict_to_data(dict):
+		return StreamData(**dict)
+
+	def get_all(self, from_ind, cnt, region, ordering):
+
+		pipeline = []
+
+		if ordering == "Recommended":
+			pipeline = Db.recommended_sort_pipeline()
+		elif ordering == "Views": 
+			pipeline = Db.views_sort_pipeline()
+		else: 
+			pipeline = Db.no_sort_pipeline()
+		
+		pipeline.append(Db.from_stage(from_ind))
+		pipeline.append(Db.count_stage(cnt))
+		
+
+		# datas = StreamData.objects(media_servers__region=region)\
+		# 	.skip(from_ind)\
+		# 	.limit(cnt)
+
+		return StreamData.objects().aggregate(pipeline)
+
+		# return filter_region_streams(datas, region)
 
 	def get_by_category(self, 
 					category: StreamCategory, 
@@ -53,14 +89,15 @@ class Db:
 		
 		return StreamData.empty(creator, ingest_ip, stream_key).save()
 
-	def update(self, streamer: str, update_req: UpdateRequest) -> StreamData:
-		data = StreamData.objects(creator=streamer).first()
-		if data is None:
-			print(f"Such stream not found: {streamer}")
-			return None
+	def update(self, streamer: str, update_req: UpdateRequest) -> bool:
+		update_result = StreamData\
+			.objects(creator=streamer)\
+			.update_one(set__title=update_req.title, 
+			   		set__category=update_req.category,
+					set__is_public=update_req.is_public)
+		
 
-		data.update(update_req.title, update_req.category, update_req.is_public)
-		return data.save() # is save required here ... ?
+		return update_result > 0
 			
 	def remove_stream(self, key:str):
 		return StreamData.objects(stream_key=key).first().delete()
@@ -112,3 +149,8 @@ class Db:
 
 	def get_stream(self, streamer) -> StreamData:
 		return StreamData.objects(creator=streamer).first()
+	
+	def get_streams(self, streams: List[str], ordering: str = 'None'):
+		
+
+		return 
