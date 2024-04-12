@@ -12,7 +12,8 @@ class AppConfig:
 				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
-				hc_path="health_check")
+				hc_path="health_check",
+				preview_path="preview")
 		],
 		"na": [
 			InstanceConf(ip="localhost",
@@ -20,7 +21,8 @@ class AppConfig:
 				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
-				hc_path="health_check")
+				hc_path="health_check",
+				preview_path="preview")
 		],
 		"as": [
 			InstanceConf(ip="localhost",
@@ -28,7 +30,8 @@ class AppConfig:
 				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
-				hc_path="health_check")
+				hc_path="health_check",
+				preview_path="preview")
 		]
 	}
 
@@ -43,7 +46,13 @@ class AppConfig:
 
 	@staticmethod
 	def load_config(config: str):
-		AppConfig.instance = {}
+		# AppConfig.instance = {}
+  
+		# Next code will just add fields to the existing configuration, thus
+		# removing the need to pass irrelevant (to cdn deploy script) fields
+		# from the deploy script.
+		# ^ handy if configuration actually contains fields irrelevant for the
+		# cdn deployment script.
 		parsed = json.loads(config)
 		for region in parsed:
 			AppConfig.instance[region] = [InstanceConf(**c) for c in parsed[region]]

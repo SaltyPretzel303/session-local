@@ -345,15 +345,6 @@ async def remove_user(username: str):
 def authorize():
 	print(f"Processing authorization.")
 
-	# TODO Use some secret or authorization api instead of fixed key-value.
-	if 'sessionorigin' in request.headers \
-		and request.headers.get("sessionorigin") == "streamregistry":
-
-		print("Verifying StreamRegistry request. Authorized.")
-		return "Authorized.", status.HTTP_200_OK 
-	
-	print("Stream registry origin not found, authorizing regular user.")
-
 	# print("==== header ====")
 	# print(request.headers)
 	# print("==== header ====")

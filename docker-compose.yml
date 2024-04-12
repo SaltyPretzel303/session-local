@@ -95,7 +95,7 @@ services:
       dockerfile: ./dockerfiles/cdn_proxy.Dockerfile
     image: session/cdn-proxy
     ports:
-      - "0.0.0.0:12000:12000"
+      - "0.0.0.0:12000:1935"
     networks:
       - session-net
 
@@ -106,7 +106,7 @@ services:
       dockerfile: ./dockerfiles/cdn_instance.Dockerfile
     image: session/cdn
     ports:
-      - "0.0.0.0:11000:11000" # rtmp server
+      - "0.0.0.0:11000:1935" # rtmp server
       - "0.0.0.0:10000:80" # hls server
     networks:
       - session-net 

@@ -1,6 +1,6 @@
 import asyncio
 import os
-from typing import List
+from typing import Iterable, List
 from fastapi import FastAPI, Response, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -274,8 +274,8 @@ async def get_tnail(request: Request, streamer: str='unavailable'):
 	if streamer not in tnails or is_expired(tnails[streamer]):
 		print("Thumbnail expired, will generate new.")
 
-		gen_result = await generate_thumbnail(streamer, 
-									config.tnail_path(streamer))
+		tnail_path = config.tnail_path(streamer)
+		gen_result = await generate_thumbnail(streamer, tnail_path)
 
 		if not gen_result:
 			print(f"Failed to generate thumbnail for: {streamer}.")
@@ -304,16 +304,17 @@ async def generate_thumbnail(streamer, path):
 	stream_data:StreamData = get_db().get_stream(streamer)
 
 	found_valid = False
-	servers = iter(stream_data.media_servers)
+	preview_servers= filter(preview_quality_filter, stream_data.media_servers)
+	# servers = iter(stream_data.media_servers)
 
-	while (server:=next(servers, None)) and not found_valid: 
+	while (server:=next(preview_servers, None)) and not found_valid: 
 		try:
 			print(f"Pulling from: {server.media_url}")
 			proc = await asyncio.create_subprocess_exec(
 				"ffmpeg",
 				# Replace SessionOrigin field with some secret, or somehow
 				# authenticate registry service.
-				"-headers", "sessionorigin: streamregistry",
+				# "-headers", "sessionorigin: streamregistry", 
 				"-i",
 				server.media_url,
 				"-vframes", "1",
@@ -344,9 +345,13 @@ async def generate_thumbnail(streamer, path):
 
 	return True
 
+def preview_quality_filter(server:MediaServerData):
+	return server.quality == 'preview'
+
 def is_live(streamer: str):
 	return get_db().get_stream(streamer) is not None
 
+# mockup data
 def gen_stream_info(ind: int):
 	return StreamInfo(f"title_{ind}", 
 			f"creator_{ind}", 

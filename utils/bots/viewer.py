@@ -35,7 +35,7 @@ def setup_arg_parser():
 					action='store',
 					default='http://session.com/stream/stream_info')
 
-	parser.add_argument('--quality', action='store', default='subsd')
+	parser.add_argument('--quality', action='store', default='sd')
 	parser.add_argument('--stream', action='store', default='streamer-0')
 
 	parser.add_argument('--count', action='store', default='1')

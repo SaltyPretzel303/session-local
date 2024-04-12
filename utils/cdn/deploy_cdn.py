@@ -30,7 +30,8 @@ regions =  {
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
-				"hc_path":"health_check"
+				"hc_path":"health_check",
+				"preview_path": "preview"
 			}
 		],
 		"na": [
@@ -40,7 +41,8 @@ regions =  {
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
-				"hc_path":"health_check"
+				"hc_path":"health_check",
+				"preview_path": "preview"
 			}
 		],
 		"as": [
@@ -50,7 +52,8 @@ regions =  {
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
-				"hc_path":"health_check"
+				"hc_path":"health_check",
+				"preview_path": "preview"
 			}
 		]
 	}
@@ -63,7 +66,8 @@ regions =  {
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
-				"hc_path":"health_check"
+				"hc_path":"health_check",
+				"preview_path": "preview"
 			}
 		]
 	}
@@ -72,9 +76,12 @@ NETWORK = "session-net"
 IP_SUBNET_PREFIX = "172.19.0."
 STARTING_IP = 20
 BASE_RTMP_PORT = 11000
-INNER_RTMP_PORT = 11000
+INNER_RTMP_PORT = 1935
 BASE_HLS_PORT = 10000
 INNER_HLS_PORT = 80
+# BASE_PREVIEW_PORT = 9000
+# INNER_PREVIEW_PORT = 80
+
 
 CDN_LABEL = "cdn_instance"
 CDN_IMAGE_TAG = 'session/cdn'

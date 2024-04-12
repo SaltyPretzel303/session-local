@@ -105,7 +105,7 @@ def publish_stream(session, key_url, video_path, ingest_path):
 			loglevel="warning",
 			vcodec="libx264",
 			acodec="aac",
-			g=60
+			g=60 # number of frames per key frame 
 		)\
 		.run_async(pipe_stdin=True)
 

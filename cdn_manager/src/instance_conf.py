@@ -9,3 +9,4 @@ class InstanceConf:
 	hc_port: int
 	hls_path: str
 	hc_path: str
+	preview_path: str 
