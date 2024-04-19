@@ -1,5 +1,6 @@
-import Hls, { BufferEOSData, CMCDController, EMEControllerConfig, Events, HlsConfig } from "hls.js"
-import React, { useEffect, useRef, useState } from "react"
+import Hls, { BufferEOSData, Events, HlsConfig } from "hls.js"
+import { useEffect, useRef, useState } from "react"
+import config from '../Config'
 
 
 type HlsPlayerProps = {
@@ -22,7 +23,6 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 
 		const videoElement = videoRef.current;
 		if (!videoElement || !props.src) {
-			console.log("HlsPlayer not initialized")
 			console.log("Missing src or no video element.")
 			return
 		}
@@ -36,6 +36,8 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 				xhrSetup: (xhr: XMLHttpRequest, url) => {
 					xhr.withCredentials = true;
 				},
+				backBufferLength: 0,
+				liveDurationInfinity: true
 			} as HlsConfig;
 
 			hls = new Hls(config)
@@ -89,6 +91,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 		hls.stopLoad()
 		console.log("Pause handled, load stopped.")
 	}
+
 
 
 	return (

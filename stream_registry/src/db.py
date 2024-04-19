@@ -7,6 +7,10 @@ from mongoengine import connect, disconnect
 from ipaddress import ip_address
 
 from stream_registry.src.media_server_data import MediaServerData
+from stream_registry.src.viewer_data import ViewerData
+
+from datetime import datetime, UTC
+from app_config import AppConfig
 
 def filter_region_streams(streams, region):
 	stream: StreamData
@@ -19,6 +23,8 @@ def filter_region_streams(streams, region):
 		
 	return streams
 
+# TODO refactor this to be just a collection of methods, where each calls
+# connect at the beginning.
 class Db:
 
 	def __init__(self, conn_string: str):
@@ -99,8 +105,14 @@ class Db:
 
 		return update_result > 0
 			
-	def remove_stream(self, key:str):
-		return StreamData.objects(stream_key=key).first().delete()
+	def remove_stream_by_key(self, key:str) -> str: # return the name
+		data = StreamData.objects(stream_key=key).first()
+		data.delete()
+
+		if data is not None: 
+			return data.creator
+
+		return None
 
 	def add_media_server(self, stream_creator: str, 
 					quality: str,
@@ -108,17 +120,30 @@ class Db:
 					region:str, 
 					media_url:str) -> StreamData:
 		
-		stream:StreamData = StreamData.objects(creator=stream_creator).first()
+		stream = StreamData.objects(creator=stream_creator).first()
 
 		if stream is None:
 			print(f"Failed to find stream with creator: {stream_creator} ...")
 			return None
+
+		# existing = filter(lambda s: s.ip == int(ip_address(server_ip)), stream.media_servers)
+
+		# if all(s.ip == int(ip_address(server_ip)) for s in stream.media_servers):
+		# 	print("Media server already registered.")
+		# 	return None
 		
 		new_server_data = MediaServerData(quality=quality, 
 									ip=int(ip_address(server_ip)), 
 									region=region, 
 									media_url=media_url)
+
+		if new_server_data in stream.media_servers:
+			print("Media server already registered.")
+			# If None is returned the return code is server error, cdn_instance
+			# will keep trying to execute on_publish call. 
+			return new_server_data
 		
+
 		stream.media_servers.append(new_server_data)
 		save_res:StreamData = stream.save()
 
@@ -150,7 +175,33 @@ class Db:
 	def get_stream(self, streamer) -> StreamData:
 		return StreamData.objects(creator=streamer).first()
 	
-	def get_streams(self, streams: List[str], ordering: str = 'None'):
-		
+	def update_viewer(self, viewer_username: str, stream_name: str) -> ViewerData: 
+		view_data = ViewerData.objects(stream=stream_name, viewer=viewer_username).first()
 
-		return 
+		# view_data can be None if stream doesn't exists (not only if user was
+		# not watching it already). This means after the clear_viewers is called
+		# it is possible that someone will request update_viewer again and thus
+		# create an document, but this should not drastically impact anything
+		# since the db is remove those documents anyway after the expire_at.
+		if view_data is None: 
+			print("No such viewer, will create one.")
+			view_data = ViewerData(stream=stream_name, viewer=viewer_username)
+		
+		
+		longevity = AppConfig.get_instance().viewer_longevity
+		view_data.expire_at = datetime.now(UTC) + longevity
+
+		return view_data.save()
+	
+
+	def clear_viewers(self, stream_name):
+		viewers = ViewerData.objects(stream=stream_name)
+
+		print("Viewers: ")
+		for v in viewers:
+			print(v.to_json())
+			v.delete()
+
+
+	def get_view_count(self, stream_name):
+		return ViewerData.objects(stream=stream_name).count()

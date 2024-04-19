@@ -6,10 +6,7 @@ import { StreamInfo } from "./Datas";
 import config from './Config'
 
 type PlayerPageProps = {
-	user: UserInfo | undefined
 	getUser: () => Promise<UserInfo | undefined>
-	// setLoginVisible: React.Dispatch<boolean>
-	// setLoginForced: React.Dispatch<boolean>
 }
 
 enum VideoQuality {
@@ -20,9 +17,11 @@ enum VideoQuality {
 
 export function PlayerPage(props: PlayerPageProps) {
 
-	const { streamer: channel } = useParams<string>()
+	// const { streamer: channel } = useParams<string>()
+	const { channel } = useParams<string>()
 	const [streamSrc, setStreamSrc] = useState<string | undefined>(undefined)
 	const [quality, setQuality] = useState<VideoQuality>(VideoQuality.SUBSD)
+	const [viewsCount, setViewsCount] = useState("0")
 
 	// Data provided using navigate programatically.
 	// Mostly from stream preview.
@@ -32,47 +31,37 @@ export function PlayerPage(props: PlayerPageProps) {
 
 	useEffect(() => {
 
-		if (!props.user) {
-			console.log("Authentication required for this page.")
-			// navigate("/", { state: { getUser: props.getUser } })
-			navigate("/")
-		}
+		props.getUser()
+			.then((user) => {
+				if (!user) {
+					console.log("Authentication required for this page.")
+					navigate("/")
+					return // is it necessary ?
+				}
 
-		// This logic is moved in stream preview, that way user can't 
-		// navigate to this page if he is not authenticated.
+				console.log('Launching player for: ')
+				console.log('\tChannel: ' + channel)
+				console.log('\tViewer: ' + user?.username)
 
-		// props.getUser()
-		// 	.then(async (user) => {
-		// 		console.log("Obtained user in player page is: " + user)
-		// 		if (!user) {
-		// 			console.log("Authentication is required for this page.")
-		// 			props.setLoginForced(false)
-		// 			props.setLoginVisible(true)
-		// 		}
-		// 	})
-		// 	.catch((err) => {
-		// 		console.log("Failed to obtain user in playerPage: " + err)
-		// 	})
+				if (!channel) {
+					console.log("No channel provided.")
+					return;
+				}
 
-		console.log('Launching player for')
-		console.log('\tChannel: ' + channel)
-		console.log('\tViewer: ' + props.user?.username)
+				setupStreamSrc(channel)
+					.then(() => {
+						console.log("Stream source set.")
+					})
+					.catch((err) => {
+						console.log("Failed to set stream source: " + err)
+					})
 
-		if (!channel) {
-			console.log("No channel provided.")
-			return;
-		}
-
-		setupStreamSrc(channel)
-			.then(() => {
-				console.log("Stream source set, will register viewer.")
-				// addViewer() // fire and forget
 			})
 			.catch((err) => {
-				console.log("Failed to set stream source: " + err)
+
 			})
 
-	}, [props.user]);
+	}, []);
 
 	async function setupStreamSrc(creator: string) {
 		if (state) {
@@ -120,24 +109,24 @@ export function PlayerPage(props: PlayerPageProps) {
 
 	}
 
-	// async function addViewer() {
-	// 	try {
-	// 		let res = await fetch(config.addViewerUrl)
+	async function loadViewsHandler() {
+		console.log("Will load views counter")
+		if (!channel) {
+			return
+		}
+		let url = config.viewCountUrl(channel)
+		let view_res = await fetch(url)
 
-	// 		if (!res) {
-	// 			throw Error("Http is undefined. ")
-	// 		}
+		if (!view_res || view_res.status != 200) {
+			console.log("Failed to fetch views count.")
+			return
+		}
 
-	// 		if (res.status != 200) {
-	// 			let msg = await res.text
-	// 			throw Error("Non 200 code: " + msg)
-	// 		}
+		let value = await view_res.text()
+		console.log(`viewers_count: ${value}`)
 
-	// 	} catch (e) {
-	// 		console.log("Failed to add viewer: " + e)
-	// 	}
-
-	// }
+		setViewsCount(value)
+	}
 
 	function formPosterUrl(streamer: string | undefined): string {
 		return streamer ? config.tnailUrl(streamer) : config.notFoundTnailUrl
@@ -159,6 +148,12 @@ export function PlayerPage(props: PlayerPageProps) {
 					abr={false}
 					muted={false}
 					onDone={doneHandler} />
+			</div>
+			<div className='flex-row'>
+				<p>
+					{viewsCount}
+				</p>
+				<button onClick={loadViewsHandler}>Load views</button>
 			</div>
 			{/* <Chat visible={true} /> */}
 

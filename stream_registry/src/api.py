@@ -14,6 +14,7 @@ from requests import get
 
 import jsonpickle
 
+from shared_model.continue_view_request import ContinueViewRequest
 from shared_model.following_info import FollowingInfo
 from shared_model.media_server_request import MediaServerRequest
 from shared_model.media_server_info import MediaServerInfo
@@ -63,6 +64,10 @@ def stream_data_to_info(data:StreamData)->StreamInfo:
 
 def media_server_data_to_info(data: MediaServerData)->MediaServerInfo:
 	return MediaServerInfo(quality=data.quality, access_url=data.media_url)
+
+@app.get("/ping")
+def ping():
+	return "pong"
 
 # This is used by the ingest instance so therefore
 # request.ip should be the ingest instance's ip.
@@ -162,25 +167,26 @@ async def update(update_data: UpdateRequest, request: Request):
 	else: 
 		return "Failed to stream.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
-@app.get("/continue_view")
-async def add_viewer(request: Request):
-	
-	if request.cookies is None: 
-		print("Adding unauthorized viewer.")
+@app.post("/continue_view")
+async def add_viewer(view_request: ContinueViewRequest):
 
-	
-	
-	# if has cookie 
-	# grab user info from tokens-api
-	# else save with ip 
+	print("Processing continue view request.")
+	print(f"User: {view_request.username}, stream:{view_request.stream_name}")
 
+	result = get_db().update_viewer(viewer_username=view_request.username, 
+						stream_name=view_request.stream_name)
+	if result is None: 
+		print("Failed to update viewer.")
+		return "Failed to update viewer.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
-	return 
+	return "Viewer updated." ,status.HTTP_200_OK
 
-@app.get('/remove_viewer')
-def remove_viewer():
-	# same this as with the add_viewer 
-	return 
+@app.get('/viewer_count/{streamer}')
+async def get_viewer_count(streamer: str):
+	count = get_db().get_view_count(streamer)
+	print(f"Found count: {count}")
+
+	return count
 
 @app.get("/all")
 def get_all(region:str="eu", start:int=0, count:int=4, ordering: str = 'None'):
@@ -367,13 +373,18 @@ def url_decode(data:str):
 @app.post("/stop_stream")
 async def stop_stream(request: Request):
 	args = url_decode((await request.body()).decode())
-	stream_name = args['name']
+	stream_key = args['name']
 
-	print(f"Removing stream with the key: {stream_name}")
+	print(f"Removing stream with the key: {stream_key}")
+	stream_name = get_db().remove_stream_by_key(stream_key)
 
-	get_db().remove_stream(stream_name)
-
-	return Response(f"Stream {stream_name} removed.")
+	if stream_name is not None: 
+		print(f"Clearing viewers for: {stream_name}")
+		get_db().clear_viewers(stream_name)	
+	else: 
+		print("Stream name was not resolved, db will eventually clear viewers.")
+	
+	return Response(f"Stream {stream_key} removed.")
 
 # if __name__ == '__main__':
 # 	app.run(host='0.0.0.0', port='80') 

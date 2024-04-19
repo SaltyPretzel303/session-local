@@ -19,7 +19,7 @@ NETWORK="session-net"
 IP_SUBNET="172.23.1"
 BASE_RTMP_PORT=9090
 BASE_HLS_PORT=8080
-INNER_RTMP_PORT=9090
+INNER_RTMP_PORT=1935
 INNER_HLS_PORT=8080
 IMAGE_NAME="session/ingest"
 
@@ -74,7 +74,7 @@ else:
 		out_hls_port = BASE_HLS_PORT+ind
 
 		container_ports = [INNER_RTMP_PORT, INNER_HLS_PORT]
-		address = f"{IP_SUBNET}.{ind}"
+		# address = f"{IP_SUBNET}.{ind}"
 
 		h_config = d_api.create_host_config(
 			port_bindings={
@@ -88,7 +88,8 @@ else:
 			NETWORK: d_api.create_endpoint_config()
 		})
 
-		print(f"Starting: {c_name} addr: {address}")
+		# print(f"Starting: {c_name} addr: {address}")
+		print(f"Starting ingest: {c_name}")
 
 		ing_id = d_api.create_container(image=IMAGE_NAME,
 								  	detach=True, 

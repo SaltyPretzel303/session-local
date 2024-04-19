@@ -73,7 +73,7 @@ export default function Explore(props: ExploreProps) {
 			followingChannels
 				.map(async f => await fetchStreamInfo(f.following))
 				.filter(f => f != undefined) as any
-			// offline streams will be undefined
+			// offline channels will be undefined 
 		)
 		console.log("Found: " + streams.length + " live followers.")
 

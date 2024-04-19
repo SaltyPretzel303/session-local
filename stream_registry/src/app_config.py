@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import os
 from typing import Callable
+from datetime import timedelta
 
 @dataclass
 class Config:
@@ -11,6 +12,7 @@ class Config:
 	unavailable_path: str
 	match_region_url: Callable[[str], str]
 	followingUrl: str
+	viewer_longevity :timedelta
 
 class AppConfig:
 
@@ -23,7 +25,9 @@ class AppConfig:
 		tnail_path=lambda streamer: f"./app/tnails/{streamer}.jpeg",
 		unavailable_path="tnails/unavailable.png",
 		match_region_url=lambda region: f"http://localhost:8004/match_region/{region}",
-		followingUrl="http://localhost:8100/get_following"
+		followingUrl="http://localhost:8100/get_following",
+		# viewer_longevity=timedelta(minutes=1),
+		viewer_longevity=timedelta(seconds=20)
 	)
 
 	PROD_INSTANCE = Config(
@@ -33,7 +37,9 @@ class AppConfig:
 		tnail_path=lambda streamer: f"/app/tnails/{streamer}.jpg",
 		unavailable_path="tnails/unavailable.png",
 		match_region_url=lambda region: f"http://cdn-manager.session.com/match_region/{region}",
-		followingUrl="http://tokens.api.session.com/get_following"
+		followingUrl="http://tokens.api.session.com/get_following",
+		# viewer_longevity=timedelta(minutes=1)
+		viewer_longevity=timedelta(seconds=20)
 	)
 
 	# CONFIG_PATH = "stream_registry/src/app_config.json"

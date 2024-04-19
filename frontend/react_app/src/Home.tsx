@@ -160,13 +160,13 @@ export default function Home() {
 								}
 							/>
 
-							<Route path="/watch/:streamer"
+							<Route path="/watch/:channel"
 								element={
 									<PlayerPage
-										user={userInfo}
+										// user={userInfo}
 										getUser={getUser}
 									// getUser is redundant and only used 
-									// so that it can be navigated back to /
+									// so that it can be navigated back to / <- home
 									/>
 								}
 							/>

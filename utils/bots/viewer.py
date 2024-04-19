@@ -9,6 +9,8 @@ import signal
 from requests import Session, get
 from tokens_auth import tokens_full_auth
 
+STREAM_QUALITY = 'stream'
+
 def setup_arg_parser():
 
 	parser = ArgumentParser()
@@ -35,7 +37,6 @@ def setup_arg_parser():
 					action='store',
 					default='http://session.com/stream/stream_info')
 
-	parser.add_argument('--quality', action='store', default='sd')
 	parser.add_argument('--stream', action='store', default='streamer-0')
 
 	parser.add_argument('--count', action='store', default='1')
@@ -49,11 +50,12 @@ def form_headers(s: Session):
 	return f"Cookie: sAccessToken={s.cookies['sAccessToken']}"
 
 def form_play_stream_cmd(headers, width, height, stream_url)->str:
-	return [ 'ffplay',
+	return [ 
+		'ffplay',
 		'-fflags', 'nobuffer',
 		'-headers', headers,
-		'-x', width,
-		'-y', height,
+		'-x', str(width),
+		'-y', str(height),
 		'-loglevel', 'error',
 		stream_url
 	]
@@ -66,10 +68,12 @@ def form_waste_stream_cmd(headers, stream_url):
 		'-loglevel', 'error',
 		'-f', 'null',
 		'-'
-		# '-headers', headers,
 	]
 
-def get_stream_url(registry_at, stream_name, quality):
+def stream_filter(s):
+	return s['quality'] == STREAM_QUALITY
+
+def get_stream_url(registry_at, stream_name):
 	registry_url = f"{registry_at}/{stream_name}"
 	info_res = get(registry_url)
 
@@ -77,9 +81,10 @@ def get_stream_url(registry_at, stream_name, quality):
 		print("Failed to obtain stream info.")
 		return None
 	
-	print("Media/cdn server info obtained.")
-	print("Quality ignored.")
-	return info_res.json()['media_servers'][0]['access_url']
+	print("Media/cdn server (abr) info obtained.")
+	server = next(filter(stream_filter, info_res.json()['media_servers']))
+
+	return server['access_url'] if server else None
 
 def gen_username(base, index):
 	return f"{base}_proc_{index}"
@@ -96,7 +101,6 @@ def watch(username,
 		signin_at,
 		registry_at,
 		stream_name,
-		quality,
 		width, 
 		height,
 		count, 
@@ -118,10 +122,11 @@ def watch(username,
 		if s is None: 
 			print(f"Failed to authenticate: {ind_username} - {ind_email}")
 			return procs
+		
 		print(f"Successfully authenticated: {ind_username}")
 
 		headers = form_headers(s)
-		stream_url = get_stream_url(registry_at, stream_name, quality)
+		stream_url = get_stream_url(registry_at, stream_name)
 
 		if stream_url is None: 
 			print("Failed to obtain stream url.")
@@ -139,8 +144,8 @@ def watch(username,
 		else:
 			print(f"Will waste stream from: {stream_url} with: {ind_username}.")
 			cmd = form_waste_stream_cmd(headers, stream_url)
-		
-		proc = Popen(cmd)	
+
+		proc = Popen(cmd)
 		procs[proc.pid] = proc
 
 	return procs
@@ -157,7 +162,6 @@ if __name__ == '__main__':
 	   args.signin_at,
 	   args.reg_at,
 	   args.stream,
-	   args.quality,
 	   args.w,
 	   args.h,
 	   args.count,

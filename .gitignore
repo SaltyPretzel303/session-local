@@ -3,6 +3,10 @@ docker_share/video.mp4
 **.mp4
 *.png
 **.png
+*.flv
+**.flv
+
+fhd.flv
 
 # python stuff 
 

@@ -14,7 +14,7 @@ def tokens_remove_user(username: str, url: str)->bool:
 		res = get(form_remove_url(url, username))
 		
 		if res is None:
-			raise Exception(f"Remove response: {None}.")
+			raise Exception(f"Remove response is None.")
 
 		if res.status_code != 200 and res.status_code != 404:
 			raise Exception(f"Non success code: {res.status_code}")

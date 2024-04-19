@@ -17,6 +17,7 @@ api = Api(app)
 
 QUALITIES = ['sd', 'subsd']
 PREVIEW_QUALITY = 'preview'
+STREAM_QUALITY = 'stream'
 
 # QUAL_HD = "hd"
 # QUAL_SD = "sd"
@@ -50,27 +51,23 @@ def ping():
 @app.route("/initialize", methods=["POST"])
 def initialize():
 	AppConfig.load_config(request.get_json())
+	print("Configuration loaded.")
 
 	return "Configuration loaded.", status.HTTP_200_OK
 
 def filter_region_with_ip(ip: str)->Tuple[str, InstanceConf]:
 	conf = AppConfig.get_instance()
-	print("Filtering from")
-	print(conf)
 	for region in conf:
-		print(f"Checking region: {region}")
 		instance = next(filter(lambda inst: inst.ip == ip, conf[region]), None)
 		if instance is not None:
 			return (region, instance)
 		
 	return (None, None)
 
-def form_media_url(server:InstanceConf, content:str, quality:str):
+def form_media_url(server:InstanceConf, content:str):
 	# Enforce use of domainName instead of ip:port since suprtokens will look
 	# at domain root and decide to send credentials or not.
-	hls_path = server.hls_path
-	domain_name = server.domainName
-	return f"http://{domain_name}/{hls_path}/{content}_{quality}/index.m3u8"
+	return f"http://{server.domainName}/{server.hls_path}/{content}.m3u8"
 
 def form_preview_url(server:InstanceConf, content:str):
 	preview_path = server.preview_path
@@ -91,6 +88,7 @@ def add_media_server():
 		return "Name and quality in wrong format ...", status.HTTP_500_INTERNAL_SERVER_ERROR
 	
 	print(f"Streamer: {creator} qual: {quality} at: {instance_ip}")
+	print("Quality will be ignored, abr is used.")
 
 	(region, instance) = filter_region_with_ip(instance_ip)
 	if region is None:
@@ -98,10 +96,10 @@ def add_media_server():
 		return "Failed to match region.", status.HTTP_404_NOT_FOUND
 
 	add_request = MediaServerRequest(content_name=creator,
-						quality=quality,
+						quality=STREAM_QUALITY,
 						media_server_ip=instance_ip,
 						region=region, 
-						media_url=form_media_url(instance, creator, quality))
+						media_url=form_media_url(instance, creator))
 	
 	# req_data = encode(add_request, unpicklable=False)
 	try:
@@ -210,7 +208,7 @@ def remove_media_server():
 						quality=quality,
 						media_server_ip=instance_ip,
 						region=region,
-						media_url=form_media_url(instance, content_name, quality))
+						media_url=form_media_url(instance, content_name))
 	
 	add_res = post(url=f"http://{STREAM_REGISTRY_ADDR}/{REMOVE_MEDIA_SERVER_PATH}", json=req_data.__dict__)
 	

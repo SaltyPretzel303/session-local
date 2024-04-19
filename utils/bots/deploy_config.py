@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 
-# Will be used in docker deployment as well ... 
+# Will be used in docker deployment as well.
+# Source file in config will just point to the mounted LOCAL_VIDE_PATH inside
+# the container.
 LOCAL_VIDEO_PATH = '/home/nemanja/Videos/clock.mp4'
 LOCAL_VIDEO_PATH = "/home/nemanja/workspace/session-local/sample.mp4"
+# LOCAL_VIDEO_PATH = "/home/nemanja/workspace/session-local/fhd.flv"
 
 @dataclass
 class DeployConfig:
@@ -27,16 +30,15 @@ class DeployConfig:
 					
 
 	def docker():
-		auth_server = "tokens-api.session.com"
 		ingest_server = "ingest-proxy.session.com"
-		registry_server = 'stream-registry.session.com'
 
 		domain = 'session.com'
 		return DeployConfig(reg_url=f'http://{domain}/auth/signup',
-					  auth_url=f'http://{domain}/auth/signin',
-					  remove_url=f"http://{domain}/user/remove",
-					  key_route=f'http://{domain}/auth/get_key',
-					  source_file='/sample.mp4',
-					  ingest_url=f'rtmp://{ingest_server}:9000/ingest',
-					  update_url=f'http://{domain}/stream/update',
-					  registry_url=f'http://{domain}/stream/stream_info')
+					auth_url=f'http://{domain}/auth/signin',
+					remove_url=f"http://{domain}/user/remove",
+					key_route=f'http://{domain}/auth/get_key',
+					source_file='/sample.mp4',
+	 				# source_file='/fhd.flv',
+					ingest_url=f'rtmp://{ingest_server}:9000/ingest',
+					update_url=f'http://{domain}/stream/update',
+					registry_url=f'http://{domain}/stream/stream_info')

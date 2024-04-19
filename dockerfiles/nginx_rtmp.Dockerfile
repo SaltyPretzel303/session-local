@@ -118,17 +118,4 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
 
 RUN useradd nginx
 
-# Set up config file
-# COPY ingest/nginx.conf /etc/nginx/nginx.conf
-# COPY ingest/min_nginx.conf /etc/nginx/nginx.conf
-
-# COPY ingest/processor.sh /processor.sh
-# RUN chmod a+x /processor.sh
-
-# ingest
-# EXPOSE 9090
-# # http health_check
-# EXPOSE 8080
-
-# ENTRYPOINT ["python3", "-u", "launcher.py"]
 ENTRYPOINT ["nginx","-g","daemon off;"]

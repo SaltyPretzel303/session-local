@@ -4,9 +4,11 @@ import string
 from typing import Any, Dict, List
 from flask_restful import Api
 import jsonpickle
+from requests import post
 
 from config import config
 
+from shared_model.continue_view_request import ContinueViewRequest
 import users_db
 
 from flask import Response, g, request, Flask, abort
@@ -341,6 +343,9 @@ async def remove_user(username: str):
 
 # TODO Refactor with fastapi so that the method can be async 
 # since it will require viewers count update.
+# TODO Split in two endpoints, one for user authentication and one for stream
+# authorization and possibly one for non-viewer stream authorization if someone
+# just want to search channel or something like that.
 @app.route("/verify", methods=["GET"])
 def authorize():
 	print(f"Processing authorization.")
@@ -356,7 +361,6 @@ def authorize():
 		return "Not authorized.", status.HTTP_403_FORBIDDEN
 
 	tokens_id = session.get_user_id()
-
 	stream_name = request.headers.get("X-Stream-Username")
 
 	# User has to be not None, if session exists there has to be 
@@ -367,6 +371,23 @@ def authorize():
 		return "No such user.", status.HTTP_404_NOT_FOUND
 
 	# Check stream limits. (these are not yet implemented)
+ 
+	# Update viewer count. 
+	if stream_name is not None: 
+		# stream_name is gonna be None in the case some service is just trying
+		# to verify users auth token. 
+		print("Will update viewer count.")
+		view_cnt_update = ContinueViewRequest(user.username, stream_name)
+		try:
+			update_res = post(url=config.view_update_url, json=view_cnt_update.__dict__)
+			if update_res.status_code != 200:
+				raise Exception(f"Status code: {update_res.status_code}")
+			
+		except Exception as e:
+			print(f"Failed to update viewer count for {user.username}: {e}.")
+			# User can still be authorized, failure reason could be just server error.
+	else:
+		print("Stream name not provided, simple token verification.")
 
 	print(f"Authorized: {user.username} for {stream_name}.")
 	return "Authorized.", status.HTTP_200_OK

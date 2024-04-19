@@ -2,7 +2,6 @@
 
 import argparse
 from time import sleep
-import pickle
 from threading import Thread
 import ffmpeg # pip install ffmpeg-python NOT JUST FFMPEG !!!
 
@@ -36,11 +35,11 @@ def setup_arg_parser():
 
 	parser.add_argument(f'--{MAIL_ARG}',
 						action='store',
-						default='email0')
+						default='email0@mail.com')
 
 	parser.add_argument(f'--{PASSWORD_ARG}',
 						action='store',
-						default='pwd0')
+						default='email0pwd')
 
 	parser.add_argument(f'--{TITLE_ARG}',
 						action='store',
@@ -93,18 +92,21 @@ def publish_stream(session, key_url, video_path, ingest_path):
 	if key_data is None: 
 		print(f"Failed to obtain stream key.")
 		return None
-	
-	print(f"Obtained key: {key_data.value}")
+
+	print(f"KeyData: {json_serialize(key_data)}")
+
+	ingest_url = f"{ingest_path}/{key_data.value}"
+	print(f"Publishing: {video_path} at {ingest_url}")
 
 	return ffmpeg\
-		.input(video_path, re=None)\
+		.input(video_path, re=None, stream_loop=-1)\
 		.output(
-			f"{ingest_path}/{key_data.value}",
+			ingest_url,
 			format='flv',
 			flvflags="no_duration_filesize",
 			loglevel="warning",
 			vcodec="libx264",
-			acodec="aac",
+			acodec="aac",	
 			g=60 # number of frames per key frame 
 		)\
 		.run_async(pipe_stdin=True)

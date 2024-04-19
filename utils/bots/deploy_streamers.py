@@ -115,11 +115,12 @@ def docker_deployment(count: int):
 
 		try:
 			entry = get_container_entrypoint(index)
+			container_name = get_container_name(index)
 			container = dckr.containers.run(image=DOCKER_IMAGE,
 									detach=True, 
 									network='session-net',
 									auto_remove=True,
-									name=get_container_name(index),
+									name=container_name,
 									# labels=DOCKER_STREAMER_LABEL,
 									# mounts=[video_mount],
 									volumes=volumes,
@@ -128,8 +129,12 @@ def docker_deployment(count: int):
 			print("Error while starting container: ")
 			print(e)
 			return None
-
-		ids.append(container.id)
+		
+		streamer = dckr.containers.get(container.id)
+		if not streamer: 
+			print(f"Failed to start streamer: {container_name}")
+		else:
+			ids.append(container.id)
 
 	print("Streamers deployed.")
 

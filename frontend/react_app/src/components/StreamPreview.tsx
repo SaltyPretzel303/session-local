@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react"
-import { StreamInfo } from "../Datas"
+import { useState } from "react"
+import { MediaServer, StreamInfo } from "../Datas"
 import HlsPlayer from "./HlsPlayer"
 import config from "../Config"
-import { useNavigate } from "react-router-dom"
 
 type StreamPreviewProps = {
 	info: StreamInfo
@@ -21,8 +20,20 @@ export default function StreamPreview(props: StreamPreviewProps) {
 		setPlaying(false)
 	}
 
-	function formPosterUrl(streamer: string): string {
-		return config.tnailUrl(streamer)
+	function formStreamUrl(): string | undefined {
+		let previewFilter = (s: MediaServer) => s.quality == config.previewQuality
+		let mediaServers = props.info.media_servers.filter(previewFilter)
+
+		if (mediaServers.length > 0) {
+			return mediaServers[0].access_url
+		}
+
+		return undefined
+	}
+
+
+	function formPosterUrl(): string {
+		return config.tnailUrl(props.info.creator)
 	}
 
 	return (
@@ -38,8 +49,8 @@ export default function StreamPreview(props: StreamPreviewProps) {
 
 			<div className='h-full w-46'>
 				<HlsPlayer
-					src={props.info.media_servers[0].access_url}
-					posterUrl={formPosterUrl(props.info.creator)}
+					src={formStreamUrl()}
+					posterUrl={formPosterUrl()}
 					shouldPlay={playing}
 					quality={"subsd"}
 					abr={false}

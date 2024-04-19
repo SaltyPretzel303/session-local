@@ -54,6 +54,7 @@ services:
     ports:
       - 0.0.0.0:9000:9000
       - 0.0.0.0:9001:9999
+      # 9999 haproxy admin port
     networks: 
       - session-net
 
@@ -64,8 +65,7 @@ services:
       dockerfile: dockerfiles/ingest.Dockerfile
     image: session/ingest
     ports: 
-      - "0.0.0.0:9090:9090"
-      - "0.0.0.0:9080:9080"
+      - "0.0.0.0:9090:1935"
       - "0.0.0.0:8080:8080"
     networks: 
       - session-net
@@ -184,7 +184,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # stop_signal: SIGINT
+    stop_signal: SIGINT
 
   tokens-api: 
     container_name: tokens-api.session.com

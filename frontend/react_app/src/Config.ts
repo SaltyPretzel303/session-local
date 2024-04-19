@@ -22,7 +22,9 @@ type configuration = {
 	userFromTokensIdUrl: (tokensId: string) => string,
 	followingUrl: string,
 	tnailUrl: (username: string) => string,
-	notFoundTnailUrl: string
+	notFoundTnailUrl: string,
+	previewQuality: string,
+	viewCountUrl: (stream: string) => string
 }
 
 
@@ -71,7 +73,10 @@ const config: configuration = {
 
 	tnailUrl: (stream: string) => `http://session.com/stream/tnail/${stream}`,
 
-	notFoundTnailUrl: "http://session.com/stream/tnail/unavailable"
+	notFoundTnailUrl: "http://session.com/stream/tnail/unavailable",
+	previewQuality: "preview",
+	viewCountUrl: (stream: string) => `http://session.com/stream/viewer_count/${stream}`
+
 }
 
 export default config
