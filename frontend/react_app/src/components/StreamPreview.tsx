@@ -42,12 +42,14 @@ export default function StreamPreview(props: StreamPreviewProps) {
 			onMouseLeave={hoverOutHandler}
 			onClick={() => props.onClick(props.info)}
 			className='flex flex-row 
-				p-2 mx-2 box-border h-40 max-w-96
-				border-blue-500 border
+				box-border p-2 mx-2 
+				h-full
+				// w-1/4
+				border-blue-500 border 
 				hover:bg-sky-50'
 		>
 
-			<div className='h-full w-46'>
+			<div className='flex h-full w-full'>
 				<HlsPlayer
 					src={formStreamUrl()}
 					posterUrl={formPosterUrl()}
@@ -56,7 +58,9 @@ export default function StreamPreview(props: StreamPreviewProps) {
 					abr={false}
 					muted={true} />
 			</div>
-			<div className='flex flex-col ml-10'>
+			<div className='flex flex-col h-full max-w-60
+				border border-black'
+			>
 
 				<div className='font-extrabold text-nowrap'>
 					{props.info.title}</div>

@@ -24,7 +24,10 @@ type configuration = {
 	tnailUrl: (username: string) => string,
 	notFoundTnailUrl: string,
 	previewQuality: string,
-	viewCountUrl: (stream: string) => string
+	viewCountUrl: (stream: string) => string,
+	isLiveUrl: (stramer: string) => string,
+	categoriesUrl: string,
+	updateStreamUrl: (streamer: string) => string
 }
 
 
@@ -75,8 +78,10 @@ const config: configuration = {
 
 	notFoundTnailUrl: "http://session.com/stream/tnail/unavailable",
 	previewQuality: "preview",
-	viewCountUrl: (stream: string) => `http://session.com/stream/viewer_count/${stream}`
-
+	viewCountUrl: (stream: string) => `http://session.com/stream/viewer_count/${stream}`,
+	isLiveUrl: (streamer: string) => `http://session.com/stream/is_live/${streamer}`,
+	categoriesUrl: "http://session.com/stream/categories",
+	updateStreamUrl: (streamer: string) => "http://session.com/stream/update"
 }
 
 export default config

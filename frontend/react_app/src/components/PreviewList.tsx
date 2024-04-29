@@ -18,7 +18,7 @@ type range = {
 
 export default function PreviewsList(props: PreviewListProps) {
 
-	const visibleCount = 1
+	const visibleCount = 4
 
 	const [streams, setStreams] = useState<StreamInfo[]>([])
 	const [currentRange, setCurrentRange] = useState<range>({ start: 0, count: 0 })
@@ -108,21 +108,21 @@ export default function PreviewsList(props: PreviewListProps) {
 
 	return (
 		<div className='flex flex-col 
-			border-y-4 border-blue-950 
+			border-y-4 border-purple-500
 			p-2 my-3 h-60'>
 
-			<h1 className='h-10 ml-24 
+			<h1 className='h-10 ml-[160px] 
 				font-bold
-				text-blue-950 text-2xl'>{props.title}</h1>
+				text-purple-500 text-2xl'>{props.title}</h1>
 
 			<div className='flex flex-row
 				items-center justify-center
-				h-full box-border border-2 border-red-400'>
+				h-full box-border'>
 
 				{<ScrollButton dir={"left"} clickHandler={scrollBack} />}
 
 				{/* streams container */}
-				<div className='flex flex-row 
+				<div className='flex flex-row
 						h-full basis-10/12 
 						justify-center
 						box-border p-2

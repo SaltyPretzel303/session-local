@@ -152,7 +152,7 @@ export default function Explore(props: ExploreProps) {
 		<div className='flex flex-col h-full p-3'>
 
 			<PreviewsList title={"Following"}
-				streamsProvider={followingStreamsProvider}
+				streamsProvider={mockupProvider}
 				streamClickHandler={streamClickHandler} />
 
 			<PreviewsList title={"Recommended"}

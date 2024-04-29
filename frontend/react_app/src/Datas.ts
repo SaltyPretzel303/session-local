@@ -55,3 +55,10 @@ export type FollowingInfo = {
 	following: string
 	from_date: string
 }
+
+export type UpdateRequest = {
+	username: string
+	title: string
+	category: string
+	is_public: boolean
+}

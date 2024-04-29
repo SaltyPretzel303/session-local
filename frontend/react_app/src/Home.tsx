@@ -104,19 +104,22 @@ export default function Home() {
 		let userTokensId = await Session.getUserId()
 
 		let infoUrl = config.userFromTokensIdUrl(userTokensId)
-		let response = await fetch(infoUrl, { method: 'GET' })
+		try {
+			let response = await fetch(infoUrl, { method: 'GET' })
 
-		if (response.status != 200) {
-			console.log("Return status: " + response.status
-				+ " msg: " + await response.text())
+			if (response.status != 200) {
+				throw Error("Status code: " + response.status)
+			}
+
+			let info = await response.json() as UserInfo
+
+			setUserInfo(info)
+
+			return info
+		} catch (e) {
+			console.log("Error while fetching user data: " + e)
 			return undefined
 		}
-
-		let info = await response.json() as UserInfo
-
-		setUserInfo(info)
-
-		return info
 	}
 
 	async function logout() {
@@ -135,9 +138,9 @@ export default function Home() {
 	return (
 
 		// root
-		<div className='flex flex-col h-screen w-screen'>
+		<div className='flex flex-col h-screen w-screen bg-sky-950'>
 
-			<div className='h-14 w-full'>
+			<div className='h-14 w-full border-2'>
 				<HeaderBar
 					loginVisible={loginVisible}
 					setLoginVisible={setLoginVisible}

@@ -1,7 +1,7 @@
 import asyncio
 import os
 from typing import Iterable, List
-from fastapi import FastAPI, Response, Request, status
+from fastapi import FastAPI, HTTPException, Response, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -98,8 +98,9 @@ async def start_stream(request: Request):
 		print("Saving stream info skeleton.")
 		db_res = get_db().save_empty(match_data["value"], ingest_ip, key)
 		if db_res is None:
-			return Response(content="Failure.", 
-					   status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+			raise HTTPException(status_code=500)
+			# return  Response(content="Failure.", 
+			# 		   status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 		
 		print("Stream saved.")
 
@@ -110,6 +111,7 @@ async def start_stream(request: Request):
 
 	except Exception as e:
 		print(f"Failed to match key: {key}, reason: {e}")
+		raise HTTPException(status=500)
 		return Response(content="Failure.", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @app.post("/add_media_server")
@@ -125,6 +127,7 @@ async def add_media_server(server_data: MediaServerRequest):
 								server_data.media_url)
 
 	if add_res is None:
+		raise HTTPException(status=500, details='Failed to add media server.')
 		return Response("Failed to add media server.", 
 				status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 	else:
@@ -156,6 +159,7 @@ async def update(update_data: UpdateRequest, request: Request):
 		
 	except Exception as e :
 		print(f"Failed to authorize user: {e}")
+		raise HTTPException(status=401, details='Authorization failed.')
 		return "Authorization failed.", status.HTTP_401_UNAUTHORIZED
 
 	print("User authorized.")
@@ -163,9 +167,10 @@ async def update(update_data: UpdateRequest, request: Request):
 	update_success = get_db().update(update_data.username, update_data)
 
 	if update_success:
-		return "Stream updated.", status.HTTP_200_OK
+		return "Stream updated."
 	else: 
-		return "Failed to stream.", status.HTTP_500_INTERNAL_SERVER_ERROR
+		raise HTTPException(status=500, details='Failed to update stream.')
+		return "Failed to update stream.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
 @app.post("/continue_view")
 async def add_viewer(view_request: ContinueViewRequest):
@@ -177,9 +182,10 @@ async def add_viewer(view_request: ContinueViewRequest):
 						stream_name=view_request.stream_name)
 	if result is None: 
 		print("Failed to update viewer.")
+		raise HTTPException(status=500)
 		return "Failed to update viewer.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
-	return "Viewer updated." ,status.HTTP_200_OK
+	return "Viewer updated."
 
 @app.get('/viewer_count/{streamer}')
 async def get_viewer_count(streamer: str):
@@ -218,10 +224,12 @@ def get_stream_info(streamer: str, region:str = 'eu'):
 	stream_data:StreamData = get_db().get_stream(streamer)
 
 	if stream_data is None:
+		raise HTTPException(status=404, details='No such stream..')
 		return "No such stream.", status.HTTP_404_NOT_FOUND
 
 	if not stream_data.is_public:
 		print("This is not public stream ... ")
+		raise HTTPException(status=404, details='No such stream.')
 		return "No such stream.", status.HTTP_404_NOT_FOUND
 	
 	return JSONResponse(jsonify(stream_data_to_info(stream_data)))
@@ -249,20 +257,23 @@ async def get_following(request: Request,
 
 	except Exception as e:
 		print(f"Failed to obtain followed channels: {e}")
+		raise HTTPException(status=followed_res.status_code, 
+					details='Failed to obtain followed channels.')
 		return "Failed to obtain followed channels.", followed_res.status_code
 
-	following_data = map(lambda f: f.following, following_data)
-
+	return map(lambda f: f.following, following_data)
 
 @app.get("/get_recommended/{username}")
 def get_recommended(username: str):
 	print("GET RECOMMENDED NOT IMPLEMENTED")
+	raise HTTPException(status_code=501)
 	return jsonify([]), status.HTTP_501_NOT_IMPLEMENTED
 
 @app.get("/get_explore")
 def get_explore(region: str="eu", start:int=0, count:int=2):
 	print("GET EXPLORE NOT IMPLEMENTED")
-	return jsonify([]), status.HTTP_200_OK
+	# raise HTTPException(status_code=501)
+	return jsonify([])
 
 @app.get("/tnail/{streamer}")
 async def get_tnail(request: Request, streamer: str='unavailable'):
@@ -272,9 +283,11 @@ async def get_tnail(request: Request, streamer: str='unavailable'):
 
 	if streamer == 'unavailable':
 		print("Requested static unavailable thumbnail.")
+		raise HTTPException(status_code=400, detail='Stream name not provided.') # bad request
 		return "Stream name not provided", status.HTTP_404_NOT_FOUND
 
 	if not is_live(streamer):
+		raise HTTPException(status_code=404, detail='Stream is not live.') 
 		return "Streamer is not live.", status.HTTP_404_NOT_FOUND
 	
 	if streamer not in tnails or is_expired(tnails[streamer]):
@@ -285,6 +298,7 @@ async def get_tnail(request: Request, streamer: str='unavailable'):
 
 		if not gen_result:
 			print(f"Failed to generate thumbnail for: {streamer}.")
+			raise HTTPException(status_code=500) 
 			return "Server error.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
 		exp_date = datetime.now() + timedelta(seconds=TNAIL_LONGEVITY)
@@ -293,10 +307,20 @@ async def get_tnail(request: Request, streamer: str='unavailable'):
 
 	if not os.path.exists(config.tnail_path(streamer)):
 		print(f"Failed to generate tnail at: {config.tnail_path(streamer)}")
+		raise HTTPException(status_code=500) 
 		return "Server error.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
 	print(f"Returning tnail for {streamer}.")
 	return FileResponse(path=config.tnail_path(streamer), media_type="image/jpg")
+
+@app.get("/is_live/{streamer}")
+async def is_live_request(streamer: str):
+	print(f"Processing is live request for: {streamer}")
+	return is_live(streamer)
+
+@app.get("/categories")
+async def get_categories():
+	return AppConfig.get_instance().categories
 
 def flatten_cookies(cookies):
 	return f"Cookie: sAccessToken={cookies['sAccessToken']}"

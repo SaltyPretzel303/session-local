@@ -49,6 +49,7 @@ def local_deployment(count: int):
 		new_proc = stream(username=get_name(index),
 				email=get_mail(index),
 				password=get_pwd(index),
+				keep=False,
 				reg_route=config.reg_url,
 				auth_route=config.auth_url,
 				remove_route=config.remove_url,

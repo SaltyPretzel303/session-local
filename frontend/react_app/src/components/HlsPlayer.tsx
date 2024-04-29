@@ -97,7 +97,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 	return (
 		<div className="box-border" >
 			<video
-				className='border-stone-700 w-full h-full'
+				className='border border-black w-full h-full'
 				muted={props.muted}
 				poster={props.posterUrl}
 				ref={videoRef}

@@ -13,6 +13,7 @@ class Config:
 	match_region_url: Callable[[str], str]
 	followingUrl: str
 	viewer_longevity :timedelta
+	categories: list[str]
 
 class AppConfig:
 
@@ -27,7 +28,8 @@ class AppConfig:
 		match_region_url=lambda region: f"http://localhost:8004/match_region/{region}",
 		followingUrl="http://localhost:8100/get_following",
 		# viewer_longevity=timedelta(minutes=1),
-		viewer_longevity=timedelta(seconds=20)
+		viewer_longevity=timedelta(seconds=20),
+		categories=["chatting", "gaming", "music", "art", "sport", "science"]
 	)
 
 	PROD_INSTANCE = Config(
@@ -39,7 +41,8 @@ class AppConfig:
 		match_region_url=lambda region: f"http://cdn-manager.session.com/match_region/{region}",
 		followingUrl="http://tokens.api.session.com/get_following",
 		# viewer_longevity=timedelta(minutes=1)
-		viewer_longevity=timedelta(seconds=20)
+		viewer_longevity=timedelta(seconds=20),
+		categories=["chatting", "gaming", "music", "art", "sport", "science"]
 	)
 
 	# CONFIG_PATH = "stream_registry/src/app_config.json"

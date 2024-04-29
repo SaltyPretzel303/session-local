@@ -45,10 +45,10 @@ export default function HeaderBar(props: HeaderBarProps) {
 
 	return (
 		<div
-			className="flex flex-row h-full
-				justify-center
+			className="flex flex-row h-full w-full
+				justify-center items-center
 				p-2
-				bg-blue-900
+				bg-sky-800
 				text-white font-bold"
 		>
 

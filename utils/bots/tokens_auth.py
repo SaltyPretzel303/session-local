@@ -160,6 +160,7 @@ def tokens_get_key(s: Session, url: str)->StreamKey:
 	
 
 def tokens_full_auth(username, email, password, remove_at, signup_at, signin_at):
+	
 	tokens_remove_user(username, remove_at)
 
 	signup_res = tokens_signup(username, email, password, signup_at)

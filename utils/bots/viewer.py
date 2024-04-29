@@ -17,6 +17,7 @@ def setup_arg_parser():
 	parser.add_argument("--username", action='store', default='viewer_0')
 	parser.add_argument("--email", action='store', default='viewer_0@session.com')
 	parser.add_argument("--password", action='store', default='strongpassword_1')
+	# parser.add_argument("--keep", action='store_true', default=False)
 
 	parser.add_argument("--remove_at", 
 					action='store', 
@@ -119,6 +120,7 @@ def watch(username,
 					remove_at, 
 					signup_at, 
 					signin_at)
+		
 		if s is None: 
 			print(f"Failed to authenticate: {ind_username} - {ind_email}")
 			return procs

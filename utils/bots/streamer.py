@@ -15,6 +15,7 @@ DESCRIPTION = "Parameterized streamer."
 NAME_ARG = 'name'
 MAIL_ARG = 'email'
 PASSWORD_ARG = 'pwd'
+KEEP_ARG = 'keep'
 TITLE_ARG = "title"
 CATEGORY_ARG = "category"
 SOURCE_FILE_ARG = "file"
@@ -40,6 +41,10 @@ def setup_arg_parser():
 	parser.add_argument(f'--{PASSWORD_ARG}',
 						action='store',
 						default='email0pwd')
+
+	parser.add_argument(f'--{KEEP_ARG}',
+					 	action='store_true',
+						default=False)
 
 	parser.add_argument(f'--{TITLE_ARG}',
 						action='store',
@@ -116,21 +121,27 @@ def authenticate(username,
 				password, 
 				remove_route, 
 				reg_route, 
-				auth_route)->Session: 
-	
-	print(f"Will try to remove user: {username}.", end=" ")
-	remove_success = tokens_remove_user(username, remove_route)
-	if not remove_success:
-		print(f"Failed to remove user: {username}.")
-		return None
-	print("User successfully removed.")
+				auth_route,
+				keep=False)->Session: 
+	if not keep:
+		print(f"Will try to remove user: {username}.", end=" ")
+		remove_success = tokens_remove_user(username, remove_route)
+		if not remove_success:
+			print(f"Failed to remove user: {username}.")
+			return None
+		print("User successfully removed.")
+	else: 
+		print("User will not be removed (keep == true).")
 
-	print("Will try to signup.", end=" ")
-	signup_success = tokens_signup(username, email, password, reg_route)
-	if not signup_success:
-		print(f"Filed to signup with email: {email}.")
-		return None
-	print("Successfully signedUp.")
+	if not keep: 
+		print("Will try to signup.", end=" ")
+		signup_success = tokens_signup(username, email, password, reg_route)
+		if not signup_success:
+			print(f"Filed to signup with email: {email}.")
+			return None
+		print("Successfully signedUp.")
+	else: 
+		print("User will not be signedIp (keep == true).")
 
 	print("Will try to signin (obtain session).", end=" ")
 	session = tokens_signin(email, password, auth_route)
@@ -185,7 +196,8 @@ def delayed_update(delay, session, update_url, username, title, category):
 
 def stream(username, 
 		email, 
-		password, 
+		password,
+		keep, 
 		reg_route,
 		auth_route, 
 		remove_route, 
@@ -201,7 +213,8 @@ def stream(username,
 					password=password,
 					remove_route=remove_route,
 					reg_route=reg_route,
-					auth_route=auth_route)
+					auth_route=auth_route, 
+					keep=keep)
 
 	if session is None: 
 		print("Authentication failed.")
@@ -230,6 +243,7 @@ if __name__ == '__main__':
 	proc = stream(username=args[NAME_ARG],
 			email=args[MAIL_ARG],
 			password=args[PASSWORD_ARG],
+			keep=args[KEEP_ARG],
 			reg_route=args[REG_ROUTE_ARG],
 			auth_route=args[AUTH_ROUTE_ARG],
 			remove_route=args[REMOVE_ROUTE_ARG],

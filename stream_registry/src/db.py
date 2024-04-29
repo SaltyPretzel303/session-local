@@ -96,6 +96,10 @@ class Db:
 		return StreamData.empty(creator, ingest_ip, stream_key).save()
 
 	def update(self, streamer: str, update_req: UpdateRequest) -> bool:
+		
+		if not Db.validate_category(update_req.category):
+			return False
+		
 		update_result = StreamData\
 			.objects(creator=streamer)\
 			.update_one(set__title=update_req.title, 
@@ -104,7 +108,10 @@ class Db:
 		
 
 		return update_result > 0
-			
+
+	def validate_category(cat: str):
+		return cat in AppConfig.get_instance().categories
+
 	def remove_stream_by_key(self, key:str) -> str: # return the name
 		data = StreamData.objects(stream_key=key).first()
 		data.delete()
@@ -193,7 +200,6 @@ class Db:
 
 		return view_data.save()
 	
-
 	def clear_viewers(self, stream_name):
 		viewers = ViewerData.objects(stream=stream_name)
 
@@ -202,6 +208,6 @@ class Db:
 			print(v.to_json())
 			v.delete()
 
-
 	def get_view_count(self, stream_name):
 		return ViewerData.objects(stream=stream_name).count()
+	
