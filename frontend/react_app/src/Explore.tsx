@@ -3,6 +3,7 @@ import { FollowingInfo, StreamInfo, UserInfo, StreamsOrdering } from "./Datas"
 import config from './Config'
 import fakeData from './MockupData'
 import { useNavigate } from "react-router-dom"
+import VertPreviewList from "./components/VertPreviewList"
 
 type ExploreProps = {
 	getUser: () => Promise<UserInfo | undefined>
@@ -151,18 +152,26 @@ export default function Explore(props: ExploreProps) {
 	return (
 		<div className='flex flex-col h-full p-3'>
 
-			<PreviewsList title={"Following"}
-				streamsProvider={mockupProvider}
-				streamClickHandler={streamClickHandler} />
+			<div className='flex flex-row w-[300px] h-full border-1 border-black'>
+				<VertPreviewList
+					title="Following"
+					streamsProvider={mockupProvider}
+					streamClickHandler={() => console.log("Clicked on mockup stream")}
+				/>
+			</div>
 
-			<PreviewsList title={"Recommended"}
+			{/* <PreviewsList title={"Following"}
+				streamsProvider={mockupProvider}
+				streamClickHandler={streamClickHandler} /> */}
+
+			{/* <PreviewsList title={"Recommended"}
 				streamsProvider={recommendedStreamsProvider}
-				streamClickHandler={streamClickHandler} />
+				streamClickHandler={streamClickHandler} /> */}
 
 			{/* add other categories instead of streams  */}
-			<PreviewsList title={"Explore"}
+			{/* <PreviewsList title={"Explore"}
 				streamsProvider={allProvider}
-				streamClickHandler={streamClickHandler} />
+				streamClickHandler={streamClickHandler} /> */}
 
 		</div >)
 
