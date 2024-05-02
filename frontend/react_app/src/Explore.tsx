@@ -3,7 +3,9 @@ import { FollowingInfo, StreamInfo, UserInfo, StreamsOrdering } from "./Datas"
 import config from './Config'
 import fakeData from './MockupData'
 import { useNavigate } from "react-router-dom"
-import VertPreviewList from "./components/VertPreviewList"
+import InfiniteLoader from "react-window-infinite-loader"
+import AutoSizer from "react-virtualized-auto-sizer"
+import { FixedSizeList as List } from 'react-window'
 
 type ExploreProps = {
 	getUser: () => Promise<UserInfo | undefined>
@@ -150,29 +152,27 @@ export default function Explore(props: ExploreProps) {
 	}
 
 	return (
-		<div className='flex flex-col h-full p-3'>
+		<div className='w-full h-full flex flex-row justify-center p-4'>
 
-			<div className='flex flex-row w-[300px] h-full border-1 border-black'>
-				<VertPreviewList
-					title="Following"
-					streamsProvider={mockupProvider}
-					streamClickHandler={() => console.log("Clicked on mockup stream")}
-				/>
+			<div className='flex h-full w-1/3 items-center'>
+				<PreviewsList title="Following"
+					streamClickHandler={streamClickHandler}
+					streamsProvider={mockupProvider} />
 			</div>
 
-			{/* <PreviewsList title={"Following"}
-				streamsProvider={mockupProvider}
-				streamClickHandler={streamClickHandler} /> */}
+			<div className='flex h-full w-1/4 items-center mx-5' >
+				<PreviewsList title="Categories"
+					streamClickHandler={streamClickHandler}
+					streamsProvider={mockupProvider} />
+			</div>
 
-			{/* <PreviewsList title={"Recommended"}
-				streamsProvider={recommendedStreamsProvider}
-				streamClickHandler={streamClickHandler} /> */}
+			<div className='flex h-full w-1/3 items-center'>
+				<PreviewsList title="Random"
+					streamClickHandler={streamClickHandler}
+					streamsProvider={mockupProvider} />
+			</div>
 
-			{/* add other categories instead of streams  */}
-			{/* <PreviewsList title={"Explore"}
-				streamsProvider={allProvider}
-				streamClickHandler={streamClickHandler} /> */}
-
-		</div >)
+		</div>
+	)
 
 }

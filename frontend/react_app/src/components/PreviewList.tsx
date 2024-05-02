@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react"
 import StreamPreview from "./StreamPreview"
 import { StreamInfo, StreamsOrdering } from "../Datas"
+import AutoSizer from "react-virtualized-auto-sizer"
+import { FixedSizeList as List } from 'react-window'
+import InfiniteLoader from "react-window-infinite-loader"
 
 type PreviewListProps = {
 	title: string,
@@ -10,139 +13,110 @@ type PreviewListProps = {
 	streamClickHandler: (stream: StreamInfo) => void
 }
 
-type range = {
-	start: number,
-	count: number
-}
-
-
 export default function PreviewsList(props: PreviewListProps) {
 
 	const visibleCount = 4
 
-	const [streams, setStreams] = useState<StreamInfo[]>([])
-	const [currentRange, setCurrentRange] = useState<range>({ start: 0, count: 0 })
+	let streams: { [index: number]: (StreamInfo | undefined) } = {}
 
-	useEffect(() => {
-		async function fetchData() {
-			let newStreams = await props.streamsProvider(0,
-				visibleCount,
-				StreamsOrdering.Views)
+	function isItemLoaded(index: number): boolean {
+		return (index in streams && streams[index] != undefined)
+	}
 
-			if (newStreams.length > 0) {
-				console.log(`Populating ${props.title} list with ${newStreams.length} streams.`)
+	async function loadMoreItems(start: number, end: number): Promise<void> {
+		console.log("Loading " + start + "-" + end)
+		for (let i = start; i < end; i++) {
+			if (!(i in streams)) {
+				streams[i] = undefined
+			}
+		}
+
+		clearOld()
+
+		let newStreams = await props.streamsProvider(start, end, StreamsOrdering.None)
+
+		for (let i = start; i < end; i++) {
+			let stream = newStreams.shift()
+			if (!stream) {
+				delete streams[i]
+			} else {
+				streams[i] = stream
 			}
 
-
-			setStreams(newStreams)
-			setCurrentRange({ start: 0, count: newStreams.length })
 		}
 
-		fetchData()
-
-	}, [])
-
-	type scrollProps = {
-		dir: "left" | "right"
-		clickHandler: () => void
 	}
 
-	function ScrollButton(props: scrollProps) {
+	function Row({ index, style }: { index: number, style: any }) {
 
-		return (
-			<button
-				className='border border-black 
-					w-14 h-28 
-					rounded-full mx-4
-					text-xl font-bold'
-				onClick={props.clickHandler}>
+		let info: StreamInfo | undefined = streams[index]
 
-				{props.dir === "left" ? "<" : ">"}
-			</button>
-		)
+		if (info != undefined) {
+
+
+			if (info === undefined) {
+				console.log("INFO IS UNDEFINED")
+			}
+
+			// return <StreamPreview info={info}
+			// 	onClick={props.streamClickHandler}
+			// 	style={style} />
+			return (
+
+				<div className='border-2 border-purple-400 w-[full] h-[full] align-center' style={style}>
+					{info.title}
+				</div>
+			)
+		} else {
+			return (
+				<div className='border-2 border-black w-[full] h-[full] align-center' style={style}>
+					LOADING ....
+				</div>
+			)
+		}
 	}
 
-	async function scrollNext() {
-		if (currentRange.count < visibleCount) {
-			// Last provider call returned the last streams. (no more streams)
-			// Or maybe ask once more ... maybe someone started a stream ...
-			return
-		}
 
-		let newFrom = currentRange.start + currentRange.count
-		let newStreams = await props.streamsProvider(newFrom,
-			visibleCount,
-			StreamsOrdering.Views)
+	function clearOld() {
 
-		if (newStreams.length == 0) {
-			console.log(`0 new streams fetched from: ${newFrom}.`)
-			return
-		}
-
-		setStreams(newStreams)
-		setCurrentRange({ start: newFrom, count: newStreams.length })
-	}
-
-	async function scrollBack() {
-		if (currentRange.start == 0) {
-			console.log("We are at the begining.")
-			return
-		}
-
-		let newFrom = currentRange.start - visibleCount
-		newFrom = newFrom >= 0 ? newFrom : 0
-
-		let oldStreams = await props.streamsProvider(newFrom,
-			visibleCount,
-			StreamsOrdering.Views)
-
-		if (oldStreams.length == 0) {
-			console.log(`0 old streams fetched from: ${newFrom}.`)
-			return
-		}
-
-		// TODO once again I am asking for some animation. 
-		setStreams(oldStreams)
-		setCurrentRange({ start: newFrom, count: oldStreams.length })
 	}
 
 	return (
-		<div className='flex flex-col 
-			border-y-4 border-purple-500
-			p-2 my-3 h-60'>
+		<div className='min-h-[500px] min-w-[400px] 
+				h-full w-full
+				flex justify-center items-center
+				p-5
+				bg-blue-900'>
 
-			<h1 className='h-10 ml-[160px] 
-				font-bold
-				text-purple-500 text-2xl'>{props.title}</h1>
+			<div className='w-full h-full'>
 
-			<div className='flex flex-row
-				items-center justify-center
-				h-full box-border'>
+				<AutoSizer>
+					{({ height, width }: { height: number, width: number }) => (
+						<InfiniteLoader
+							isItemLoaded={isItemLoaded}
+							itemCount={2000}
+							loadMoreItems={loadMoreItems}
+						>
+							{({ onItemsRendered, ref }) => {
+								return (
+									<List
+										className="border"
+										height={height}
+										width={width}
+										itemCount={200}
+										itemSize={120}
+										onItemsRendered={onItemsRendered}
+										ref={ref}
+									>
+										{Row}
+									</List>
+								)
+							}}
 
-				{<ScrollButton dir={"left"} clickHandler={scrollBack} />}
-
-				{/* streams container */}
-				<div className='flex flex-row
-						h-full basis-10/12 
-						justify-center
-						box-border p-2
-						border-2 border-blue-900
-						'>
-
-					{
-						streams.map((stream) =>
-							<StreamPreview
-								key={stream.creator}
-								info={stream}
-								onClick={props.streamClickHandler} />)
-					}
-
-				</div>
-
-				{<ScrollButton dir={"right"} clickHandler={scrollNext} />}
-
+						</InfiniteLoader>
+					)}
+				</AutoSizer>
 			</div>
-
 
 		</div>
 	)

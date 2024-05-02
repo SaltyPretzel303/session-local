@@ -6,6 +6,7 @@ import config from "../Config"
 type StreamPreviewProps = {
 	info: StreamInfo
 	onClick: (stream: StreamInfo) => void
+	style: any
 }
 
 export default function StreamPreview(props: StreamPreviewProps) {
