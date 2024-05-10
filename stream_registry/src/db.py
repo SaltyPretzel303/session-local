@@ -98,6 +98,7 @@ class Db:
 	def update(self, streamer: str, update_req: UpdateRequest) -> bool:
 		
 		if not Db.validate_category(update_req.category):
+			print(f"Failed to update, stream category invalid: {update_req.category}")
 			return False
 		
 		update_result = StreamData\
@@ -110,7 +111,8 @@ class Db:
 		return update_result > 0
 
 	def validate_category(cat: str):
-		return cat in AppConfig.get_instance().categories
+		cats = AppConfig.get_instance().categories
+		return next(filter(lambda c: c.name == cat, cats), None) is not None
 
 	def remove_stream_by_key(self, key:str) -> str: # return the name
 		data = StreamData.objects(stream_key=key).first()

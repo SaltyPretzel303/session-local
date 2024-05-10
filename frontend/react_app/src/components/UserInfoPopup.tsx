@@ -248,7 +248,7 @@ export default function UserInfoPopup(props: userInfoProps) {
 		} as RequestInit
 
 		try {
-			let res = await fetch(config.updateStreamUrl(userInfo.username), reqOptions)
+			let res = await fetch(config.updateStreamUrl, reqOptions)
 			if (res.status != 200) {
 				throw Error("Status code: " + res.status)
 			}

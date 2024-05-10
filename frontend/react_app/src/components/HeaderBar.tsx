@@ -27,10 +27,13 @@ export default function HeaderBar(props: HeaderBarProps) {
 	const [profileLabel, setProfileLabel] = useState<string>('Profile')
 
 	useEffect(() => {
+		console.log("Rendering header bar.")
 		if (props.loggedIn) {
+			console.log("User is logged in.")
 			loadProfileLabel()
 		}
 
+		console.log("User not logged in.")
 
 	}, [props.loggedIn])
 
@@ -44,13 +47,11 @@ export default function HeaderBar(props: HeaderBarProps) {
 	}
 
 	return (
-		<div
-			className="flex flex-row h-full w-full
+		<div className="flex flex-row 
+				size-full
 				justify-center items-center
 				p-2
-				bg-sky-800
-				text-white font-bold"
-		>
+				bg-sky-800">
 
 			<input placeholder="Search"
 				className='basis-1/4 rounded-full placeholder p-2' />

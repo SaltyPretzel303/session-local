@@ -6,7 +6,6 @@ import config from "../Config"
 type StreamPreviewProps = {
 	info: StreamInfo
 	onClick: (stream: StreamInfo) => void
-	style: any
 }
 
 export default function StreamPreview(props: StreamPreviewProps) {
@@ -43,14 +42,14 @@ export default function StreamPreview(props: StreamPreviewProps) {
 			onMouseLeave={hoverOutHandler}
 			onClick={() => props.onClick(props.info)}
 			className='flex flex-row 
-				box-border p-2 mx-2 
 				h-full
-				// w-1/4
-				border-blue-500 border 
-				hover:bg-sky-50'
-		>
+				w-full
+				box-border p-2
+				justify-center
+				border-2 border-sky-900
+				hover:border-2 hover:border-sky-800'>
 
-			<div className='flex h-full w-full'>
+			<div className='flex h-full w-2/3 mr-4 '>
 				<HlsPlayer
 					src={formStreamUrl()}
 					posterUrl={formPosterUrl()}
@@ -59,9 +58,7 @@ export default function StreamPreview(props: StreamPreviewProps) {
 					abr={false}
 					muted={true} />
 			</div>
-			<div className='flex flex-col h-full max-w-60
-				border border-black'
-			>
+			<div className='flex flex-col h-full w-1/3'>
 
 				<div className='font-extrabold text-nowrap'>
 					{props.info.title}</div>

@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import random
 import string
 from typing import Any, Dict, List
-from flask_restful import Api
 import jsonpickle
 from requests import post
 
@@ -11,6 +10,7 @@ from config import config
 from shared_model.continue_view_request import ContinueViewRequest
 import users_db
 
+from flask_restful import Api
 from flask import Response, g, request, Flask, abort
 from flask_cors import CORS
 from flask_api import status
@@ -354,6 +354,10 @@ def authorize():
 	# print(request.headers)
 	# print("==== header ====")
 
+	print("==== cookies ====")
+	print(request.cookies)
+	print("==== cookies ====")
+
 	session = get_session(request)
 
 	if session is None: 
@@ -392,6 +396,8 @@ def authorize():
 	print(f"Authorized: {user.username} for {stream_name}.")
 	return "Authorized.", status.HTTP_200_OK
 
+
+@app.route("/chat/authorize")
 
 @app.route("/fetch", methods=["GET"])
 def fetch_cookie():

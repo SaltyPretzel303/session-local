@@ -67,7 +67,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 		}
 
 		return () => {
-			console.log("Destroying hlsPlayer.")
+			// console.log("Destroying hlsPlayer.")
 			if (hls) {
 				hls.detachMedia()
 				hls.destroy()
@@ -95,9 +95,11 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 
 
 	return (
-		<div className="box-border" >
+		<div className="flex size-full
+			justify-center items-center">
+
 			<video
-				className='border border-black w-full h-full'
+				className={`flex w-full max-w-full max-h-full`}
 				muted={props.muted}
 				poster={props.posterUrl}
 				ref={videoRef}

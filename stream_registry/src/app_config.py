@@ -3,6 +3,12 @@ import os
 from typing import Callable
 from datetime import timedelta
 
+@dataclass 
+class Category: 
+	name: str
+	low_icon_path: str
+	high_icon_path: str
+
 @dataclass
 class Config:
 	db_url: str
@@ -13,7 +19,7 @@ class Config:
 	match_region_url: Callable[[str], str]
 	followingUrl: str
 	viewer_longevity :timedelta
-	categories: list[str]
+	categories: list[Category]
 
 class AppConfig:
 
@@ -29,7 +35,33 @@ class AppConfig:
 		followingUrl="http://localhost:8100/get_following",
 		# viewer_longevity=timedelta(minutes=1),
 		viewer_longevity=timedelta(seconds=20),
-		categories=["chatting", "gaming", "music", "art", "sport", "science"]
+		categories = [ # none of this paths exists
+			Category(name='chatting',
+				low_icon_path='/app/categories/chatting_icon.png',
+				high_icon_path='/app/categories/chatting_icon.png'
+			),
+			Category(name='gaming',
+				low_icon_path='/app/categories/gaming_icon.png',
+				high_icon_path='/app/categories/gaming_icon.png'
+			),
+			Category(name='music',
+				low_icon_path='/app/categories/music_icon.png',
+				high_icon_path='/app/categories/music_icon.png'
+			),
+			Category(name='art',
+				low_icon_path='/app/categories/art_icon.png',
+				high_icon_path='/app/categories/art_icon.png'
+			),
+			Category(name='sport',
+				low_icon_path='/app/categories/sport_icon.png',
+				high_icon_path='/app/categories/sport_icon.png'
+			),
+			Category(name='science',
+				low_icon_path='/app/categories/science_icon.png',
+				high_icon_path='/app/categories/science_icon.png'
+			)
+		]
+				
 	)
 
 	PROD_INSTANCE = Config(
@@ -42,7 +74,32 @@ class AppConfig:
 		followingUrl="http://tokens.api.session.com/get_following",
 		# viewer_longevity=timedelta(minutes=1)
 		viewer_longevity=timedelta(seconds=20),
-		categories=["chatting", "gaming", "music", "art", "sport", "science"]
+		categories=[
+			Category(name='chatting',
+				low_icon_path='/app/categories/chatting_icon.png',
+				high_icon_path='/app/categories/chatting_icon.png'
+			),
+			Category(name='gaming',
+				low_icon_path='/app/categories/gaming_icon.png',
+				high_icon_path='/app/categories/gaming_icon.png'
+			),
+			Category(name='music',
+				low_icon_path='/app/categories/music_icon.png',
+				high_icon_path='/app/categories/music_icon.png'
+			),
+			Category(name='art',
+				low_icon_path='/app/categories/art_icon.png',
+				high_icon_path='/app/categories/art_icon.png'
+			),
+			Category(name='sport',
+				low_icon_path='/app/categories/sport_icon.png',
+				high_icon_path='/app/categories/sport_icon.png'
+			),
+			Category(name='science',
+				low_icon_path='/app/categories/science_icon.png',
+				high_icon_path='/app/categories/science_icon.png'
+			)
+		]
 	)
 
 	# CONFIG_PATH = "stream_registry/src/app_config.json"

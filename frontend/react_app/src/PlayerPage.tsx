@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { UserInfo } from "./Datas";
 import { StreamInfo } from "./Datas";
 import config from './Config'
+import { setCookie } from "react-use-cookie";
 
 type PlayerPageProps = {
 	getUser: () => Promise<UserInfo | undefined>
@@ -30,7 +31,6 @@ export function PlayerPage(props: PlayerPageProps) {
 	const navigate = useNavigate()
 
 	useEffect(() => {
-
 		props.getUser()
 			.then((user) => {
 				if (!user) {
@@ -137,10 +137,15 @@ export function PlayerPage(props: PlayerPageProps) {
 	}
 
 	return (
-		<div className='w-full h-full'>
-			<div className='w-full h-full
-				box-border
-				'>
+		<div className='flex flex-row
+			size-[80%]
+			justify-center items-center 
+			bg-black'>
+
+			<div className='flex size-full 
+				justify-center items-center
+				bg-green-400'>
+
 				<HlsPlayer src={streamSrc}
 					posterUrl={formPosterUrl(channel)}
 					shouldPlay={true}
@@ -148,13 +153,36 @@ export function PlayerPage(props: PlayerPageProps) {
 					abr={false}
 					muted={false}
 					onDone={doneHandler} />
+
 			</div>
-			<div className='flex-row'>
+
+			<div className='flex flex-col
+				border-l
+				bg-gray-400
+				h-full w-[300px]
+				justify-end items-center
+				text-lg text-white'>
+
+				<p>chat</p>
+				<p>chat</p>
+				<p>chat</p>
+				<p>chat</p>
+				<p>chat</p>
+				<p>chat</p>
+				<p>chat</p>
+
+				<div className='flex w-full h-[50px]
+					box-border border-2 border-green-300'>
+					INPUT BAR
+				</div>
+			</div>
+
+			{/* <div className='absolute flex-row text-white'>
 				<p>
 					{viewsCount}
 				</p>
 				<button onClick={loadViewsHandler}>Load views</button>
-			</div>
+			</div> */}
 			{/* <Chat visible={true} /> */}
 
 			{/* overlay */}

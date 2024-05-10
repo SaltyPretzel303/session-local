@@ -1,18 +1,18 @@
 import asyncio
 import os
-from typing import Iterable, List
+from typing import List
+
 from fastapi import FastAPI, HTTPException, Response, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from starlette.responses import FileResponse
+from fastapi.responses import FileResponse
+# from starlette.responses import FileResponse
 import uvicorn
 
 from datetime import datetime, timedelta
 
 from requests import get
-
-import jsonpickle
 
 from shared_model.continue_view_request import ContinueViewRequest
 from shared_model.following_info import FollowingInfo
@@ -23,7 +23,7 @@ from shared_model.update_request import UpdateRequest
 
 from stream_registry.src.db import Db
 
-from stream_registry.src.app_config import AppConfig
+from stream_registry.src.app_config import AppConfig, Category
 from stream_registry.src.media_server_data import MediaServerData
 from stream_registry.src.stream_data import StreamData
 
@@ -111,7 +111,7 @@ async def start_stream(request: Request):
 
 	except Exception as e:
 		print(f"Failed to match key: {key}, reason: {e}")
-		raise HTTPException(status=500)
+		raise HTTPException(status_code=500)
 		return Response(content="Failure.", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @app.post("/add_media_server")
@@ -127,7 +127,7 @@ async def add_media_server(server_data: MediaServerRequest):
 								server_data.media_url)
 
 	if add_res is None:
-		raise HTTPException(status=500, details='Failed to add media server.')
+		raise HTTPException(status_code=500, detail='Failed to add media server.')
 		return Response("Failed to add media server.", 
 				status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 	else:
@@ -159,8 +159,7 @@ async def update(update_data: UpdateRequest, request: Request):
 		
 	except Exception as e :
 		print(f"Failed to authorize user: {e}")
-		raise HTTPException(status=401, details='Authorization failed.')
-		return "Authorization failed.", status.HTTP_401_UNAUTHORIZED
+		raise HTTPException(status_code=401, detail='Authorization failed.')
 
 	print("User authorized.")
 
@@ -169,20 +168,20 @@ async def update(update_data: UpdateRequest, request: Request):
 	if update_success:
 		return "Stream updated."
 	else: 
-		raise HTTPException(status=500, details='Failed to update stream.')
-		return "Failed to update stream.", status.HTTP_500_INTERNAL_SERVER_ERROR
+		raise HTTPException(status_code=500, detail='Failed to update stream.')
 
 @app.post("/continue_view")
 async def add_viewer(view_request: ContinueViewRequest):
 
 	print("Processing continue view request.")
 	print(f"User: {view_request.username}, stream:{view_request.stream_name}")
+	
 
 	result = get_db().update_viewer(viewer_username=view_request.username, 
 						stream_name=view_request.stream_name)
 	if result is None: 
 		print("Failed to update viewer.")
-		raise HTTPException(status=500)
+		raise HTTPException(status_code=500)
 		return "Failed to update viewer.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
 	return "Viewer updated."
@@ -197,7 +196,7 @@ async def get_viewer_count(streamer: str):
 @app.get("/all")
 def get_all(region:str="eu", start:int=0, count:int=4, ordering: str = 'None'):
 	print("Processing get all streams request.")
-
+	print(f"Ordering: {ordering}")
 	streams_data = get_db().get_all(start, count, region, ordering)
 
 	if streams_data is None: 
@@ -224,12 +223,12 @@ def get_stream_info(streamer: str, region:str = 'eu'):
 	stream_data:StreamData = get_db().get_stream(streamer)
 
 	if stream_data is None:
-		raise HTTPException(status=404, details='No such stream..')
+		raise HTTPException(status_code=404, detail='No such stream..')
 		return "No such stream.", status.HTTP_404_NOT_FOUND
 
 	if not stream_data.is_public:
 		print("This is not public stream ... ")
-		raise HTTPException(status=404, details='No such stream.')
+		raise HTTPException(status_code=404, detail='No such stream.')
 		return "No such stream.", status.HTTP_404_NOT_FOUND
 	
 	return JSONResponse(jsonify(stream_data_to_info(stream_data)))
@@ -257,9 +256,8 @@ async def get_following(request: Request,
 
 	except Exception as e:
 		print(f"Failed to obtain followed channels: {e}")
-		raise HTTPException(status=followed_res.status_code, 
-					details='Failed to obtain followed channels.')
-		return "Failed to obtain followed channels.", followed_res.status_code
+		raise HTTPException(status_code=followed_res.status_code, 
+					detail='Failed to obtain followed channels.')
 
 	return map(lambda f: f.following, following_data)
 
@@ -284,11 +282,9 @@ async def get_tnail(request: Request, streamer: str='unavailable'):
 	if streamer == 'unavailable':
 		print("Requested static unavailable thumbnail.")
 		raise HTTPException(status_code=400, detail='Stream name not provided.') # bad request
-		return "Stream name not provided", status.HTTP_404_NOT_FOUND
 
 	if not is_live(streamer):
 		raise HTTPException(status_code=404, detail='Stream is not live.') 
-		return "Streamer is not live.", status.HTTP_404_NOT_FOUND
 	
 	if streamer not in tnails or is_expired(tnails[streamer]):
 		print("Thumbnail expired, will generate new.")
@@ -299,7 +295,6 @@ async def get_tnail(request: Request, streamer: str='unavailable'):
 		if not gen_result:
 			print(f"Failed to generate thumbnail for: {streamer}.")
 			raise HTTPException(status_code=500) 
-			return "Server error.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
 		exp_date = datetime.now() + timedelta(seconds=TNAIL_LONGEVITY)
 		tnails[streamer] = exp_date
@@ -308,7 +303,6 @@ async def get_tnail(request: Request, streamer: str='unavailable'):
 	if not os.path.exists(config.tnail_path(streamer)):
 		print(f"Failed to generate tnail at: {config.tnail_path(streamer)}")
 		raise HTTPException(status_code=500) 
-		return "Server error.", status.HTTP_500_INTERNAL_SERVER_ERROR
 
 	print(f"Returning tnail for {streamer}.")
 	return FileResponse(path=config.tnail_path(streamer), media_type="image/jpg")
@@ -318,9 +312,49 @@ async def is_live_request(streamer: str):
 	print(f"Processing is live request for: {streamer}")
 	return is_live(streamer)
 
+# Default end index is 200 so that all categories are fetched (with the
+# assumption there is not more than 200) if indices are not specified
 @app.get("/categories")
-async def get_categories():
-	return AppConfig.get_instance().categories
+async def get_categories(start:int=0, end:int=200):
+	cats: List[Category] =  AppConfig.get_instance().categories[start:end]
+	return list(map(lambda c: c.name, cats))
+
+@app.get("/category_low_tnail/{category}")
+async def get_category_low_tnail(category: str):
+	cat:Category = next(filter(lambda c: c.name==category, 
+							AppConfig.get_instance().categories), 
+						None)
+	
+	if cat is None: 
+		raise HTTPException(status_code=404)
+
+	if not os.path.exists(cat.low_icon_path):
+		print(f"Failed to server low icon from: {cat.low_icon_path}")
+		raise HTTPException(status_code=500)
+
+	ext = get_extension(cat.low_icon_path)
+
+	return FileResponse(path=cat.low_icon_path, media_type=f"image/{ext}")
+
+@app.get("/category_high_tnail/{category}")
+async def get_category_high_tnail(category: str):
+	cat:Category = next(filter(lambda c: c.name==category, 
+							AppConfig.get_instance().categories), 
+						None)
+	
+	if cat is None: 
+		raise HTTPException(status_code=404)
+
+	if not os.path.exists(cat.high_icon_path):
+		print(f"Failed to server high icon from: {cat.high_icon_path}")
+		raise HTTPException(status_code=500)
+
+	ext = get_extension(cat.high_icon_path)
+
+	return FileResponse(path=cat.high_icon_path, media_type=f"image/{ext}")
+
+def get_extension(file: str):
+	return file.split('.')[1]
 
 def flatten_cookies(cookies):
 	return f"Cookie: sAccessToken={cookies['sAccessToken']}"

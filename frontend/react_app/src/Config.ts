@@ -1,4 +1,4 @@
-import { StreamsOrdering } from "./Datas"
+import { Orderings } from "./Datas"
 
 type configuration = {
 	myRegion: string,
@@ -9,7 +9,7 @@ type configuration = {
 	allStreamsUrl: (start: number,
 		count: number,
 		region: string,
-		ordering: StreamsOrdering) => string,
+		ordering: Orderings) => string,
 
 	exploreStreamsUrl: (start: number,
 		count: number,
@@ -27,7 +27,10 @@ type configuration = {
 	viewCountUrl: (stream: string) => string,
 	isLiveUrl: (stramer: string) => string,
 	categoriesUrl: string,
-	updateStreamUrl: (streamer: string) => string
+	categoriesRangeUrl: (fromInd: number, toInd: number) => string,
+	lowCategoryIconUrl: (name: string) => string,
+	highCategoryIconUrl: (name: string) => string,
+	updateStreamUrl: string
 }
 
 
@@ -44,13 +47,13 @@ const config: configuration = {
 	allStreamsUrl: (start: number,
 		count: number,
 		region: string,
-		ordering: StreamsOrdering) =>
+		ordering: Orderings) =>
 
 		`http://session.com/stream/all?
 			region=${region}&
 			start=${start}&
 			count=${count}&
-			ordering=${ordering}`,
+			ordering=${ordering.toString()}`,
 
 	exploreStreamsUrl: (start: number, count: number, region: string) =>
 
@@ -81,7 +84,12 @@ const config: configuration = {
 	viewCountUrl: (stream: string) => `http://session.com/stream/viewer_count/${stream}`,
 	isLiveUrl: (streamer: string) => `http://session.com/stream/is_live/${streamer}`,
 	categoriesUrl: "http://session.com/stream/categories",
-	updateStreamUrl: (streamer: string) => "http://session.com/stream/update"
+	categoriesRangeUrl: (f, t) => `http://session.com/stream/categories?start=${f}&end=${t}`,
+	lowCategoryIconUrl: (name: string) =>
+		"http://session.com/stream/category_low_tnail/" + name,
+	highCategoryIconUrl: (name: string) =>
+		"http://session.com/stream/category_high_tnail/" + name,
+	updateStreamUrl: "http://session.com/stream/update"
 }
 
 export default config

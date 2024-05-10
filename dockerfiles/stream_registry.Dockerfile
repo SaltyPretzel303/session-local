@@ -13,6 +13,9 @@ ADD unavailable.png ./tnails/unavailable.png
 # ^ provide some icon representing unavailable stream thumbnail 
 # This may not be used. Default stream icon could be implemnted on frontend. 
 
+RUN mkdir categories
+ADD stream_registry/icons/* ./categories/
+
 WORKDIR /app/stream_registry
 ADD stream_registry/src ./src
 

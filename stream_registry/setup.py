@@ -4,7 +4,7 @@ setup(
     name='stream_registry',
     install_requires=['fastapi',
 					  'uvicorn[standard]',
-					  'starlette',
+					#   'starlette',
 					  'asyncprocess',
                       'jsonpickle',
 					  'dataclasses',

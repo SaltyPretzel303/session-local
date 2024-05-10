@@ -51,10 +51,7 @@ class StreamData(Document):
 
 	is_public = BooleanField(required=True, default=False)
 
-	def update(self, title:str, category:str, is_public: bool):
-		self.title = title
-		self.category = category
-		self.is_public = is_public
+	viewer_count = IntField()
 
 	@staticmethod
 	def empty(streamer:str, ingest_ip:str, stream_key:str):
@@ -65,6 +62,7 @@ class StreamData(Document):
 					stream_key=stream_key,
 					media_servers=[],
 					is_public=False)
+
 
 class ViewerData(Document):
 	stream_id = ObjectIdField()

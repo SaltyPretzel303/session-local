@@ -18,10 +18,19 @@ export type MediaServer = {
 	access_url: string
 }
 
-export enum StreamsOrdering {
-	Views,
-	Recommended,
-	None
+export type OrderingOption = {
+	displayName: string
+	value: Orderings
+}
+
+export enum Orderings {
+	viewsAscending,
+	viewsDescending,
+	recommendedAscending,
+	recommendedDescending,
+	popularityAscending,
+	popularityDescending,
+	noOrder
 }
 
 export type StreamInfo = {
@@ -61,4 +70,10 @@ export type UpdateRequest = {
 	title: string
 	category: string
 	is_public: boolean
+}
+
+export type Category = {
+	name: string
+	low_icon_url: string
+	high_icon_url: string
 }
