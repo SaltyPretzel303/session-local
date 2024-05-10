@@ -4,6 +4,7 @@ setup(
     name='tokens_api',
     install_requires=['fastapi',
 					  'uvicorn[standard]',
+					  'starlette',
 					# 'flask[async]',
                     # 'flask_api',
                     # 'flask_restful',

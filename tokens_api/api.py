@@ -4,16 +4,13 @@ import string
 from typing import Any, Dict, List
 import jsonpickle
 from requests import post
+import uvicorn
+from httpx import AsyncClient 
 
 from config import config
 
 from shared_model.continue_view_request import ContinueViewRequest
 import users_db
-
-from flask_restful import Api
-from flask import Response, g, request, Flask, abort
-from flask_cors import CORS
-from flask_api import status
 
 from supertokens_python import init, InputAppInfo, SupertokensConfig
 from supertokens_python import get_all_cors_headers
@@ -26,15 +23,16 @@ from supertokens_python.recipe.emailpassword.types import FormField, InputFormFi
 from supertokens_python.recipe.emailpassword import InputSignUpFeature
 from supertokens_python.recipe.emailpassword.interfaces import SignInPostOkResult, SignUpPostOkResult
 from supertokens_python.recipe.emailpassword.interfaces import APIInterface, APIOptions
-from supertokens_python.recipe.session.framework.flask import verify_session
-from supertokens_python.recipe.session import SessionContainer
-from supertokens_python.recipe.session.syncio import get_session
 
-from supertokens_python.recipe.jwt.interfaces import CreateJwtOkResult
+from supertokens_python.recipe.session.framework.fastapi import verify_session
+from supertokens_python.recipe.session import SessionContainer
+# from supertokens_python.recipe.session.syncio import get_session
 
 from supertokens_python.asyncio import delete_user
 
-from supertokens_python.framework.flask import Middleware as TokensMiddleware
+# from supertokens_python.framework.flask import Middleware as TokensMiddleware
+from supertokens_python.framework.fastapi import get_middleware as get_fast_api_middleware
+
 from shared_model.user import User as PublicUser
 from shared_model.following_info import FollowingInfo
 from shared_model.key_response import KeyResponse
@@ -43,8 +41,13 @@ from shared_model.user import User
 
 from tokens_api.db_model import FollowingDoc, StreamKeyDoc, UserDoc 
 
+from fastapi.encoders import jsonable_encoder
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import status as code
+from starlette.middleware.cors import CORSMiddleware
+
 def jsonify(obj):
-	return jsonpickle.encode(obj, unpicklable=False)
+	return jsonable_encoder(obj)
 
 def override_default_emailpassword(defaultImp: APIInterface)->APIInterface: 
 
@@ -130,7 +133,8 @@ init(
 	supertokens_config=SupertokensConfig(
 		connection_uri="http://tokens-core.session.com:3567",
 	),
-	framework='flask',
+	framework='fastapi',
+	mode='wsgi', # required for uvicorn
 	recipe_list=[
 		emailpassword.init(
 			sign_up_feature=InputSignUpFeature(form_fields=[
@@ -140,11 +144,7 @@ init(
 				apis=override_default_emailpassword
 			)
 		),
-		# thirdpartyemailpassword.init(
-		# 	override=thirdpartyemailpassword.InputOverrideConfig(
-		# 	   functions=override_default_emailpassword
-		# 	)
-		# ),
+		
 		session.init(
 			# Also this can't be single word ...
 			cookie_domain='.session.com',
@@ -156,39 +156,23 @@ init(
 		)
 	],
 	# debug=True,
-	mode='asgi' # use wsgi if you are running using gunicorn
 )
 
-app = Flask(__name__)
-TokensMiddleware(app)
-api = Api(app)
 
-CORS(
-	app=app,
-	origins = 'http://session.com',
-	# origins=[
-	# 	"http://session.com", # This should be gateway ... ? 
-	# 	# "http://localhost:3000",
-	# 	# "http://session.com:3000",
-
-	# 	# "http://session.com:[0-9]+",
-	# 	# "http://session.com",
-	# 	# "http://stream-registry.session.com:[0-9]+",
-	# 	# "http://stream-registry.session.com"
-	# 	# "http://localhost:3000",
-	# 	# "http://stream-registry.session.com:8002"
-	# ],
-	supports_credentials=True,
-	allow_headers=["Content-Type", "someField", "cookies"] + get_all_cors_headers(),
+app = FastAPI()
+app.add_middleware(
+	get_fast_api_middleware()
+)
+app.add_middleware(
+	CORSMiddleware,
+	allow_origins=['http://session.com'],
+	allow_credentials=True,
+	allow_methods=["GET", "PUT", "POST", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Content-Type", "cookies"] + get_all_cors_headers(),
 )
 
-# This is required since if this is not there, then OPTIONS requests for
-@app.route('/', defaults={'u_path': ''})  
-@app.route('/<path:u_path>')  
-@verify_session()
-def catch_all(u_path: str):
-	abort(404)
-	
+
+
 def gen_stream_key(len) -> StreamKeyDoc:
 	chars = string.ascii_letters+string.digits
 	return "".join(random.choice(chars) for i in range(len))
@@ -196,17 +180,17 @@ def gen_stream_key(len) -> StreamKeyDoc:
 def gen_exp_date(longevity) -> datetime:
 	return datetime.now() + timedelta(seconds=longevity)
 
-@app.route("/auth/get_key", methods=["GET"])
-@verify_session()
-def get_key():
+@app.get("/auth/get_key")
+def get_key(session: SessionContainer = Depends(verify_session())):
 	print("Processing get key request.")
 
-	# Session has to exists since method is decorated with @verify_session()
-	session: SessionContainer = g.supertokens
-	tokens_id = session.get_user_id()
+	if session is None: 
+		raise HTTPException(status_code=code.HTTP_401_UNAUTHORIZED)
 
-	# I guess this has to be not None as well.
+	tokens_id = session.user_id
 	user = users_db.get_user_by_tokens_id(tokens_id)
+	# I guess this has to be not None as well.
+
 	print("Found user : ")
 	print(user.to_json() if user is not None else "User is None.")
 	key = users_db.get_key_for_user(user)
@@ -223,15 +207,11 @@ def get_key():
 	print(f"Key generated: {key.value}")
 	users_db.save_key(key)
 
-	key_resp = KeyResponse.success(value=key.value,
-							expiration_date=key.exp_date)
-
-	return jsonify(key_resp), 200
+	return KeyResponse.success(value=key.value, expiration_date=key.exp_date)
 
 # Nginx cant' forward cookies and this is used in on_publish callback.
 # This should be guarded somehow but at this point ... it's fine.
-@app.route("/match_key/<req_key>", methods=["GET"])
-# @verify_session()
+@app.get("/match_key/{req_key}")
 def match_key(req_key:str):
 
 	print(f"Processing match key request with: {req_key}")
@@ -239,6 +219,7 @@ def match_key(req_key:str):
 	if not req_key: # not None and not empty
 		print("Invalid/no key provided.")
 		res_data = KeyResponse.failure("Invalid/no key provider.")
+		raise HTTPException(status_code=code.HTTP_400_BAD_REQUEST, detail=res_data)
 		return jsonify(res_data), status.HTTP_400_BAD_REQUEST
 
 	stream_key = users_db.get_key_by_value(req_key)
@@ -246,6 +227,7 @@ def match_key(req_key:str):
 	if stream_key is None: 
 		print("No such key.")
 		res_data = KeyResponse.failure("No such key")
+		raise HTTPException(status_code=code.HTTP_404_NOT_FOUND, detail=res_data)
 		return jsonify(res_data), status.HTTP_404_NOT_FOUND
 	
 	users_db.invalidata_key(stream_key)
@@ -253,7 +235,7 @@ def match_key(req_key:str):
 	res_data = KeyResponse.success(value=stream_key.owner.username)
 	print(f"Key successfully matched with: {res_data.value}")
 
-	return jsonify(res_data), status.HTTP_200_OK
+	return res_data
 
 def to_public_user(model: UserDoc)->User:
 	return User(username=model.username, email=model.email)
@@ -267,66 +249,60 @@ def to_public_follow_record(record: FollowingDoc)->FollowingInfo:
 					following=record.following.username, 
 					from_date=record.followed_at)
 
-@app.route("/get_user/<username>", methods=["GET"])
+@app.get("/get_user/{username}")
 def get_user(username:str):
-	response = Response()
 
-	try:
-		user_data = users_db.get_user_by_username(username)
+	print(f"Processing get user request for: {username}")
 
-		if user_data is not None: 
-			public_data = PublicUser(username=user_data.username,
-									email=user_data.email)
-			
-			response.status_code=status.HTTP_200_OK
-			response.set_data(jsonify(public_data))
-		else:
-			response.status_code=status.HTTP_404_NOT_FOUND
+	if username is None or username == "":
+		raise HTTPException(status_code=code.HTTP_400_BAD_REQUEST, 
+					  	detail="Username not provided")
 
-	except Exception as e:
-		print(f"Exception in get_user query: {e}")
-		response.status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+	user_data = users_db.get_user_by_username(username)
 
-	return response
+	if user_data is None: 
+		raise HTTPException(status_code=code.HTTP_404_NOT_FOUND)
 
-@app.route("/get_user_from_tokensid/<tokensid>", methods=["GET"])
+	return PublicUser(username=user_data.username, email=user_data.email)
+	
+
+@app.get("/get_user_from_tokensid/{tokensid}")
 def get_user_from_tokensid(tokensid: str):
 	print(f"Processing get user from tokensid for: {tokensid}")
 
 	user_data = users_db.get_user_by_tokens_id(tokensid)
 	if user_data is None:
 		print("No user for such token.")
-		return 'No such user', status.HTTP_404_NOT_FOUND
+		raise HTTPException(status_code=code.HTTP_404_NOT_FOUND, 
+					  	detail="No such user.")
 
-	public_data = PublicUser(username=user_data.username,
-						email=user_data.email)
-	print(f"Found user: {jsonify(public_data)}")
-	return jsonify(to_public_user(public_data)), status.HTTP_200_OK
+	return to_public_user(user_data)
 
-@app.route("/get_following", methods=["GET"])
-@verify_session()
-def get_following():
+@app.get("/get_following")
+def get_following(session: SessionContainer = Depends(verify_session())):
 	print(f"Processing (session verified) get followed request.")
 
-	session = g.supertokens
-	tokens_id = session.get_user_id()
+	if session is None: 
+		raise HTTPException(status_code=code.HTTP_401_UNAUTHORIZED)
+	
+	tokens_id = session.user_id
 	user = users_db.get_user_by_tokens_id(tokens_id)
 
 	follow_data = users_db.get_following(user.username)
 	if follow_data is None:
 		print(f"Following query failed for: {user.username}")
-		return "Query failed.", status.HTTP_500_INTERNAL_SERVER_ERROR
+		raise HTTPException(status_code=code.HTTP_500_INTERNAL_SERVER_ERROR)
 
-	public_data = list(map(to_public_follow_record, follow_data))
-	return jsonify(public_data), status.HTTP_200_OK
+	return list(map(to_public_follow_record, follow_data))
 
 # not protected, used just for bots
-@app.route("/remove/<username>", methods=["GET"])
+@app.get("/remove/{username}")
 async def remove_user(username: str):
 	user:UserDoc = users_db.get_user_by_username(username)
 	if user is None: 
 		print("No such user.")
-		return "No such user.", status.HTTP_404_NOT_FOUND
+		raise HTTPException(status_code=code.HTTP_404_NOT_FOUND, 
+					  	detail="No such user.")
 
 	print(f"Found user: {user.to_json()}")
 
@@ -339,73 +315,82 @@ async def remove_user(username: str):
 	users_db.remove_user(user)
 	print("User removed from session db.")
 
-	return "Should be success.", status.HTTP_200_OK
+	return "Should be success."
 
-# TODO Refactor with fastapi so that the method can be async 
-# since it will require viewers count update.
-# TODO Split in two endpoints, one for user authentication and one for stream
-# authorization and possibly one for non-viewer stream authorization if someone
-# just want to search channel or something like that.
-@app.route("/verify", methods=["GET"])
-def authorize():
-	print(f"Processing authorization.")
+@app.get("/is_authenticated")
+def check_session(session: SessionContainer = Depends(verify_session())):
+	print("Processing is authorized request.")
+	if session is None: 
+		print("Unauthorized")
+		raise HTTPException(status_code=code.HTTP_401_UNAUTHORIZED)
+	
+	print("Authorized")
+	return to_public_user(users_db.get_user_by_tokens_id(session.user_id))
 
-	# print("==== header ====")
-	# print(request.headers)
-	# print("==== header ====")
+@app.get("/authorize_viewer")
+async def authorize_viewer(request:Request, 
+		session: SessionContainer = Depends(verify_session())):
 
-	print("==== cookies ====")
-	print(request.cookies)
-	print("==== cookies ====")
-
-	session = get_session(request)
+	print("Processing authorize viewer request.")
 
 	if session is None: 
-		print("No session.")
-		return "Not authorized.", status.HTTP_403_FORBIDDEN
+		print("Unauthorized.")
+		raise HTTPException(status_code=code.HTTP_401_UNAUTHORIZED)
 
-	tokens_id = session.get_user_id()
+	user = users_db.get_user_by_tokens_id(session.user_id)
 	stream_name = request.headers.get("X-Stream-Username")
+	# Lets just assume that the stream name is asctually gonna be provided ... 
 
-	# User has to be not None, if session exists there has to be 
-	# a valid user associated with it.
-	user = users_db.get_user_by_tokens_id(tokens_id)
-	if user is None: 
-		print("Not authorized, token ip might be wrong/missing.")
-		return "No such user.", status.HTTP_404_NOT_FOUND
+	print(f"Authorizing: {user.username} for: {stream_name}'s stream.")
 
-	# Check stream limits. (these are not yet implemented)
- 
-	# Update viewer count. 
-	if stream_name is not None: 
-		# stream_name is gonna be None in the case some service is just trying
-		# to verify users auth token. 
-		print("Will update viewer count.")
-		view_cnt_update = ContinueViewRequest(user.username, stream_name)
-		try:
-			update_res = post(url=config.view_update_url, json=view_cnt_update.__dict__)
-			if update_res.status_code != 200:
-				raise Exception(f"Status code: {update_res.status_code}")
-			
-		except Exception as e:
-			print(f"Failed to update viewer count for {user.username}: {e}.")
-			# User can still be authorized, failure reason could be just server error.
-	else:
-		print("Stream name not provided, simple token verification.")
+	# TODO check stream limits at this point
 
-	print(f"Authorized: {user.username} for {stream_name}.")
-	return "Authorized.", status.HTTP_200_OK
+	# Kinda fire and forget, still nice to have some return value.
+	update_res = await update_view_count(user.username, stream_name)
+
+	return user
+
+@app.get("/authorize_chatter/{channel}")
+async def authorize_chatter(request:Request, 
+				channel: str,
+				session: SessionContainer = Depends(verify_session())):
+	
+	print("Processing authorize chatter request.")
+
+	if session is None: 
+		print("Unauthorized.")
+		raise HTTPException(status_code=code.HTTP_401_UNAUTHORIZED)
+
+	user = users_db.get_user_by_tokens_id(session.user_id)
+
+	print(f"Authorizing chatter: {user.username} for: {channel}")
+
+	# everyone is authorized
+	return user
 
 
-@app.route("/chat/authorize")
+async def update_view_count(username, stream):
+	print(f"Will update view count for: {stream}")
 
-@app.route("/fetch", methods=["GET"])
+	async with AsyncClient() as client: 
+		update_data = ContinueViewRequest(username, stream).__dict__
+		resp = await client.post(url=config.view_update_url, json=update_data)
+		if resp.status_code != code.HTTP_200_OK:
+			print(f"View count update failed with code: {resp.status_code}")
+			return False
+		
+	return True
+
+
+
+@app.get("/fetch")
 def fetch_cookie():
 
 	resp = Response()
 	resp.set_cookie(key="some_random_key", value='some_random_value')
 
-	return resp, status.HTTP_200_OK
+	return resp
 
 if __name__ == "__main__":
-	app.run(host="0.0.0.0", port=80)
+	uvicorn.run("api:app", host="0.0.0.0", port=80)
+	# app.run(host="0.0.0.0", port=80)

@@ -9,6 +9,8 @@ def connect():
 	print(f"Connecting with mongo on: {host_url}")
 	mongoengine.connect(host=host_url)
 
+# Why are all of these synchronous. ... ... .... ... ... ... ... .
+
 def get_user_by_username(username: str)->UserDoc:
 	connect()
 	print(f"Quering user with username: {username}")

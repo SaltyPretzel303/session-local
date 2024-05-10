@@ -148,7 +148,7 @@ async def update(update_data: UpdateRequest, request: Request):
 	print("Processing update stream request.")
 
 	try:
-		auth_url = AppConfig.get_instance().authorize_url
+		auth_url = AppConfig.get_instance().is_authenticated_url
 		auth_res: Response = get(url=auth_url, cookies=request.cookies)
 
 		if auth_res is None: 
