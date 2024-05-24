@@ -6,6 +6,10 @@ from flask_api import  status
 from requests import get, post
 
 from app_config import AppConfig
+from app_config import  ADD_MEDIA_SERVER_PATH
+from app_config import REMOVE_MEDIA_SERVER_PATH
+from app_config import STREAM_REGISTRY_ADDR
+
 from instance_conf import InstanceConf
 from jsonpickle import encode
 import re 
@@ -23,9 +27,8 @@ STREAM_QUALITY = 'stream'
 # QUAL_SD = "sd"
 # QUAL_SUBSD = "subsd"
 
-STREAM_REGISTRY_ADDR = 'stream-registry.session.com'
-ADD_MEDIA_SERVER_PATH = 'add_media_server'
-REMOVE_MEDIA_SERVER_PATH = 'remove_media_server'
+
+
 # TODO ^ move this to the config
 
 # ==================

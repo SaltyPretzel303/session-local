@@ -13,6 +13,7 @@ import uvicorn
 from datetime import datetime, timedelta
 
 from requests import get
+from httpx import AsyncClient, Response as HttpxResp
 
 from shared_model.continue_view_request import ContinueViewRequest
 from shared_model.following_info import FollowingInfo
@@ -20,10 +21,13 @@ from shared_model.media_server_request import MediaServerRequest
 from shared_model.media_server_info import MediaServerInfo
 from shared_model.stream_info import StreamInfo
 from shared_model.update_request import UpdateRequest
+from shared_model.category import Category as PublicCategory
 
+from shared_model.user import User
 from stream_registry.src.db import Db
 
-from stream_registry.src.app_config import AppConfig, Category
+from stream_registry.src.app_config import AppConfig, DOMAIN_NAME
+from stream_registry.src.app_config import Category as ConfCategory
 from stream_registry.src.media_server_data import MediaServerData
 from stream_registry.src.stream_data import StreamData
 
@@ -31,7 +35,7 @@ JSON_CONTENT_TYPE = 'application/json'
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, 
-				   allow_origins=['http://session.com'], 
+				   allow_origins=[f'http://{DOMAIN_NAME}'], 
 				   allow_credentials=True, 
 				   allow_headers=['rid', 'st-auth-mode'])
 
@@ -147,20 +151,9 @@ async def remove_media_server(remove_req: MediaServerRequest):
 async def update(update_data: UpdateRequest, request: Request):
 	print("Processing update stream request.")
 
-	try:
-		auth_url = AppConfig.get_instance().is_authenticated_url
-		auth_res: Response = get(url=auth_url, cookies=request.cookies)
-
-		if auth_res is None: 
-			raise Exception("Auth response is None.")
-
-		if auth_res.status_code != 200:
-			raise Exception(f"Auth status code: {auth_res.status_code}")
-		
-	except Exception as e :
-		print(f"Failed to authorize user: {e}")
+	if await getUser(request.cookies) is None: 
 		raise HTTPException(status_code=401, detail='Authorization failed.')
-
+	
 	print("User authorized.")
 
 	update_success = get_db().update(update_data.username, update_data)
@@ -169,6 +162,17 @@ async def update(update_data: UpdateRequest, request: Request):
 		return "Stream updated."
 	else: 
 		raise HTTPException(status_code=500, detail='Failed to update stream.')
+
+async def getUser(cookies) -> User:
+
+	async with AsyncClient() as client: 
+		auth_url = AppConfig.get_instance().is_authenticated_url
+		auth_res: HttpxResp = await client.get(url=auth_url, cookies=cookies)
+
+		if auth_res is None or auth_res.status_code != 200: 
+			return None
+
+		return User(**auth_res.json())
 
 @app.post("/continue_view")
 async def add_viewer(view_request: ContinueViewRequest):
@@ -207,35 +211,39 @@ def get_all(region:str="eu", start:int=0, count:int=4, ordering: str = 'None'):
 	# return list(map(stream_data_to_info, streams_data))
 
 @app.get("/by_category/{category}")
-def get_by_category(category: str, region: str='eu', start: int = 0, count:int=3):
+def get_by_category(category: str, 
+					region: str='eu', 
+					start: int = 0, 
+					count:int=3,
+					ordering: str = 'None' ):
 	print(f"Processing get by category request for: {category}")
+	print(f"Ordering: {ordering}")
 
 	streams_data = get_db().get_by_category(category, region, start, count)
 	if streams_data is None:
-		return "No such category.", status.HTTP_404_NOT_FOUND
+		raise HTTPException(status_code=404)
 	
 	return list(map(stream_data_to_info, streams_data))
 
 @app.get("/stream_info/{streamer}")
-def get_stream_info(streamer: str, region:str = 'eu'):
+async def get_stream_info(request: Request, streamer: str, region:str = 'eu'):
 	print(f"Processing get stream info request for: {streamer} in: {region}")
 
 	stream_data:StreamData = get_db().get_stream(streamer)
 
 	if stream_data is None:
 		raise HTTPException(status_code=404, detail='No such stream..')
-		return "No such stream.", status.HTTP_404_NOT_FOUND
 
-	if not stream_data.is_public:
+	user = await getUser(request.cookies)
+
+	if not stream_data.is_public and (user is None or user.username != streamer):
 		print("This is not public stream ... ")
 		raise HTTPException(status_code=404, detail='No such stream.')
-		return "No such stream.", status.HTTP_404_NOT_FOUND
 	
 	return JSONResponse(jsonify(stream_data_to_info(stream_data)))
 
 @app.get("/get_following")
 async def get_following(request: Request,
-						region: str="eu", 
 						start:int=0, 
 						count:int=4, 
 						ordering: str = 'None') -> List[StreamInfo]:
@@ -259,6 +267,7 @@ async def get_following(request: Request,
 		raise HTTPException(status_code=followed_res.status_code, 
 					detail='Failed to obtain followed channels.')
 
+	return following_data
 	return map(lambda f: f.following, following_data)
 
 @app.get("/get_recommended/{username}")
@@ -312,16 +321,27 @@ async def is_live_request(streamer: str):
 	print(f"Processing is live request for: {streamer}")
 	return is_live(streamer)
 
+
+# @app.middleware("http")
+# async def header_print(request:Request, call_next):
+# 	print("In middleware.")
+# 	print(request.headers)
+
+# 	return await call_next(request)
+
 # Default end index is 200 so that all categories are fetched (with the
 # assumption there is not more than 200) if indices are not specified
 @app.get("/categories")
 async def get_categories(start:int=0, end:int=200):
-	cats: List[Category] =  AppConfig.get_instance().categories[start:end]
-	return list(map(lambda c: c.name, cats))
+	cats: List[ConfCategory] =  AppConfig.get_instance().categories[start:end]
+	return list(map(to_public_cat, cats))
+
+def to_public_cat(cat: ConfCategory):
+	return PublicCategory(name=cat.name, display_name=cat.displayName)
 
 @app.get("/category_low_tnail/{category}")
 async def get_category_low_tnail(category: str):
-	cat:Category = next(filter(lambda c: c.name==category, 
+	cat:ConfCategory = next(filter(lambda c: c.name==category, 
 							AppConfig.get_instance().categories), 
 						None)
 	
@@ -338,7 +358,7 @@ async def get_category_low_tnail(category: str):
 
 @app.get("/category_high_tnail/{category}")
 async def get_category_high_tnail(category: str):
-	cat:Category = next(filter(lambda c: c.name==category, 
+	cat:ConfCategory = next(filter(lambda c: c.name==category, 
 							AppConfig.get_instance().categories), 
 						None)
 	

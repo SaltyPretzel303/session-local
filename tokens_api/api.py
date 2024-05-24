@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import random
 import string
 from typing import Any, Dict, List
-import jsonpickle
 from requests import post
 import uvicorn
 from httpx import AsyncClient 
@@ -125,13 +124,13 @@ init(
 		# like cookie_domain.
 		# Domain name of the service exposing auth api.
 		# https://supertokens.com/docs/emailpassword/common-customizations/sessions/multiple-api-endpoints
-		api_domain="http://tokens-api.session.com",
+		api_domain=f"http://tokens-api.{config.domain_name}",
 		api_base_path="/auth", # I thinks this is per documentation.
-		website_domain="http://session.com",
+		website_domain=f"http://{config.domain_name}",
 		website_base_path="/" # default is /auth, don't know why
 	),
 	supertokens_config=SupertokensConfig(
-		connection_uri="http://tokens-core.session.com:3567",
+		connection_uri=f"http://tokens-core.{config.domain_name}:3567",
 	),
 	framework='fastapi',
 	mode='wsgi', # required for uvicorn
@@ -147,7 +146,7 @@ init(
 		
 		session.init(
 			# Also this can't be single word ...
-			cookie_domain='.session.com',
+			cookie_domain=f'.{config.domain_name}',
 			# cookie_secure=True
 			# For local development, you should not set the cookieDomain to an
 			# IP address based domain, or .localhost - browsers will reject
@@ -165,7 +164,7 @@ app.add_middleware(
 )
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=['http://session.com'],
+	allow_origins=[f'http://{config.domain_name}'],
 	allow_credentials=True,
 	allow_methods=["GET", "PUT", "POST", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["Content-Type", "cookies"] + get_all_cors_headers(),
@@ -327,7 +326,7 @@ def check_session(session: SessionContainer = Depends(verify_session())):
 	print("Authorized")
 	return to_public_user(users_db.get_user_by_tokens_id(session.user_id))
 
-@app.get("/authorize_viewer")
+@app.get("/auth/authorize_viewer")
 async def authorize_viewer(request:Request, 
 		session: SessionContainer = Depends(verify_session())):
 
@@ -339,7 +338,7 @@ async def authorize_viewer(request:Request,
 
 	user = users_db.get_user_by_tokens_id(session.user_id)
 	stream_name = request.headers.get("X-Stream-Username")
-	# Lets just assume that the stream name is asctually gonna be provided ... 
+	# Lets just assume that the stream name is actually gonna be provided ... 
 
 	print(f"Authorizing: {user.username} for: {stream_name}'s stream.")
 
@@ -348,14 +347,14 @@ async def authorize_viewer(request:Request,
 	# Kinda fire and forget, still nice to have some return value.
 	update_res = await update_view_count(user.username, stream_name)
 
-	return user
+	return to_public_user(user)
 
-@app.get("/authorize_chatter/{channel}")
+@app.get("/auth/authorize_chatter/{channel}")
 async def authorize_chatter(request:Request, 
 				channel: str,
 				session: SessionContainer = Depends(verify_session())):
 	
-	print("Processing authorize chatter request.")
+	print(f"Processing authorize chatter request for: {channel} channel.")
 
 	if session is None: 
 		print("Unauthorized.")
@@ -366,7 +365,7 @@ async def authorize_chatter(request:Request,
 	print(f"Authorizing chatter: {user.username} for: {channel}")
 
 	# everyone is authorized
-	return user
+	return to_public_user(user)
 
 
 async def update_view_count(username, stream):

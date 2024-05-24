@@ -8,6 +8,7 @@ import signal
 
 from requests import Session, get
 from tokens_auth import tokens_full_auth
+from config import remove_user_url, signup_url, signin_url, stream_info_url
 
 STREAM_QUALITY = 'stream'
 
@@ -15,28 +16,28 @@ def setup_arg_parser():
 
 	parser = ArgumentParser()
 	parser.add_argument("--username", action='store', default='viewer_0')
-	parser.add_argument("--email", action='store', default='viewer_0@session.com')
+	parser.add_argument("--email", action='store', default='viewer_0@mail.com')
 	parser.add_argument("--password", action='store', default='strongpassword_1')
 	# parser.add_argument("--keep", action='store_true', default=False)
 
 	parser.add_argument("--remove_at", 
 					action='store', 
-					default='http://session.com/user/remove')
+					default=remove_user_url)
 
 
 	parser.add_argument("--signup_at", 
 					action='store', 
-					default='http://session.com/auth/signup')
+					default=signup_url)
 
 	parser.add_argument("--signin_at", 
 					action='store', 
-					default='http://session.com/auth/signin')
+					default=signin_url)
 
 	# stream_registry_at
 	# rename to stream_info_at
 	parser.add_argument('--reg_at', 
 					action='store',
-					default='http://session.com/stream/stream_info')
+					default=stream_info_url)
 
 	parser.add_argument('--stream', action='store', default='streamer-0')
 
@@ -100,7 +101,7 @@ def watch(username,
 		remove_at,
 		signup_at, 
 		signin_at,
-		registry_at,
+		stream_info_at,
 		stream_name,
 		width, 
 		height,
@@ -128,7 +129,7 @@ def watch(username,
 		print(f"Successfully authenticated: {ind_username}")
 
 		headers = form_headers(s)
-		stream_url = get_stream_url(registry_at, stream_name)
+		stream_url = get_stream_url(stream_info_at, stream_name)
 
 		if stream_url is None: 
 			print("Failed to obtain stream url.")

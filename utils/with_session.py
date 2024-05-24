@@ -4,7 +4,7 @@ from requests import Session, post, Response
 from jsonpickle import encode, decode, dumps
 
 USERNAME = "streamer"
-EMAIL = "some_streamer@session.com"
+EMAIL = "some_streamer@mail.com"
 PASSWORD = "strong_password"
 
 AUTH_ROUTE = "http://localhost:8003/authenticate"

@@ -1,87 +1,143 @@
 import { useEffect, useState } from "react";
 import LoginPopup from "./LoginPopup";
-import { UserInfo } from '../Datas'
+import { StreamInfo, UserInfo } from '../Datas'
 import UserInfoPopup from "./UserInfoPopup";
 
 type HeaderBarProps = {
 	loginVisible: boolean
 	setLoginVisible: React.Dispatch<boolean>
 	forcedLogin: boolean
-	loggedIn: boolean
+	user: UserInfo | undefined
 	getUser: () => Promise<UserInfo | undefined>
+	stream: StreamInfo | undefined
+	getStream: () => Promise<StreamInfo | undefined>
 	logoutHandler: () => void
 }
 
-const standardSpacerSize = 10
+export default function HeaderBar({
+	loginVisible,
+	setLoginVisible,
+	forcedLogin,
+	user,
+	getUser,
+	stream,
+	getStream,
+	logoutHandler
+}: {
+	loginVisible: boolean
+	setLoginVisible: React.Dispatch<boolean>
+	forcedLogin: boolean
+	user: UserInfo | undefined
+	getUser: () => Promise<UserInfo | undefined>
+	stream: StreamInfo | undefined
+	getStream: () => Promise<StreamInfo | undefined>
+	logoutHandler: () => void
+}) {
 
-function Spacer({ size }: { size: number }) {
-	return (
-		<div style={{ width: `${size}vh` }}></div>
-	)
-}
-
-export default function HeaderBar(props: HeaderBarProps) {
-
-	// const [loginVisible, setLoginVisible] = useState(false)
 	const [userInfoVisible, setUserInfoVisible] = useState(false)
-	const [profileLabel, setProfileLabel] = useState<string>('Profile')
 
 	useEffect(() => {
-		console.log("Rendering header bar.")
-		if (props.loggedIn) {
-			console.log("User is logged in.")
-			loadProfileLabel()
-		}
 
-		console.log("User not logged in.")
-
-	}, [props.loggedIn])
-
-	async function loadProfileLabel() {
-		let user = await props.getUser()
 		if (user == undefined) {
-			return
+			getUser()
 		}
 
-		setProfileLabel(user.username)
+		if (stream == undefined) {
+			getStream()
+		}
+
+	}, [user, stream])
+
+	function LogoText() {
+
+		let offline = 'text-orange-600'
+		let online = 'text-red-500'
+		let textColor = stream ? online : offline
+
+		return (
+			// also customize font
+			<div className={`flex h-full items-center
+				text-bold ${textColor} text-[35px] 
+				font-['Bebas Neue']`}>
+				<p>SESSION</p>
+			</div>
+		)
+
 	}
+
+	function LoginButton() {
+
+		return (
+			<button
+				className='flex h-full w-[160px]
+					justify-center items-center
+					px-2 rounded-full 
+					bg-orange-500 border border-orange-400'
+				onClick={() => user ? setUserInfoVisible(true) : setLoginVisible(true)}>
+				{user ? user.username : "Sign in / Sign up"}
+			</button>
+		)
+
+	}
+
 
 	return (
 		<div className="flex flex-row 
-				size-full
+				size-full 
+				px-10
 				justify-center items-center
-				p-2
-				bg-sky-800">
+				font-[Oswald]
+				bg-gradient-to-t from-slate-800 from-1%  to-slate-900
+				">
 
-			<input placeholder="Search"
-				className='basis-1/4 rounded-full placeholder p-2' />
+			{/* left section  */}
+			<div className='flex flex-row w-1/3 h-full justify-left items-center'>
 
-			{<Spacer size={standardSpacerSize} />}
+				<img className='flex h-full mr-4' src="broadcast.png" />
 
-			{!props.loggedIn && <button
-				className='basis-1/8 bg-purple-600 p-2 rounded-full'
-				onClick={() => props.setLoginVisible(true)}>
-				Sign In
-			</button>}
+				<LogoText />
+
+			</div>
+
+			{/* middle section  */}
+			<div className='flex flex-row w-1/3 h-full
+				justify-start items-center'>
+
+				<input className='flex w-3/5 h-2/3
+					rounded-full px-4'
+
+					placeholder="Search" />
+
+				{/* TODO dropdown list in form of some popup ...  */}
+			</div>
+
+
+
+			{/* right section  */}
+			<div className='flex flex-row w-1/3 h-full 
+				justify-end items-center
+				py-2 pr-10'>
+
+				<LoginButton />
+
+			</div>
+
+			{/* popups activated from the headerbar */}
 
 			<LoginPopup
-				loginVisible={props.loginVisible}
-				setLoginVisible={props.setLoginVisible}
-				forcedLogin={props.forcedLogin}
+				loginVisible={loginVisible}
+				setLoginVisible={setLoginVisible}
+				forcedLogin={forcedLogin}
 			/>
-
-			{props.loggedIn && <button
-				className='basis-1/8 bg-orange-500 p-2 rounded-full'
-				onClick={() => setUserInfoVisible(true)}>
-				{profileLabel}
-			</button>}
 
 			<UserInfoPopup isVisible={userInfoVisible}
-				getUser={props.getUser}
+				user={user}
+				getUser={getUser}
+				stream={stream}
+				getStream={getStream}
 				setVisible={setUserInfoVisible}
-				logoutHandler={props.logoutHandler}
+				logoutHandler={logoutHandler}
 			/>
-
 
 		</div>
 	)

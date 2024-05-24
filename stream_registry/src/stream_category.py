@@ -2,4 +2,6 @@ class StreamCategory:
     CHATTING = 'chatting'
     GAMING = 'gaming'
     MUSIC = 'music'
-    WORK = 'work'
+    ART = 'art'
+    SPORT = 'sport '
+    SCIENCE = 'science'

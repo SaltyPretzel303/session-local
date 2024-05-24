@@ -3,12 +3,18 @@ from jsonpickle import encode
 
 from instance_conf import InstanceConf
 
+DOMAIN_NAME = 'session.com'
+
+STREAM_REGISTRY_ADDR = f'stream-registry.{DOMAIN_NAME}'
+ADD_MEDIA_SERVER_PATH = 'add_media_server'
+REMOVE_MEDIA_SERVER_PATH = 'remove_media_server'
+
 class AppConfig:
 
 	instance = {
 		"eu": [
 			InstanceConf(ip="localhost",
-				domainName="cdn-0.session.com",
+				domainName=f"cdn-0.{DOMAIN_NAME}",
 				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
@@ -17,7 +23,7 @@ class AppConfig:
 		],
 		"na": [
 			InstanceConf(ip="localhost",
-				domainName="cdn-1.session.com",
+				domainName=f"cdn-1.{DOMAIN_NAME}",
 				hls_port=80,
 				hc_port=10000,
 				hls_path="live",
@@ -26,7 +32,7 @@ class AppConfig:
 		],
 		"as": [
 			InstanceConf(ip="localhost",
-				domainName="cdn-2.session.com",
+				domainName=f"cdn-2.{DOMAIN_NAME}",
 				hls_port=80,
 				hc_port=10000,
 				hls_path="live",

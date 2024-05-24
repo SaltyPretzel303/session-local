@@ -9,14 +9,6 @@ import docker
 DESCRIPTION = "Will deploy specific amount of parameterized viewers."
 DOCKER_IMAGE = 'session/viewer'
 
-# Not used but could be if docker_deployment deploys viewer farms outside the
-# session-net network and default docker dns cant resolve cdn domain names. 
-HOSTS = [	
-			"172.19.0.20	eu-0-cdn.session.com",
-			"172.19.0.21	na-0-cdn.session.com",
-			"172.19.0.22 	as-0-cdn.session.com",
-			"172.19.0.14	session.com"
-		]
 
 def setup_argument_parser():
 	parser = ArgumentParser(DESCRIPTION)
@@ -26,8 +18,10 @@ def setup_argument_parser():
 	parser.add_argument("--local", action='store_const', const=True, default=False)
 	parser.add_argument("--show", action='store_const', const=True, default=False)
 
+	parser.add_argument("--stream", action='store', default='streamer-0')
+	
 	parser.add_argument("--username", action='store', default='viewer')
-	parser.add_argument("--email", action='store', default='viewer@session.com')
+	parser.add_argument("--email", action='store', default='viewer@mail.com')
 	parser.add_argument("--password", action='store', default='viewer_pwd_1')
 
 
@@ -57,9 +51,9 @@ def local_deployment(args, streams):
 			   get_email(args.email, i), 
 			   args.password,
 			   config.remove_url,
-			   config.reg_url,
-			   config.auth_url,
-			   config.registry_url,
+			   config.signup_url,
+			   config.signin_url,
+			   config.stream_info_url,
 			   stream, 
 			   400,
 			   300, 

@@ -5,16 +5,14 @@ import subprocess
 from ffpyplayer.player import  MediaPlayer 
 from requests import post, get, Response, Session
 
-# USERNAME = "viewer"
-# EMAIL = "viewer@session.com"
-# PASSWORD = "view_password"
+USERNAME = "viewer"
+EMAIL = "viewer@mail.com"
+PASSWORD = "view_password"
 
-USERNAME = "user_1"
-EMAIL = "email_1"
-PASSWORD = "pwd_1"
+DOMAIN_NAME = 'session.com'
 
-REGISTER_URL = "http://session.com/auth/signup"
-AUTH_URL = "http://session.com/auth/signin"
+REGISTER_URL = f"http://{DOMAIN_NAME}/auth/signup"
+AUTH_URL = f"http://{DOMAIN_NAME}/auth/signin"
 
 VIEWER_SESSION_PATH = "./viewer_session"
 VIEWER_COOKIE_PATH = "./viewer_cookie"

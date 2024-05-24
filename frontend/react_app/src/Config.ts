@@ -1,7 +1,10 @@
 import { Orderings } from "./Datas"
 
+const DOMAIN = 'session.com'
+
 type configuration = {
 	myRegion: string,
+	domainName: string,
 
 	streamKeyUrl: string,
 	userUrl: (user: string) => string,
@@ -19,45 +22,50 @@ type configuration = {
 		start: number,
 		count: number,
 		region: string) => string,
+
+	categoryStreamsUrl: (category: string,
+		start: number,
+		count: number,
+		region: string) => string,
+
 	userFromTokensIdUrl: (tokensId: string) => string,
-	followingUrl: string,
+	followingUrl: (from: number, count: number, ordering: Orderings) => string,
 	tnailUrl: (username: string) => string,
 	notFoundTnailUrl: string,
 	previewQuality: string,
 	viewCountUrl: (stream: string) => string,
 	isLiveUrl: (stramer: string) => string,
 	categoriesUrl: string,
-	categoriesRangeUrl: (fromInd: number, toInd: number) => string,
+	categoriesRangeUrl: (start: number, count: number) => string,
 	lowCategoryIconUrl: (name: string) => string,
 	highCategoryIconUrl: (name: string) => string,
-	updateStreamUrl: string
+	updateStreamUrl: string,
+	chatRelayUrl: (channel: string) => string
 }
-
 
 const config: configuration = {
 	myRegion: 'eu',
 
-	streamKeyUrl: "http://session.com/auth/get_key",
+	domainName: 'session.com',
 
-	userUrl: (user: string) => `http://session.com/user/get_user/${user}`,
-
+	streamKeyUrl: `http://${DOMAIN}/auth/get_key`,
+	userUrl: (user: string) => `http://${DOMAIN}/user/get_user/${user}`,
 	streamInfoUrl: (streamer: string, region: string) =>
-		`http://session.com/stream/stream_info/${streamer}?region=${region}`,
+		`http://${DOMAIN}/stream/stream_info/${streamer}?region=${region}`,
 
 	allStreamsUrl: (start: number,
 		count: number,
 		region: string,
 		ordering: Orderings) =>
 
-		`http://session.com/stream/all?
+		`http://${DOMAIN}/stream/all?
 			region=${region}&
 			start=${start}&
 			count=${count}&
 			ordering=${ordering.toString()}`,
 
 	exploreStreamsUrl: (start: number, count: number, region: string) =>
-
-		`http://session.com/stream/get_explore?
+		`http://${DOMAIN}/stream/get_explore?
 			region=${region || config.myRegion}&
 			start=${start}&
 			count=${count}`,
@@ -67,29 +75,42 @@ const config: configuration = {
 		count: number,
 		region: string) =>
 
-		`http://session.com/stream/get_recommended/${username}?
+		`http://${DOMAIN}/stream/get_recommended/${username}?
 			start=${start}&
 			count=${count}&
 			region=${region}`,
+	categoryStreamsUrl: (category: string,
+		start: number,
+		count: number,
+		region: string) =>
+		`http://${DOMAIN}/stream/by_category/${category}?
+					start=${start}&
+					count=${count}&
+					region=${region}`,
 
 	userFromTokensIdUrl: (tokensId: string) =>
-		`http://session.com/user/get_user_from_tokensid/${tokensId}`,
+		`http://${DOMAIN}/user/get_user_from_tokensid/${tokensId}`,
 
-	followingUrl: `http://session.com/user/get_following`,
+	followingUrl: (start, count, ordering) =>
+		`http://${DOMAIN}/user/get_following?
+				start=${start}&
+				count=${count}&
+				oredering=${ordering.toString()}`,
 
-	tnailUrl: (stream: string) => `http://session.com/stream/tnail/${stream}`,
+	tnailUrl: (stream: string) => `http://${DOMAIN}/stream/tnail/${stream}`,
 
-	notFoundTnailUrl: "http://session.com/stream/tnail/unavailable",
+	notFoundTnailUrl: `http://${DOMAIN}/stream/tnail/unavailable`,
 	previewQuality: "preview",
-	viewCountUrl: (stream: string) => `http://session.com/stream/viewer_count/${stream}`,
-	isLiveUrl: (streamer: string) => `http://session.com/stream/is_live/${streamer}`,
-	categoriesUrl: "http://session.com/stream/categories",
-	categoriesRangeUrl: (f, t) => `http://session.com/stream/categories?start=${f}&end=${t}`,
+	viewCountUrl: (stream: string) => `http://${DOMAIN}/stream/viewer_count/${stream}`,
+	isLiveUrl: (streamer: string) => `http://${DOMAIN}/stream/is_live/${streamer}`,
+	categoriesUrl: `http://${DOMAIN}/stream/categories`,
+	categoriesRangeUrl: (f, t) => `http://${DOMAIN}/stream/categories?start=${f}&end=${t}`,
 	lowCategoryIconUrl: (name: string) =>
-		"http://session.com/stream/category_low_tnail/" + name,
+		`http://${DOMAIN}/stream/category_low_tnail/${name}`,
 	highCategoryIconUrl: (name: string) =>
-		"http://session.com/stream/category_high_tnail/" + name,
-	updateStreamUrl: "http://session.com/stream/update"
+		`http://${DOMAIN}/stream/category_high_tnail/${name}`,
+	updateStreamUrl: `http://${DOMAIN}/stream/update`,
+	chatRelayUrl: (channel) => `ws://${DOMAIN}/chat/${channel}`
 }
 
 export default config

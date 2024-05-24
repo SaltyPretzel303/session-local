@@ -37,19 +37,23 @@ export default function StreamPreview(props: StreamPreviewProps) {
 	}
 
 	return (
-		<div
+		<div className='flex flex-col size-full
+				justify-center 		
+				rounded-xl
+				border-2 border-transparent
+				hover:border-2 hover:border-orange-600
+				bg-gray-100'
 			onMouseEnter={hoverInHandler}
 			onMouseLeave={hoverOutHandler}
-			onClick={() => props.onClick(props.info)}
-			className='flex flex-row 
-				h-full
-				w-full
-				box-border p-2
-				justify-center
-				border-2 border-sky-900
-				hover:border-2 hover:border-sky-800'>
+			onClick={() => props.onClick(props.info)}>
 
-			<div className='flex h-full w-2/3 mr-4 '>
+			<p className='ml-4
+					justify-center items-center
+					font-extrabold text-ellipsis 
+					text-[30px]'>
+				{props.info.creator}</p>
+
+			<div className='flex size-full border-y border-y-black'>
 				<HlsPlayer
 					src={formStreamUrl()}
 					posterUrl={formPosterUrl()}
@@ -58,14 +62,17 @@ export default function StreamPreview(props: StreamPreviewProps) {
 					abr={false}
 					muted={true} />
 			</div>
-			<div className='flex flex-col h-full w-1/3'>
 
-				<div className='font-extrabold text-nowrap'>
-					{props.info.title}</div>
+			<div className='flex flex-col w-full p-2'>
+				<p className='font-20px font-bold'>{props.info.title}</p>
+				<div className='flex flex-row w-full'>
+					<p className='flex w-5/6 '>Category: {props.info.category}</p>
+					<p className='flex w-1/6 
+						justify-end 
+						border border-black rounded-xl 
+						px-2 bg-orange-100'>{props.info.viewers}</p>
+				</div>
 
-				<div>Creator: {props.info.creator}</div>
-				<div>Category: {props.info.category}</div>
-				<div>Viewers: {props.info.viewers}</div>
 
 			</div>
 		</div>

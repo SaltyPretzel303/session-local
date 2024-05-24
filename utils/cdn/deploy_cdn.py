@@ -5,6 +5,7 @@ import docker
 import jsonpickle
 from requests import Response, post
 from retry_requests import retry
+from config import DOMAIN_NAME
 
 # For each region specified in regions json/dict create one cdn server instance.
 # Update regions json with the created server's ip and create cdn manager 
@@ -26,7 +27,7 @@ regions =  {
 		"eu": [
 			{
 				"ip":"172.19.0.20",
-				"domainName": "eu-0-cdn.session.com",
+				"domainName": f"eu-0-cdn.{DOMAIN_NAME}",
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
@@ -37,7 +38,7 @@ regions =  {
 		"na": [
 			{
 				"ip":"172.19.0.21",
-				"domainName": "na-0-cdn.session.com",
+				"domainName": f"na-0-cdn.{DOMAIN_NAME}",
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
@@ -48,7 +49,7 @@ regions =  {
 		"as": [
 			{
 				"ip":"172.19.0.22",
-				"domainName": "as-0-cdn.session.com",
+				"domainName": f"as-0-cdn.{DOMAIN_NAME}",
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
@@ -62,7 +63,7 @@ regions =  {
 		"eu": [
 			{
 				"ip":"172.19.0.20",
-				"domainName": "eu-0-cdn.session.com",
+				"domainName": f"eu-0-cdn.{DOMAIN_NAME}",
 				"hls_port": 80,
 				"hc_port": 80,
 				"hls_path":"live",
@@ -86,7 +87,7 @@ INNER_HLS_PORT = 80
 CDN_LABEL = "cdn_instance"
 CDN_IMAGE_TAG = 'session/cdn'
 
-MANAGER_IP = "session.com:8004"
+MANAGER_IP = f"{DOMAIN_NAME}:8004"
 
 dckr = docker.from_env()
 

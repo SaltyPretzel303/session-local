@@ -212,4 +212,3 @@ class Db:
 
 	def get_view_count(self, stream_name):
 		return ViewerData.objects(stream=stream_name).count()
-	

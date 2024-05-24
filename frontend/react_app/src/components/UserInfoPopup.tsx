@@ -6,7 +6,8 @@ import {
 	isKeySuccess,
 	failure as keyFailure,
 	StreamInfo,
-	UpdateRequest
+	UpdateRequest,
+	Category
 } from '../Datas'
 
 import config from '../Config'
@@ -16,21 +17,24 @@ type userInfoProps = {
 	isVisible: boolean
 	setVisible: React.Dispatch<boolean>
 	logoutHandler: () => void
+	user: UserInfo | undefined
 	getUser: () => Promise<UserInfo | undefined>
+	stream: StreamInfo | undefined
+	getStream: () => Promise<StreamInfo | undefined>
 }
 
 export default function UserInfoPopup(props: userInfoProps) {
 
-	const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined)
+	// const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined)
 	const [streamKeyError, setStreamKeyError] = useState<string | undefined>(undefined)
 	const [isLoadingKey, setIsLoadingKey] = useState<boolean>(false)
 	const [streamKey, setStreamKey] = useState<KeyResponse | undefined>(undefined)
 
-	const [streamInfo, setStreamInfo] = useState<StreamInfo | undefined>()
+	// const [streamInfo, setStreamInfo] = useState<StreamInfo | undefined>()
 	const [category, setCategory] = useState<string>("chatting")
 
 	const [title, setTitle] = useState<string>("Stream title")
-	const [categories, setCategories] = useState<string[]>([])
+	const [categories, setCategories] = useState<Category[]>([])
 	const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
 	const [updateStatus, setUpdateStatus] = useState<"updating" | "success" | "failed">()
 
@@ -47,46 +51,16 @@ export default function UserInfoPopup(props: userInfoProps) {
 
 		console.log("Will fetch user data.")
 
-		fetchData()
+		loadCategories()
+			.then((cats) => {
+				setCategories(cats)
+			})
+			.catch((err) => {
+				console.log("Failed to fetch categories.")
+			})
 
 	}, [props.isVisible])
 
-	async function fetchData() {
-		let user = await props.getUser()
-
-		if (!user) {
-			// can't be undefined
-			return
-		}
-
-		setUserInfo(user)
-
-		setStreamInfo(await loadStreamInfo(user?.username))
-
-		setCategories(await loadCategories())
-	}
-
-	async function loadStreamInfo(username: string): Promise<StreamInfo | undefined> {
-
-		try {
-			let res = await fetch(config.streamInfoUrl(username, config.myRegion))
-
-			if (res.status != 200) {
-				throw Error("status code: " + res.status)
-			}
-
-			let data = await res.json() as StreamInfo
-
-			console.log("Stream info: ")
-			console.log(JSON.stringify(data))
-
-			return data
-		} catch (e) {
-			console.log("Failed to load stream info: " + e)
-			return undefined
-		}
-
-	}
 
 	function isExpired(expDate: string) {
 		return (new Date(expDate)) < new Date()
@@ -150,7 +124,7 @@ export default function UserInfoPopup(props: userInfoProps) {
 						border-2 border-purple-500 
 						w-full 
 						p-2 box-border'>
-						http://session.com/ingest/{streamKey.value}
+						{`http://${config.domainName}/ingest/${streamKey.value}`}
 					</p>
 				)
 			} else {
@@ -171,7 +145,7 @@ export default function UserInfoPopup(props: userInfoProps) {
 		return (new Date(strDate)).toLocaleString("de-CH")
 	}
 
-	async function loadCategories(): Promise<string[]> {
+	async function loadCategories(): Promise<Category[]> {
 		try {
 			let res = await fetch(config.categoriesUrl)
 
@@ -179,8 +153,7 @@ export default function UserInfoPopup(props: userInfoProps) {
 				throw Error("status code: " + res.status)
 			}
 
-			return await res.json() as string[]
-
+			return await res.json() as Category[]
 		} catch (e) {
 			console.log("Failed to load categories: " + e)
 			return []
@@ -188,7 +161,7 @@ export default function UserInfoPopup(props: userInfoProps) {
 	}
 
 	function LiveIndicator() {
-		if (streamInfo) {
+		if (props.stream) {
 			return (
 				<div className='flex flex-row'>
 					<div className='w-[20px] h-[20px]
@@ -212,30 +185,23 @@ export default function UserInfoPopup(props: userInfoProps) {
 
 	async function refresh() {
 		setIsRefreshing(true)
-		let username = userInfo?.username
-		if (!username) {
-			// can't be undefined btw
-			return
-		}
-
-		setStreamInfo(await loadStreamInfo(username))
-
+		await props.getStream()
 		setIsRefreshing(false)
 	}
 
 	async function updateStream() {
-		if (!streamInfo || !userInfo) {
+		if (!props.stream || !props.user) {
 			// has to be !undefined but still ... 
 			return
 		}
 
 		setUpdateStatus("updating")
-		console.log("Updating: " + userInfo.username)
+		console.log("Updating: " + props.user.username)
 		console.log("Updating with: " + title)
 		console.log("Updating with: " + category)
 
 		let updateData = {
-			username: userInfo.username,
+			username: props.user.username,
 			title: title,
 			category: category,
 			is_public: true
@@ -303,12 +269,12 @@ export default function UserInfoPopup(props: userInfoProps) {
 					border-2 border-purple-700 rounded-3xl">
 
 				<h1 className="mb-2 font-bold text-purple-400 text-2xl ">
-					{userInfo ? userInfo.username : "USERNAME"}
+					{props.user ? props.user.username : "USERNAME"}
 				</h1>
 
 				<div className='flex flex-row items-center'>
 					<h2 className='mr-2'>Email: </h2>
-					<h2 className='text-xl'>{userInfo?.email}</h2>
+					<h2 className='text-xl'>{props.user?.email}</h2>
 				</div>
 
 
@@ -324,13 +290,11 @@ export default function UserInfoPopup(props: userInfoProps) {
 				{streamKeyError && <p className='text-red-400'>{streamKeyError}</p>}
 
 				{/* Ingest url container */}
-				<div
-					className='p-0 m-0 
+				<div className='p-0 m-0 
 					border-b-orange-500
 					w-full h-10'>
 
 					<StreamKey />
-
 				</div>
 
 				{/* Expiration date and DoNotShare message */}
@@ -355,19 +319,22 @@ export default function UserInfoPopup(props: userInfoProps) {
 
 					<label className='ml-1'>Title</label>
 					<input className='rounded-md mb-2 text-black p-1'
-						defaultValue={streamInfo?.title}
+						defaultValue={props.stream?.title}
 						// value={title}
 						onChange={e => setTitle(e.target.value)}
 					/>
 
 					<label className='ml-1'>Category</label>
 					<select className="rounded-lg text-xl p-1 text-black w-3/4"
-						defaultValue={streamInfo?.category}
+						defaultValue={props.stream?.category}
 						// value={category}
 						onChange={(e) => setCategory(e.target.value)}
 					>
 
-						{categories.map((c) => <option key={c} value={c}>{c}</option>)}
+						{categories.map((c, i) =>
+							<option key={i} value={c.name}>
+								{c.display_name}
+							</option>)}
 
 					</select>
 
@@ -395,7 +362,7 @@ export default function UserInfoPopup(props: userInfoProps) {
 							border-2 border-transparent
 							enabled:hover:border-2 enabled:hover:border-purple-400
 							disabled:bg-slate-400'
-								disabled={!streamInfo}
+								disabled={!props.stream}
 								onClick={updateStream}>
 								Update</button>
 						</div>

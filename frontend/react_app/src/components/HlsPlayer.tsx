@@ -1,6 +1,5 @@
 import Hls, { BufferEOSData, Events, HlsConfig } from "hls.js"
 import { useEffect, useRef, useState } from "react"
-import config from '../Config'
 
 
 type HlsPlayerProps = {
@@ -13,16 +12,17 @@ type HlsPlayerProps = {
 	onDone?: () => void
 }
 
+
 export default function HlsPlayer(props: HlsPlayerProps) {
 
 	const videoRef = useRef<HTMLVideoElement>(null);
 	let hls: Hls | undefined = undefined
 
 	useEffect(() => {
-		console.log("Constructing hlsPlayer for: " + props.src)
+		// console.log("Constructing hlsPlayer for: " + props.src)
 
 		const videoElement = videoRef.current;
-		if (!videoElement || !props.src) {
+		if (!props.src || !videoElement) {
 			console.log("Missing src or no video element.")
 			return
 		}
@@ -45,7 +45,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 			hls.attachMedia(videoElement)
 
 			if (props.shouldPlay) {
-				console.log("Stream will be played.")
+				// console.log("Stream will be played.")
 
 				hls.on(Hls.Events.BUFFER_EOS, doneHandler)
 				hls.startLoad()
@@ -58,7 +58,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 				// 		console.log("Failed to start video: " + err)
 				// 	})
 			} else {
-				console.log("Stream will not be played.")
+				// console.log("Stream will not be played.")
 				hls.stopLoad()
 			}
 
@@ -95,17 +95,13 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 
 
 	return (
-		<div className="flex size-full
-			justify-center items-center">
-
-			<video
-				className={`flex w-full max-w-full max-h-full`}
-				muted={props.muted}
-				poster={props.posterUrl}
-				ref={videoRef}
-				onPause={pauseHandler}
-				autoPlay
-			/>
-		</div>
+		<video
+			className='flex h-full'
+			muted={props.muted}
+			poster={props.posterUrl}
+			ref={videoRef}
+			onPause={pauseHandler}
+			autoPlay
+		/>
 	)
 }

@@ -1,4 +1,4 @@
-version: '3.5'
+# version: '3.5'
 
 networks: 
   session-net: 
@@ -21,7 +21,8 @@ services:
     image: session/frontend_base
 
   gateway:
-    container_name: session.com
+    # container_name: session.com
+    container_name: '${DOMAIN_NAME}'
     build: 
       context: ./
       dockerfile: ./dockerfiles/gateway.Dockerfile
@@ -33,20 +34,22 @@ services:
     stop_signal: SIGINT
   
   frontend:
-    container_name: frontend.session.com
+    # container_name: frontend.session.com
+    container_name: 'frontend.${DOMAIN_NAME}'
     build: 
       context: ./
       dockerfile: ./dockerfiles/frontend.Dockerfile
     image: session/frontend
     ports:
-      # - "0.0.0.0:80:80"
+      # - "0.0.0.0:80:80" # 80 points to the gateway 
       - "0.0.0.0:3000:80"
     networks:
       - session-net
     stop_signal: SIGKILL
 
   ingest-proxy:
-    container_name: ingest-proxy.session.com
+    # container_name: ingest-proxy.session.com
+    container_name: 'ingest-proxy.${DOMAIN_NAME}'
     build:
       context: ./
       dockerfile: dockerfiles/ingest_proxy.Dockerfile
@@ -59,7 +62,8 @@ services:
       - session-net
 
   ingest-instance:
-    container_name: ingest.session.com
+    # container_name: ingest.session.com
+    container_name: 'ingest.${DOMAIN_NAME}'
     build:
       context: ./
       dockerfile: dockerfiles/ingest.Dockerfile
@@ -74,7 +78,8 @@ services:
     stop_signal: SIGINT
 
   stream-registry:
-    container_name: stream-registry.session.com
+    # container_name: stream-registry.session.com
+    container_name: 'stream-registry.${DOMAIN_NAME}'
     build: 
       context: ./
       dockerfile: ./dockerfiles/stream_registry.Dockerfile
@@ -89,7 +94,8 @@ services:
     # SIGKILL will kill the process.
 
   cdn-proxy:
-    container_name: cdn-proxy.session.com
+    # container_name: cdn-proxy.session.com
+    container_name: 'cdn-proxy.${DOMAIN_NAME}'
     build:
       context: ./
       dockerfile: ./dockerfiles/cdn_proxy.Dockerfile
@@ -100,7 +106,8 @@ services:
       - session-net
 
   cdn-instance:
-    container_name: cdn.session.com
+    # container_name: cdn.session.com
+    container_name: 'cdn.${DOMAIN_NAME}'
     build:
       context: ./
       dockerfile: ./dockerfiles/cdn_instance.Dockerfile
@@ -112,7 +119,8 @@ services:
       - session-net 
 
   cdn-manager:
-    container_name: cdn-manager.session.com
+    # container_name: cdn-manager.session.com
+    container_name: 'cdn-manager.${DOMAIN_NAME}'
     build:
       context: ./
       dockerfile: ./dockerfiles/cdn_manager.Dockerfile
@@ -124,7 +132,8 @@ services:
     stop_signal: SIGINT
 
   registry-database:
-    container_name: registry-db.session.com
+    # container_name: registry-db.session.com
+    container_name: 'registry-db.${DOMAIN_NAME}'
     build: 
       context: ./
       dockerfile: ./dockerfiles/registry_db.Dockerfile
@@ -135,7 +144,8 @@ services:
       - session-net
 
   users-db:
-    container_name: users-db.session.com
+    # container_name: users-db.session.com
+    container_name: 'users-db.${DOMAIN_NAME}'
     build: 
       context: ./ 
       dockerfile: ./dockerfiles/users_db.Dockerfile
@@ -148,7 +158,8 @@ services:
   # Note: If you are assigning a custom name to your db service on the line below, 
   # make sure it does not contain underscores
   tokens-db:
-    container_name: tokens-db.session.com
+    # container_name: tokens-db.session.com
+    container_name: 'tokens-db.${DOMAIN_NAME}'
     image: 'postgres:latest'
     environment:
       POSTGRES_USER: supertokens_user 
@@ -166,7 +177,8 @@ services:
       retries: 5
 
   tokens-core:
-    container_name: tokens-core.session.com
+    # container_name: tokens-core.session.com
+    container_name: 'tokens-core.${DOMAIN_NAME}'
     image: registry.supertokens.io/supertokens/supertokens-postgresql:7.0
     depends_on:
       tokens-db:
@@ -174,7 +186,9 @@ services:
     ports:
       - 3567:3567
     environment:
-      POSTGRESQL_CONNECTION_URI: "postgresql://supertokens_user:somePassword@tokens-db.session.com:5432/supertokens"
+      # POSTGRESQL_CONNECTION_URI:
+      # "postgresql://supertokens_user:somePassword@tokens-db.session.com:5432/supertokens"
+      POSTGRESQL_CONNECTION_URI: "postgresql://supertokens_user:somePassword@tokens-db.${DOMAIN_NAME}:5432/supertokens"
     networks:
       - session-net
     # restart: unless-stopped
@@ -187,10 +201,11 @@ services:
     stop_signal: SIGINT
 
   tokens-api: 
-    container_name: tokens-api.session.com
+    # container_name: tokens-api.session.com
+    container_name: 'tokens-api.${DOMAIN_NAME}'
     build:
       context: ./
-      dockerfile: ./dockerfiles/tokens-api.Dockerfile
+      dockerfile: ./dockerfiles/tokens_api.Dockerfile
     image: session/tokens-api
     ports: 
       - "0.0.0.0:8100:80"
@@ -198,9 +213,23 @@ services:
       - session-net
     stop_signal: SIGINT
 
+  chat-relay:
+    # container_name: chat-relay.session.com
+    container_name: 'chat-relay.${DOMAIN_NAME}'
+    build: 
+      context: ./
+      dockerfile: ./dockerfiles/chat_relay.Dockerfile
+    image: session/chat-relay
+    ports: 
+      - "0.0.0.0:12345:80"
+    networks: 
+      - session-net
+    stop_signal: SIGINT
+
   # Just a bot
   streamer:
-    container_name: streamer.session.com
+    # container_name: streamer.session.com
+    container_name: 'streamer.${DOMAIN_NAME}'
     build:
       context: ./
       dockerfile: ./dockerfiles/streamer.Dockerfile
@@ -211,7 +240,8 @@ services:
 
   # Another bot
   viewer:
-    container_name: viewer.session.com
+    # container_name: viewer.session.com
+    container_name: 'viewer.${DOMAIN_NAME}'
     build: 
       context: ./
       dockerfile: ./dockerfiles/viewer.Dockerfile

@@ -6,7 +6,6 @@ from tokens_api.db_model import FollowingDoc, UserDoc, StreamKeyDoc
 def connect():
 	host_url = config.users_db_conn_string
 
-	print(f"Connecting with mongo on: {host_url}")
 	mongoengine.connect(host=host_url)
 
 # Why are all of these synchronous. ... ... .... ... ... ... ... .

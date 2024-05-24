@@ -4,6 +4,8 @@ import argparse
 import docker
 from streamer import stream 
 from deploy_config import DeployConfig, LOCAL_VIDEO_PATH
+from config import DOMAIN_NAME
+
 
 DESCRIPTION = "Will deploy specific amount of parameterized streamers."
 DOCKER_IMAGE = "session/streamer"
@@ -50,8 +52,8 @@ def local_deployment(count: int):
 				email=get_mail(index),
 				password=get_pwd(index),
 				keep=False,
-				reg_route=config.reg_url,
-				auth_route=config.auth_url,
+				reg_route=config.signup_url,
+				auth_route=config.signin_url,
 				remove_route=config.remove_url,
 				key_url=config.key_route,
 				source_file=config.source_file,
@@ -77,7 +79,7 @@ def local_deployment(count: int):
 	return close_method
 
 def get_container_name(index):
-	return f"{get_name(index)}.session.com"
+	return f"{get_name(index)}.{DOMAIN_NAME}"
 
 def get_title(index):
 	return f"Generic but not default title for stream: {index}"
@@ -92,9 +94,9 @@ def get_container_entrypoint(index):
 			--pwd {get_pwd(index)} \
 			--file {config.source_file} \
 			--ingest {config.ingest_url} \
-			--auth_on {config.auth_url} \
+			--auth_on {config.signin_url} \
 			--remove_on {config.remove_url} \
-			--reg_on {config.reg_url} \
+			--reg_on {config.signup_url} \
 			--get_key_on {config.key_route} \
 			--title '{get_title(index)}' \
 			--category {get_category(index)} \

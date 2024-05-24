@@ -1,101 +1,89 @@
-import React from "react"
 import AutoSizer from "react-virtualized-auto-sizer"
-import { FixedSizeList as List } from 'react-window'
-import InfiniteLoader from "react-window-infinite-loader"
+import { InfiniteLoader, List, ListRowProps } from 'react-virtualized'
+import React from "react"
 
 export default function GenericPreviewsList<T>(
 	{
-		dataProvider,
+		items,
+		itemsProvider,
+		hasMoreData,
 		renderItem,
-		itemSize: size
+		renderLoading,
+		relativeHeight,
 	}: {
-		dataProvider: (from: number, to: number) => Promise<T[]>
+		items: T[],
+		itemsProvider: (from: number, to: number) => Promise<void>
+		hasMoreData: boolean
 		renderItem: (item: T) => JSX.Element
-		itemSize: number
+		renderLoading: () => JSX.Element
+		relativeHeight: number
 	}
 ) {
 
-	const [hasMoreData, setHasMoreData] = React.useState<boolean>(true)
+	const loaderRef = React.useRef<InfiniteLoader>(null)
+	let itemsCount = hasMoreData ? items.length + 1 : items.length
+	let heightRatio = relativeHeight < 0 ? 0 : relativeHeight > 100 ? 100 : relativeHeight
 
-	const [data, setData] = React.useState<T[]>([])
-
-	let itemsCount = hasMoreData ? data.length + 1 : data.length
+	React.useEffect(() => {
+		if (hasMoreData) {
+			console.log("Reloading list. ")
+			loaderRef.current?.resetLoadMoreRowsCache(true)
+		}
+	}, [hasMoreData])
 
 	function isItemLoaded(index: number): boolean {
-		return !hasMoreData || index < data.length
-	}
-
-	async function loadMoreItems(start: number, end: number): Promise<void> {
-		console.log(`Requesting: ${start} - ${end} = ${end - start}`)
-
-		let newData = await dataProvider(start, end)
-
-		console.log(`Received: ${newData} = ${newData.length}`)
-
-		if (newData.length > 0) {
-			setData([...data].concat(newData))
-		}
-
-		if (newData.length < end - start) {
-			setHasMoreData(false)
-		}
+		return !hasMoreData || index < items.length
 	}
 
 	function Row({ index, style }: { index: number, style: any }) {
+		let content = undefined
 		if (isItemLoaded(index)) {
-			let info: T = data[index]
-			return (
-				<div className='flex 
-					w-full h-full
-					border-[20px] box-border border-sky-900
-					justify-center items-center'
-					style={style}>
-
-					{renderItem(info)}
-
-				</div>
-			)
+			let info: T = items[index]
+			content = renderItem(info)
 		} else {
-			return (
-				<div className='flex border-2 border-black 
-					w-full h-full 
-					justify-center items-center
-					p-4
-					bg-slate-300'
-					style={style}>
-
-					<p>Loading ... </p>
-
-				</div>
-			)
+			content = renderLoading()
 		}
 
+		return (
+			<div className='flex size-full justify-center items-center'
+				key={index}
+				style={style}>
+
+				<div className='flex size-full box-border px-2 py-3'>
+					{content}
+				</div>
+
+			</div>
+		)
 	}
 
+	async function loadMoreRows(prop: { startIndex: number, stopIndex: number }): Promise<void> {
+		itemsProvider(prop.startIndex, prop.stopIndex)
+	}
 
 	return (
-		<div className='flex flex-col h-full w-full'>
+		<div className='flex flex-col size-full'>
 
 			<AutoSizer>
 				{({ height, width }: { height: number, width: number }) => (
 					<InfiniteLoader
-						isItemLoaded={isItemLoaded}
-						itemCount={2000}
-						loadMoreItems={loadMoreItems}
-						threshold={5}
+						ref={loaderRef}
+						isRowLoaded={(prop: { index: number }) => isItemLoaded(prop.index)}
+						rowCount={1000}
+						loadMoreRows={loadMoreRows}
 					>
-						{({ onItemsRendered, ref }) => {
+						{({ onRowsRendered, registerChild }) => {
 							return (
 								<List
+									ref={registerChild}
+									onRowsRendered={onRowsRendered}
 									height={height}
 									width={width}
-									itemCount={itemsCount}
-									itemSize={size}
-									onItemsRendered={onItemsRendered}
-									ref={ref}
-								>
-									{Row}
-								</List>
+									rowCount={itemsCount}
+									rowHeight={width * heightRatio / 100}
+									rowRenderer={(props: ListRowProps) => Row(props)}
+								/>
+
 							)
 						}}
 

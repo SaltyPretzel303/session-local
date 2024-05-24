@@ -5,7 +5,7 @@ import { PlayerPage } from "./PlayerPage";
 import HeaderBar from "./components/HeaderBar";
 import { validUsername } from './Validators'
 import { useEffect, useState } from "react";
-import { UserInfo } from './Datas'
+import { StreamInfo, UserInfo } from './Datas'
 import config from './Config'
 
 import SuperTokens, { SuperTokensWrapper } from "supertokens-auth-react"
@@ -13,15 +13,14 @@ import EmailPassword, { OnHandleEventContext, signOut }
 	from 'supertokens-auth-react/recipe/emailpassword'
 
 import Session from 'supertokens-auth-react/recipe/session'
-
-// import Session from 'supertokens-auth-react/recipe/emailpassword'
+import Chat from "./components/Chat";
 
 SuperTokens.init({
 	appInfo: {
 		appName: "react_app",
-		apiDomain: "http://session.com",
+		apiDomain: `http://${config.domainName}`,
 		apiBasePath: "/auth",
-		websiteDomain: "http://session.com",
+		websiteDomain: `http://${config.domainName}`,
 		websiteBasePath: "/",
 	},
 	recipeList: [
@@ -30,10 +29,7 @@ SuperTokens.init({
 				console.log("Handling post login.")
 				console.log(context)
 
-				await new Promise((res) => setTimeout(res, 999))
-				// .then((re) => console.log("done waiting 1"))
-				// .catch((e) => console.log("Error 1: " + e))
-				// .finally(() => console.log("Finaly 1."))
+				await new Promise((res) => setTimeout(res, 1000))
 
 				console.log("Past async call.")
 			},
@@ -51,7 +47,7 @@ SuperTokens.init({
 		}),
 		Session.init(
 			{
-				sessionTokenFrontendDomain: ".session.com",
+				sessionTokenFrontendDomain: `.${config.domainName}`,
 				// If multi domain is set on the backend, this field MUST
 				// have the same value as cookie_domain in session.init()
 
@@ -67,13 +63,32 @@ SuperTokens.init({
 export default function Home() {
 
 	const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined)
+	const [streamInfo, setStreamInfo] = useState<StreamInfo | undefined>(undefined)
+
 	const [loginVisible, setLoginVisible] = useState(false)
 	const [forcedLogin, setForcedLogin] = useState(false)
 
-
 	// useEffect(() => {
-	// 	getUser()
-	// }, [userInfo])
+	// 	loadInfo()
+	// }, [userInfo, streamInfo])
+
+	// async function loadInfo() {
+	// 	if (userInfo != undefined) {
+	// 		console.log("User already fetched in home.")
+	// 		return
+	// 	}
+
+	// 	console.log("Will load user in home.")
+	// 	let user = await loadUser() // will call setUserInfo
+
+	// 	if (user == undefined) {
+	// 		console.log("User undefined, wont load stream info.")
+	// 		return
+	// 	}
+
+	// 	console.log("Will load stream in home.")
+	// 	let stream = await loadStream() // will call setStreamInfo
+	// }
 
 	// Not used, callback was broken, async methods would just be ... cancelled
 	// without any notice or error.
@@ -100,44 +115,68 @@ export default function Home() {
 
 	// }
 
-	async function getUser(): Promise<UserInfo | undefined> {
+	async function loadUser(): Promise<UserInfo | undefined> {
 		if (userInfo != undefined) {
 			console.log("User data already fetched, returning.")
 			return userInfo
 		}
 
 		if (! await Session.doesSessionExist()) {
-			console.log("Session doesn't exits.")
+			console.log("Session does not exist.")
 			return undefined
 		}
 
 		console.log("Session exists, will try to fetch user.")
 
 		let userTokensId = await Session.getUserId()
-
 		let infoUrl = config.userFromTokensIdUrl(userTokensId)
-		console.log("Fetching user from: " + infoUrl)
-		try {
 
+		try {
 			let response = await fetch(infoUrl, { method: 'GET' })
 
-			console.log("Received response.")
 			if (response.status != 200) {
 				throw Error("Status code: " + response.status)
 			}
 
 			let info = await response.json() as UserInfo
 
-			console.log("User info: " + info)
+			console.log("Fetched user: " + JSON.stringify(info))
+
 			setUserInfo(info)
 
-			return undefined
+			return info
 		} catch (e) {
 			console.log("Error while fetching user data: " + e)
+			setUserInfo(undefined)
 			return undefined
 		}
+	}
 
-		console.log("Done ith get user.")
+	async function loadStream(): Promise<StreamInfo | undefined> {
+		if (userInfo == undefined) {
+			console.log("User not found, can't load stream info.")
+			return
+		}
+
+		try {
+			let url = config.streamInfoUrl(userInfo.username, config.myRegion)
+			let res = await fetch(url)
+
+			if (res.status != 200) {
+				throw Error("status code: " + res.status)
+			}
+
+			let data = await res.json() as StreamInfo
+
+			console.log("Stream info: " + JSON.stringify(data))
+			setStreamInfo(data)
+
+			return data
+		} catch (e) {
+			console.log("Failed to load stream info: " + e)
+			setStreamInfo(undefined)
+			return undefined
+		}
 	}
 
 	async function logout() {
@@ -155,9 +194,9 @@ export default function Home() {
 
 	return (
 
-		// root
 		<div className='flex flex-col 
 			justify-center items-center
+			overflow-hidden
 			h-dvh w-dvw'>
 
 			<div className='flex h-[50px] min-h-[50px] w-full'>
@@ -165,14 +204,17 @@ export default function Home() {
 					loginVisible={loginVisible}
 					setLoginVisible={setLoginVisible}
 					forcedLogin={forcedLogin}
-					loggedIn={userInfo != undefined}
-					getUser={getUser}
+					user={userInfo}
+					getUser={loadUser}
+					stream={streamInfo}
+					getStream={loadStream}
 					logoutHandler={logout} />
 			</div>
 
 			<div className='flex size-full 
 				justify-center items-center 
-				bg-red-500'>
+				overflow-hidden
+				bg-white'>
 
 				<SuperTokensWrapper>
 
@@ -180,11 +222,15 @@ export default function Home() {
 						<Routes>
 
 							<Route path="/"
-								element={<Explore getUser={getUser} />}
+								element={<Explore getUser={loadUser} />}
 							/>
 
 							<Route path="/watch/:channel"
-								element={<PlayerPage getUser={getUser} />}
+								element={<PlayerPage getUser={loadUser} />}
+							/>
+
+							<Route path="/chat"
+								element={<Chat channel="someChannel" getUser={loadUser} />}
 							/>
 
 						</Routes>

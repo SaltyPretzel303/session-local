@@ -6,6 +6,7 @@ from datetime import timedelta
 @dataclass 
 class Category: 
 	name: str
+	displayName: str
 	low_icon_path: str
 	high_icon_path: str
 
@@ -21,6 +22,8 @@ class Config:
 	viewer_longevity :timedelta
 	categories: list[Category]
 
+DOMAIN_NAME='session.com'
+
 class AppConfig:
 
 	INSTANCE: Config = None
@@ -35,28 +38,34 @@ class AppConfig:
 		followingUrl="http://localhost:8100/get_following",
 		# viewer_longevity=timedelta(minutes=1),
 		viewer_longevity=timedelta(seconds=20),
-		categories = [ # none of this paths exists
+		categories = [
 			Category(name='chatting',
+				displayName="Chatting",
 				low_icon_path='/app/categories/chatting_icon.png',
 				high_icon_path='/app/categories/chatting_icon.png'
 			),
 			Category(name='gaming',
+				displayName="Gaming",
 				low_icon_path='/app/categories/gaming_icon.png',
 				high_icon_path='/app/categories/gaming_icon.png'
 			),
 			Category(name='music',
+				displayName="Music",
 				low_icon_path='/app/categories/music_icon.png',
 				high_icon_path='/app/categories/music_icon.png'
 			),
 			Category(name='art',
+				displayName="Art",
 				low_icon_path='/app/categories/art_icon.png',
 				high_icon_path='/app/categories/art_icon.png'
 			),
 			Category(name='sport',
+				displayName="Sport",
 				low_icon_path='/app/categories/sport_icon.png',
 				high_icon_path='/app/categories/sport_icon.png'
 			),
 			Category(name='science',
+				displayName="Science",
 				low_icon_path='/app/categories/science_icon.png',
 				high_icon_path='/app/categories/science_icon.png'
 			)
@@ -65,37 +74,43 @@ class AppConfig:
 	)
 
 	PROD_INSTANCE = Config(
-		db_url="mongodb://registry_user:registry_password@registry-db.session.com:27017/streams",
-		match_key_url=lambda key: f"http://tokens-api.session.com/match_key/{key}",
-		is_authenticated_url="http://tokens-api.session.com/is_authenticated",
+		db_url=f"mongodb://registry_user:registry_password@registry-db.{DOMAIN_NAME}:27017/streams",
+		match_key_url=lambda key: f"http://tokens-api.{DOMAIN_NAME}/match_key/{key}",
+		is_authenticated_url=f"http://tokens-api.{DOMAIN_NAME}/is_authenticated",
 		tnail_path=lambda streamer: f"/app/tnails/{streamer}.jpg",
 		unavailable_path="tnails/unavailable.png",
-		match_region_url=lambda region: f"http://cdn-manager.session.com/match_region/{region}",
-		followingUrl="http://tokens.api.session.com/get_following",
+		match_region_url=lambda region: f"http://cdn-manager.{DOMAIN_NAME}/match_region/{region}",
+		followingUrl=f"http://tokens.api.{DOMAIN_NAME}/get_following",
 		# viewer_longevity=timedelta(minutes=1)
 		viewer_longevity=timedelta(seconds=20),
 		categories=[
 			Category(name='chatting',
+				displayName="Chatting",
 				low_icon_path='/app/categories/chatting_icon.png',
 				high_icon_path='/app/categories/chatting_icon.png'
 			),
 			Category(name='gaming',
+				displayName="Gaming",
 				low_icon_path='/app/categories/gaming_icon.png',
 				high_icon_path='/app/categories/gaming_icon.png'
 			),
 			Category(name='music',
+				displayName="Music",
 				low_icon_path='/app/categories/music_icon.png',
 				high_icon_path='/app/categories/music_icon.png'
 			),
 			Category(name='art',
+				displayName="Art",
 				low_icon_path='/app/categories/art_icon.png',
 				high_icon_path='/app/categories/art_icon.png'
 			),
 			Category(name='sport',
+				displayName="Sport",
 				low_icon_path='/app/categories/sport_icon.png',
 				high_icon_path='/app/categories/sport_icon.png'
 			),
 			Category(name='science',
+				displayName="Science",
 				low_icon_path='/app/categories/science_icon.png',
 				high_icon_path='/app/categories/science_icon.png'
 			)

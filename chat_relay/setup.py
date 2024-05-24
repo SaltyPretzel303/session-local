@@ -7,5 +7,7 @@ setup(
 					"requests",
 					"fastapi",
 					"websockets",
-					'asyncio']
+					'asyncio',
+					'httpx'
+					]
 )

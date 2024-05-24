@@ -5,7 +5,7 @@ setup(
     install_requires=['fastapi',
 					  'uvicorn[standard]',
 					#   'starlette',
-					  'asyncprocess',
+					#   'asyncprocess',
                       'jsonpickle',
 					  'dataclasses',
                       'requests',

@@ -1,7 +1,7 @@
 FROM node
 
 WORKDIR /app/react_app 
-ADD frontend/react_app/package.json \
+COPY frontend/react_app/package.json \
 	frontend/react_app/package-lock.json \
 	frontend/react_app/tsconfig.json \
 	frontend/react_app/tailwind.config.js \
@@ -9,8 +9,8 @@ ADD frontend/react_app/package.json \
 
 RUN npm install 
 
-ADD frontend/react_app/src ./src
-ADD	frontend/react_app/public ./public
+COPY frontend/react_app/src ./src
+COPY frontend/react_app/public ./public
 
 # Required for npm start
 ENV PORT=80

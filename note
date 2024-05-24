@@ -1,9 +1,9 @@
-To setup everything with python run next command form ./src
-$ pip install -e .
-
 Usefull links: 
 How to stream webm over rtmp (rtmp doesn't really support webm)
 https://stackoverflow.com/questions/73820302/transcode-webm-to-rtmp
 Symmary: ffmpeg -re -i sample.webm -c:v h264 -c:a aac -f flv "rtmp://example.com/live"
 Pay attention to => -c:v h264 -c:a aac
 
+In case of utils not being able to access config.py, utils scripts have to be run from 
+the utils dir (or some other path before utils) and PYTHONPATH has to be 
+set to . (export PYTHONPATH=.) or some other path before config.py

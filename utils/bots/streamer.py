@@ -9,6 +9,8 @@ from jsonpickle import encode
 from requests import Response, Session, post
 import signal 
 from tokens_auth import StreamKey, tokens_signin, tokens_signup, tokens_get_key, tokens_remove_user
+from config import signin_url, signup_url, remove_user_url, get_key_url, update_stream_url, local_ingest_url
+
 
 DESCRIPTION = "Parameterized streamer."
 
@@ -60,27 +62,27 @@ def setup_arg_parser():
 
 	parser.add_argument(f'--{INGEST_ARG}', 
 						action='store', 
-						default='rtmp://localhost:9000/ingest')
+						default=local_ingest_url)
 
 	parser.add_argument(f'--{REMOVE_ROUTE_ARG}', 
 						action='store', 
-						default='http://session.com/user/remove')
+						default=remove_user_url)
 
 	parser.add_argument(f'--{AUTH_ROUTE_ARG}', 
 						action='store', 
-						default='http://session.com/auth/signin')
+						default=signin_url)
 
 	parser.add_argument(f'--{REG_ROUTE_ARG}', 
 						action='store', 
-						default='http://session.com/auth/signup')
+						default=signup_url)
 
 	parser.add_argument(f'--{GET_KEY_ROUTE_ARG}',
 						action='store',
-						default='http://session.com/auth/get_key')
+						default=get_key_url)
 
 	parser.add_argument(f'--{UPDATE_PATH_ARG}',
 						action='store',
-						default='http://session.com/stream/update')
+						default=update_stream_url)
 
 	return parser.parse_args()
 

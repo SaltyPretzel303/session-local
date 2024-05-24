@@ -74,6 +74,17 @@ export type UpdateRequest = {
 
 export type Category = {
 	name: string
-	low_icon_url: string
-	high_icon_url: string
+	display_name: string
+}
+
+export enum ChatMsgType {
+	text,
+	url,
+	other
+}
+
+export type ChatMessage = {
+	sender: string
+	type: ChatMsgType
+	txtContent: string
 }
