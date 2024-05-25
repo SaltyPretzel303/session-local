@@ -58,8 +58,6 @@ export default function StreamPreview(props: StreamPreviewProps) {
 					src={formStreamUrl()}
 					posterUrl={formPosterUrl()}
 					shouldPlay={playing}
-					quality={"subsd"}
-					abr={false}
 					muted={true} />
 			</div>
 

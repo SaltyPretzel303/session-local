@@ -2,34 +2,36 @@ import Hls, { BufferEOSData, Events, HlsConfig } from "hls.js"
 import { useEffect, useRef, useState } from "react"
 
 
-type HlsPlayerProps = {
-	src: string | undefined,
-	posterUrl: string | undefined,
-	shouldPlay: boolean,
-	quality: string,
-	abr: boolean // if false, passed quality is forced
-	muted: boolean
-	onDone?: () => void
-}
-
-
-export default function HlsPlayer(props: HlsPlayerProps) {
+export default function HlsPlayer(
+	{
+		src,
+		posterUrl,
+		shouldPlay,
+		muted,
+		onDone
+	}: {
+		src: string | undefined,
+		posterUrl: string | undefined,
+		shouldPlay: boolean,
+		muted: boolean,
+		onDone?: () => void
+	}) {
 
 	const videoRef = useRef<HTMLVideoElement>(null);
 	let hls: Hls | undefined = undefined
 
 	useEffect(() => {
-		// console.log("Constructing hlsPlayer for: " + props.src)
+		// console.log("Constructing hlsPlayer for: " + src)
 
 		const videoElement = videoRef.current;
-		if (!props.src || !videoElement) {
+		if (!src || !videoElement) {
 			console.log("Missing src or no video element.")
 			return
 		}
 
 		if (videoElement.canPlayType("application/vnd.apple.mpegurl")) {
 			console.log("This browser supports hls stream by default.")
-			videoElement.src = props.src
+			videoElement.src = src
 		} else if (Hls.isSupported()) {
 			let config = {
 				// debug: true,
@@ -41,14 +43,15 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 			} as HlsConfig;
 
 			hls = new Hls(config)
-			hls.loadSource(props.src)
+			hls.loadSource(src)
 			hls.attachMedia(videoElement)
 
-			if (props.shouldPlay) {
-				// console.log("Stream will be played.")
+			if (shouldPlay) {
+				console.log("Stream will be played.")
 
 				hls.on(Hls.Events.BUFFER_EOS, doneHandler)
 				hls.startLoad()
+
 				// videoElement.play()
 				// videoElement.play()
 				// 	.then((res) => {
@@ -58,7 +61,7 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 				// 		console.log("Failed to start video: " + err)
 				// 	})
 			} else {
-				// console.log("Stream will not be played.")
+				console.log("Stream will not be played.")
 				hls.stopLoad()
 			}
 
@@ -74,11 +77,11 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 			}
 		}
 
-	}, [props]);
+	}, [src, shouldPlay]);
 
 	function doneHandler(event: Events.BUFFER_EOS, data: BufferEOSData) {
 		console.log("Handling stream done in hlsPlayer.")
-		props.onDone?.()
+		onDone?.()
 	}
 
 	// not sure if this one is implemented correctly
@@ -92,13 +95,11 @@ export default function HlsPlayer(props: HlsPlayerProps) {
 		console.log("Pause handled, load stopped.")
 	}
 
-
-
 	return (
 		<video
 			className='flex h-full'
-			muted={props.muted}
-			poster={props.posterUrl}
+			muted={muted}
+			poster={posterUrl}
 			ref={videoRef}
 			onPause={pauseHandler}
 			autoPlay

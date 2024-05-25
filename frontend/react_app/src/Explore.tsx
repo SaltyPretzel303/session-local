@@ -347,13 +347,13 @@ export default function Explore(props: ExploreProps) {
 			<div className="flex flex-row h-full 
 				justify-end items-center
 				ml-[100px] mb-4
-				border-2 border-slate-800
+				border-4 border-slate-800
 				rounded-2xl
 				">
 
 				{/* CATEGORIES */}
 				<div className='flex flex-col 
-						h-[90%] w-[180px] min-w-[180px] 
+						h-[90%] w-[170px]
 						justify-center items-center
 						bg-gradient-to-b from-slate-700 from-20% to-slate-800
 						rounded-2xl 
@@ -386,8 +386,7 @@ export default function Explore(props: ExploreProps) {
 				{/* EXPLORE */}
 				<div className='flex flex-col items-center
 						h-full w-[700px] min-w-[700px]
-						px-4 
-						'>
+						px-4 ml-4'>
 
 					<div className='flex flex-row w-full 
 							px-4 mb-2 
