@@ -2,8 +2,17 @@
 
 networks: 
   session-net: 
-    driver: bridge
     name: session-net
+    driver: bridge
+    attachable: true
+
+    ipam: 
+      driver: default
+      config: 
+        - subnet: 172.23.0.0/16
+          ip_range: 172.23.2.0/24
+          # gateway: 172.23.2.254
+    
     # external: true
 
 services:
@@ -103,7 +112,8 @@ services:
     ports:
       - "0.0.0.0:12000:1935"
     networks:
-      - session-net
+      session-net:
+        ipv4_address: 172.23.1.2
 
   cdn-instance:
     # container_name: cdn.session.com

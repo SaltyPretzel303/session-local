@@ -26,7 +26,7 @@ from config import DOMAIN_NAME
 regions =  {
 		"eu": [
 			{
-				"ip":"172.19.0.20",
+				"ip":"172.23.1.20",
 				"domainName": f"eu-0-cdn.{DOMAIN_NAME}",
 				"hls_port": 80,
 				"hc_port": 80,
@@ -37,7 +37,7 @@ regions =  {
 		],
 		"na": [
 			{
-				"ip":"172.19.0.21",
+				"ip":"172.23.1.21",
 				"domainName": f"na-0-cdn.{DOMAIN_NAME}",
 				"hls_port": 80,
 				"hc_port": 80,
@@ -48,7 +48,7 @@ regions =  {
 		],
 		"as": [
 			{
-				"ip":"172.19.0.22",
+				"ip":"172.23.1.22",
 				"domainName": f"as-0-cdn.{DOMAIN_NAME}",
 				"hls_port": 80,
 				"hc_port": 80,
@@ -62,7 +62,7 @@ regions =  {
 regions =  {
 		"eu": [
 			{
-				"ip":"172.19.0.20",
+				"ip":"172.23.1.20",
 				"domainName": f"eu-0-cdn.{DOMAIN_NAME}",
 				"hls_port": 80,
 				"hc_port": 80,
@@ -74,15 +74,10 @@ regions =  {
 	}
 
 NETWORK = "session-net"
-IP_SUBNET_PREFIX = "172.19.0."
-STARTING_IP = 20
 BASE_RTMP_PORT = 11000
 INNER_RTMP_PORT = 1935
 BASE_HLS_PORT = 10000
 INNER_HLS_PORT = 80
-# BASE_PREVIEW_PORT = 9000
-# INNER_PREVIEW_PORT = 80
-
 
 CDN_LABEL = "cdn_instance"
 CDN_IMAGE_TAG = 'session/cdn'
@@ -101,9 +96,6 @@ if len(old_instances)>0:
 		print(f"{c.name} --> {c.status}")
 
 	exit(1)
-
-def gen_ip(index):
-	return f"{IP_SUBNET_PREFIX}{STARTING_IP+index}"
 
 def deploy_with_api(region_key, index):
 	container_name = region[region_key][0]['domainName']

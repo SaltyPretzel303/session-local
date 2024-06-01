@@ -8,7 +8,7 @@ signin_url = f"http://{DOMAIN_NAME}/auth/signin"
 local_ingest_url = f"rtmp://{DOMAIN_NAME}:9000/ingest"
 docker_ingest_url = f'rtmp://ingest-proxy.{DOMAIN_NAME}/ingest'
 update_stream_url = f"http://{DOMAIN_NAME}/stream/update"
-stream_info_url = f"http://{DOMAIN_NAME}/strea/stream_info"
+stream_info_url = f"http://{DOMAIN_NAME}/stream/stream_info"
 
 ws_chat_url = f'ws://{DOMAIN_NAME}/chat'
 

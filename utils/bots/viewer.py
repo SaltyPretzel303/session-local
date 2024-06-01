@@ -84,6 +84,7 @@ def get_stream_url(registry_at, stream_name):
 		return None
 	
 	print("Media/cdn server (abr) info obtained.")
+	print(info_res.content)
 	server = next(filter(stream_filter, info_res.json()['media_servers']))
 
 	return server['access_url'] if server else None
