@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import LoginPopup from "./LoginPopup";
 import { StreamInfo, UserInfo } from '../Datas'
 import UserInfoPopup from "./UserInfoPopup";
+import Search from "./Search";
 
 type HeaderBarProps = {
 	loginVisible: boolean
@@ -87,28 +88,30 @@ export default function HeaderBar({
 				px-10
 				justify-center items-center
 				font-[Oswald]
-				bg-gradient-to-t from-slate-800 from-1%  to-slate-900
-				">
+				bg-gradient-to-t from-slate-800 from-1%  to-slate-900">
 
 			{/* left section  */}
 			<div className='flex flex-row w-1/3 h-full justify-left items-center'>
 
 				<img className='flex h-full mr-4' src="broadcast.png" />
-
 				<LogoText />
 
 			</div>
 
 			{/* middle section  */}
-			<div className='flex flex-row w-1/3 h-full
-				justify-start items-center'>
+			<div className='flex flex-row
+				min-w-[600px]
+				w-1/3 h-full
+				justify-center items-center'>
 
-				<input className='flex w-3/5 h-2/3
-					rounded-full px-4'
+				<div className='flex flex-col
+					w-1/2 h-full
+					relative justify-center items-center
+					z-50'>
 
-					placeholder="Search" />
+					<Search getUser={getUser} />
 
-				{/* TODO dropdown list in form of some popup ...  */}
+				</div>
 			</div>
 
 

@@ -3,7 +3,7 @@ import useWebSocket from "react-use-websocket"
 import { ChatMessage, ChatMsgType, UserInfo } from "../Datas"
 import { WebSocketMessage } from "react-use-websocket/dist/lib/types"
 import config from "../Config"
-import GenericPreviewsList from "./GenericPreviewList"
+import GenericLazyList from "./GenericLazyList"
 
 export default function Chat({ channel, getUser }:
 	{

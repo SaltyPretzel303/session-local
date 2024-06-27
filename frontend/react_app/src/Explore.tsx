@@ -2,7 +2,7 @@ import { FollowingInfo, StreamInfo, UserInfo, OrderingOption, Orderings, Categor
 import config from './Config'
 import { useNavigate } from "react-router-dom"
 import StreamPreview from "./components/StreamPreview"
-import GenericPreviewList from "./components/GenericPreviewList"
+import GenericPreviewList from "./components/GenericLazyList"
 import { Dispatch, SetStateAction, useEffect, useState } from "react"
 import SortSelector from "./components/SortSelector"
 

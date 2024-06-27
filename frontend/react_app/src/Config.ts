@@ -40,7 +40,11 @@ type configuration = {
 	lowCategoryIconUrl: (name: string) => string,
 	highCategoryIconUrl: (name: string) => string,
 	updateStreamUrl: string,
-	chatRelayUrl: (channel: string) => string
+	chatRelayUrl: (channel: string) => string,
+	streamSearchUrl: (query: string,
+		start: number,
+		count: number,
+		region: string) => string
 }
 
 const config: configuration = {
@@ -110,7 +114,13 @@ const config: configuration = {
 	highCategoryIconUrl: (name: string) =>
 		`http://${DOMAIN}/stream/category_high_tnail/${name}`,
 	updateStreamUrl: `http://${DOMAIN}/stream/update`,
-	chatRelayUrl: (channel) => `ws://${DOMAIN}/chat/${channel}`
+	chatRelayUrl: (channel) => `ws://${DOMAIN}/chat/${channel}`,
+	streamSearchUrl: (query, start, count, region) =>
+		`http://session.com/stream/stream_query/${query}?
+													start=${start}&
+													count=${count}&
+													region=${region}`
+
 }
 
 export default config

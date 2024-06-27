@@ -11,12 +11,9 @@ RUN mkdir /run/haproxy
 # RUN touch /run/haproxy/admin.sock
 
 
-# USER haproxy
-
 COPY ingest_proxy/haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 
 EXPOSE 9000
+EXPOSE 9001
 
-# RUN useradd haproxy
-
-ENTRYPOINT ["haproxy","-f","/usr/local/etc/haproxy/haproxy.cfg"]
+ENTRYPOINT ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]

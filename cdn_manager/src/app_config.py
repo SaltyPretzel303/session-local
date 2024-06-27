@@ -12,33 +12,33 @@ REMOVE_MEDIA_SERVER_PATH = 'remove_media_server'
 class AppConfig:
 
 	instance = {
-		"eu": [
-			InstanceConf(ip="localhost",
-				domainName=f"cdn-0.{DOMAIN_NAME}",
-				hls_port=80,
-				hc_port=10000,
-				hls_path="live",
-				hc_path="health_check",
-				preview_path="preview")
-		],
-		"na": [
-			InstanceConf(ip="localhost",
-				domainName=f"cdn-1.{DOMAIN_NAME}",
-				hls_port=80,
-				hc_port=10000,
-				hls_path="live",
-				hc_path="health_check",
-				preview_path="preview")
-		],
-		"as": [
-			InstanceConf(ip="localhost",
-				domainName=f"cdn-2.{DOMAIN_NAME}",
-				hls_port=80,
-				hc_port=10000,
-				hls_path="live",
-				hc_path="health_check",
-				preview_path="preview")
-		]
+		# "eu": [
+		# 	InstanceConf(ip="localhost",
+		# 		domainName=f"cdn-0.{DOMAIN_NAME}",
+		# 		hls_port=80,
+		# 		hc_port=10000,
+		# 		hls_path="live",
+		# 		hc_path="health_check",
+		# 		preview_path="preview")
+		# ],
+		# "na": [
+		# 	InstanceConf(ip="localhost",
+		# 		domainName=f"cdn-1.{DOMAIN_NAME}",
+		# 		hls_port=80,
+		# 		hc_port=10000,
+		# 		hls_path="live",
+		# 		hc_path="health_check",
+		# 		preview_path="preview")
+		# ],
+		# "as": [
+		# 	InstanceConf(ip="localhost",
+		# 		domainName=f"cdn-2.{DOMAIN_NAME}",
+		# 		hls_port=80,
+		# 		hc_port=10000,
+		# 		hls_path="live",
+		# 		hc_path="health_check",
+		# 		preview_path="preview")
+		# ]
 	}
 
 	# CONFIG_PATH = "cdn_manager/src/app_config.json"
@@ -65,3 +65,14 @@ class AppConfig:
 
 		print(encode(AppConfig.instance, unpicklable=False, indent=4))
 			
+	@staticmethod
+	def add_server(region:str, new_conf: InstanceConf):
+		if region in AppConfig.instance and \
+			next(filter(lambda c: c.ip==new_conf.ip, AppConfig.instance[region]), None):
+			print("This instance is already registered.")
+			return
+		
+		if region not in AppConfig.instance:
+			AppConfig.instance[region] = []
+			
+		AppConfig.instance[region].append(new_conf)

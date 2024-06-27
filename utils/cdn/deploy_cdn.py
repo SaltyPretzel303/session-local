@@ -8,7 +8,7 @@ from retry_requests import retry
 from config import DOMAIN_NAME
 
 # For each region specified in regions json/dict create one cdn server instance.
-# Update regions json with the created server's ip and create cdn manager 
+# Update regions json with the created server's ip and initialize cdn manager 
 # with the updated json config. 
 # Could not find soultion to handle build errors or stop the deploy process
 # if error occur. docker_api.build(...) returns very odd stream_helper ...

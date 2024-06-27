@@ -199,26 +199,25 @@ export default function Home() {
 			overflow-hidden
 			h-dvh w-dvw'>
 
-			<div className='flex h-[50px] min-h-[50px] w-full'>
-				<HeaderBar
-					loginVisible={loginVisible}
-					setLoginVisible={setLoginVisible}
-					forcedLogin={forcedLogin}
-					user={userInfo}
-					getUser={loadUser}
-					stream={streamInfo}
-					getStream={loadStream}
-					logoutHandler={logout} />
-			</div>
+			<SuperTokensWrapper>
 
-			<div className='flex size-full 
-				justify-center items-center 
-				overflow-hidden
-				bg-white'>
+				<BrowserRouter>
+					<div className='flex h-[50px] min-h-[50px] w-full'>
+						<HeaderBar
+							loginVisible={loginVisible}
+							setLoginVisible={setLoginVisible}
+							forcedLogin={forcedLogin}
+							user={userInfo}
+							getUser={loadUser}
+							stream={streamInfo}
+							getStream={loadStream}
+							logoutHandler={logout} />
+					</div>
 
-				<SuperTokensWrapper>
-
-					<BrowserRouter>
+					<div className='flex size-full 
+								justify-center items-center 
+								overflow-hidden
+								bg-white'>
 						<Routes>
 
 							<Route path="/"
@@ -229,15 +228,13 @@ export default function Home() {
 								element={<PlayerPage getUser={loadUser} />}
 							/>
 
-							<Route path="/chat"
-								element={<Chat channel="someChannel" getUser={loadUser} />}
-							/>
-
 						</Routes>
-					</BrowserRouter>
 
-				</SuperTokensWrapper >
-			</div>
+					</div>
+					
+				</BrowserRouter>
+
+			</SuperTokensWrapper >
 		</div>
 	)
 }

@@ -2,7 +2,7 @@ import AutoSizer from "react-virtualized-auto-sizer"
 import { InfiniteLoader, List, ListRowProps } from 'react-virtualized'
 import React from "react"
 
-export default function GenericPreviewsList<T>(
+export default function GenericLazyList<T>(
 	{
 		items,
 		itemsProvider,

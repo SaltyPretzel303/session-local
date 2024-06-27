@@ -8,7 +8,7 @@ docker compose up --detach stream-registry \
 	tokens-api \
 	cdn-manager \
 	chat-relay \
-	frontend 
+	frontend
 
 echo "Auth, stream registry and frontend services deployed."
 

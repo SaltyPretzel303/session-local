@@ -88,3 +88,9 @@ export type ChatMessage = {
 	type: ChatMsgType
 	txtContent: string
 }
+
+// export type SearchResult = {
+// 	creator: string
+// 	title: string | undefined
+// 	category: string | undefined
+// }

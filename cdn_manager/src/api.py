@@ -244,6 +244,19 @@ def form_hc_path(inst: InstanceConf):
 def url_decode(data:str):
 	return { pair.split("=")[0]:pair.split("=")[1]  for pair in data.split("&")}
 
+@app.route("/all", methods=['GET'])
+def get_all():
+	return AppConfig.get_instance(), status.HTTP_200_OK
+
+@app.route("/add_instance/<region>", methods=['POST'])
+def add_instance(region:str):
+	print("Processing add server instance request.")
+	print(f"Region: {region}")
+	print(f"Data: {request.get_json()}")
+	AppConfig.add_server(region, request.get_json())
+
+	return "Ok.", status.HTTP_200_OK
+
 if __name__ == '__main__':
 
 	if len(argv) > 1:

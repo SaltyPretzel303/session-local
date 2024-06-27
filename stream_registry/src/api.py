@@ -81,7 +81,8 @@ async def start_stream(request: Request):
 	
 	args = url_decode((await request.body()).decode())
 	key = args.get("name")
-	ingest_ip = args.get("addr") # this is gonna be the ip of nginx reverse proxy 
+	proxy_ip = args.get("addr") # this is gonna be the ip of nginx reverse proxy 
+	ingest_ip = request.client.host
 
 	print(f"StreamKey: {key} from: {ingest_ip}")
 
@@ -209,6 +210,18 @@ def get_all(region:str="eu", start:int=0, count:int=4, ordering: str = 'None'):
 
 	return list(map(stream_dict_to_info, streams_data))
 	# return list(map(stream_data_to_info, streams_data))
+
+@app.get("/stream_query/{name_query}")
+def get_by_query(name_query: str, 
+			region:str="eu", 
+			start:int=0, count:int=4):
+	
+	print(f"Processing get by query request: {name_query}")
+	streams = get_db().get_by_query(name_query, region , start, count)
+	
+	as_objs = list(map(stream_dict_to_info, streams))
+
+	return as_objs
 
 @app.get("/by_category/{category}")
 def get_by_category(category: str, 

@@ -6,6 +6,16 @@ from ipaddress import ip_address
 from stream_registry.src.media_server_data import MediaServerData
 
 class StreamData(Document):
+
+	# will enable searching streams by title and creator_name
+	# meta = {'indexes': [
+	# 				{'fields': ['$title', "$creator"],
+	# 				'default_language': 'english',
+	# 				'weights': {'title': 2, 'creator': 10}
+	# 				}
+	# 			]
+	# 		}
+
 	title = StringField(required=True, max_length=120)
 	creator = StringField(required=True, max_length=20)
 	category = StringField(required=True, max_length=40)

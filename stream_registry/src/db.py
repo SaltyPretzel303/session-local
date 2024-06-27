@@ -51,9 +51,6 @@ class Db:
 	def count_stage(count: int):
 		return {'$limit': count}
 
-	def dict_to_data(dict):
-		return StreamData(**dict)
-
 	def get_all(self, from_ind, cnt, region, ordering):
 
 		pipeline = []
@@ -77,6 +74,19 @@ class Db:
 
 		# return filter_region_streams(datas, region)
 
+	def get_by_query(self, name_query: str, region: str, s_index:int, count:int):
+		return StreamData.objects().aggregate([
+			{'$match': {
+				"$or": [
+					{'$expr': {'$gt': [{'$indexOfCP': ["$title", name_query]}, -1]}},
+					{'$expr': {'$gt': [{'$indexOfCP': ["$creator", name_query]}, -1]}},
+				]
+			}}
+			# {"$match": {"region": region}},
+			# Db.from_stage(s_index),
+			# Db.count_stage(count)
+		])
+	
 	def get_by_category(self, 
 					category: StreamCategory, 
 					region: str,
