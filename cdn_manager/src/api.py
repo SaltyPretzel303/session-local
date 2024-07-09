@@ -19,7 +19,7 @@ from shared_model.media_server_request import MediaServerRequest
 app = Flask(__name__)
 api = Api(app)
 
-QUALITIES = ['sd', 'subsd']
+QUALITIES = ['sd', 'midsd', 'lsd', 'subsd']
 PREVIEW_QUALITY = 'preview'
 STREAM_QUALITY = 'stream'
 

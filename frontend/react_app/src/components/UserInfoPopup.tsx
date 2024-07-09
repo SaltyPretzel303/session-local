@@ -121,18 +121,19 @@ export default function UserInfoPopup(props: userInfoProps) {
 			if (streamKey) {
 				return (
 					<p className='text-xl 
-						border-2 border-purple-500 
+						border-2 border-orange-600
 						w-full 
 						p-2 box-border'>
-						{`http://${config.domainName}/ingest/${streamKey.value}`}
+						{`rtmp://${config.domainName}/ingest/${streamKey.value}`}
 					</p>
 				)
 			} else {
 				return (
 					<button
 						className='w-3/4 h-full 
-						border border-purple-400
-						bg-purple-500 rounded-md
+						border-2 border-orange-600
+						hover:bg-slate-500
+						rounded-md
 						font-bold'
 						onClick={revealStreamKeyClick}
 					>Click to generate url</button>
@@ -264,23 +265,21 @@ export default function UserInfoPopup(props: userInfoProps) {
 					min-w-[200px] max-w-[480px]
 					min-h-[450px]
 					items-center align-middle
-					bg-sky-900
+					bg-slate-800
 					p-9 
-					border-2 border-purple-700 rounded-3xl">
+					border-2 rounded-3xl
+					border-orange-600">
 
-				<h1 className="mb-2 font-bold text-purple-400 text-2xl ">
+				<h1 className="mb-2 font-bold text-orange-600 text-4xl ">
 					{props.user ? props.user.username : "USERNAME"}
 				</h1>
 
-				<div className='flex flex-row items-center'>
-					<h2 className='mr-2'>Email: </h2>
-					<h2 className='text-xl'>{props.user?.email}</h2>
-				</div>
+				<h3 className='text-l'>{props.user?.email}</h3>
 
 
 				<hr className='w-3/4 my-4'></hr>
 
-				<h1 className="font-bold text-purple-400 text-2xl">Start Streaming</h1>
+				<h1 className="font-bold text-orange-600 text-2xl">Start Streaming</h1>
 				<p className='my-4 text-center'>
 					In order to stream copy this generated url and paste it in
 					you streaming client (obs or similar software).
@@ -313,7 +312,7 @@ export default function UserInfoPopup(props: userInfoProps) {
 				{/* Update stream form */}
 				<div className='flex flex-col 
 					w-5/6 mt-2
-					border-2 border-purple-500 rounded-2xl
+					border-2 border-orange-600 rounded-2xl
 					p-4 pb-1
 					text-left'>
 
@@ -357,11 +356,11 @@ export default function UserInfoPopup(props: userInfoProps) {
 									w-1/2 p-4'>
 
 							<button className='bg-purple-500 rounded-lg 
-							text-xl px-4 py-1
-							box-border
-							border-2 border-transparent
-							enabled:hover:border-2 enabled:hover:border-purple-400
-							disabled:bg-slate-400'
+									text-xl px-4 py-1
+									box-border
+									border-2 border-transparent
+									enabled:hover:border-2 enabled:hover:border-purple-400
+									disabled:bg-slate-400'
 								disabled={!props.stream}
 								onClick={updateStream}>
 								Update</button>
@@ -390,6 +389,6 @@ export default function UserInfoPopup(props: userInfoProps) {
 			</div>
 
 
-		</Overlay>
+		</Overlay >
 	)
 }

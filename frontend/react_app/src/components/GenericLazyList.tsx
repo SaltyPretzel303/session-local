@@ -1,6 +1,7 @@
 import AutoSizer from "react-virtualized-auto-sizer"
 import { InfiniteLoader, List, ListRowProps } from 'react-virtualized'
 import React from "react"
+import { relative } from "path"
 
 export default function GenericLazyList<T>(
 	{
@@ -22,7 +23,9 @@ export default function GenericLazyList<T>(
 
 	const loaderRef = React.useRef<InfiniteLoader>(null)
 	let itemsCount = hasMoreData ? items.length + 1 : items.length
-	let heightRatio = relativeHeight < 0 ? 0 : relativeHeight > 100 ? 100 : relativeHeight
+	// let heightRatio = relativeHeight < 0 ? 0 : relativeHeight > 100 ? 100 :
+	// relativeHeight
+	let heightRatio = relativeHeight < 0 ? 0 : relativeHeight
 
 	React.useEffect(() => {
 		if (hasMoreData) {

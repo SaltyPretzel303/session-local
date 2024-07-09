@@ -2,6 +2,7 @@ from typing import List
 import mongoengine
 from config import config
 from tokens_api.db_model import FollowingDoc, UserDoc, StreamKeyDoc
+from datetime import datetime as dt
 
 def connect():
 	host_url = config.users_db_conn_string
@@ -53,12 +54,12 @@ def remove_user(user: UserDoc):
 	connect()
 	return user.delete()
 
-def remove_follow_rec(user:UserDoc):
+def remove_follow_rec_for(user:UserDoc):
 	connect()
-	return FollowingDoc.objects()
+	return FollowingDoc.objects(owner=user.id).delete()
 
-# TODO Page this maybe
 def get_following(username: str)->List[FollowingDoc]:
+
 	connect()
 
 	user_doc = get_user_by_username(username)
@@ -66,3 +67,31 @@ def get_following(username: str)->List[FollowingDoc]:
 		return None
 	
 	return FollowingDoc.objects(owner=user_doc.id)
+
+def is_following(user_tokens_id: str, followed:str)->bool:
+	connect()
+
+	user = get_user_by_tokens_id(user_tokens_id)
+	if user is None: 
+		return False
+	
+	followed_user = get_user_by_username(followed)
+	if followed_user is None: 
+		return
+
+	follow_doc = FollowingDoc.objects(owner=user.id, following=followed_user.id)
+
+	return  follow_doc is not None and len(follow_doc)>0
+
+def follow(user_tokens_id: str, channel: str)->FollowingDoc: 
+	user = get_user_by_tokens_id(user_tokens_id)
+	f_channel = get_user_by_username(channel)
+
+	record = FollowingDoc(owner=user, following=f_channel, followed_at=dt.now())
+	return record.save()
+
+def unfollow(user_tokens_id: str, channel: str)->FollowingDoc: 
+	user = get_user_by_tokens_id(user_tokens_id)
+	f_channel = get_user_by_username(channel)
+
+	return FollowingDoc.objects(owner=user.id, following=f_channel.id).delete()

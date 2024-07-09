@@ -53,12 +53,18 @@ export default function Search({ getUser }: { getUser: () => Promise<UserInfo | 
 			<div className='flex flex-col 
 					w-full h-[50px] 
 					px-2
-					border-2 bg-gray-400
+					text-white
+					bg-slate-700
+					border-2 border-transparent
+					hover:border-orange-700
 					rounded-2xl
-					justify-start items-center'>
+					justify-start items-center'
+				onMouseDown={() => ResultClick(item)}>
 
-				<div className='flex flex-row w-full h-full items-center'
-					onClick={() => ResultClick(item)}>
+				<div className='flex flex-row 
+					size-full
+					items-center
+					select-none'>
 					{item.creator} - {item.title || "Not live"}
 				</div>
 
@@ -97,12 +103,12 @@ export default function Search({ getUser }: { getUser: () => Promise<UserInfo | 
 		<div className='flex flex-col 
 			w-full 
 			absolute top-[5px]
-			justify-start items-start'>
+			justify-start items-start'
+			onBlur={() => setItems([])}>
 
 			<input className='flex w-full h-[40px] rounded-2xl px-2'
 				placeholder="Search live streams "
-				onChange={onType}
-				onBlur={() => setItems([])} />
+				onChange={onType} />
 
 			{(hasMoreItems || items.length > 0) &&
 				<div className='flex w-full h-[250px]

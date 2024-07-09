@@ -24,11 +24,12 @@ if user_data is None:
 	print(f"No such user: {args.user}")
 	exit(1)
 
-others = UserDoc.objects(username__ne=args.user).limit(args.count)
+others = UserDoc.objects(username__ne=args.user).limit(int(args.count))
 print(f"Adding {others.count()} to following record.")
 
 for other in others: 
 	f_doc = FollowingDoc(owner=user_data, 
 					following=other, 
 					followed_at=dt.now())
+	print(f"{user_data.username} following {other.username}")
 	f_doc.save()

@@ -37,7 +37,6 @@ export type StreamInfo = {
 	title: string
 	creator: string
 	category: string
-	viewers: number
 	media_servers: MediaServer[]
 }
 

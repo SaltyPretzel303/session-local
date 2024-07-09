@@ -45,6 +45,9 @@ type configuration = {
 		start: number,
 		count: number,
 		region: string) => string
+	isFollowingUrl: (followed: string) => string
+	followUrl: (channel: string) => string
+	unfollowUrl: (channel: string) => string
 }
 
 const config: configuration = {
@@ -119,8 +122,10 @@ const config: configuration = {
 		`http://session.com/stream/stream_query/${query}?
 													start=${start}&
 													count=${count}&
-													region=${region}`
-
+													region=${region}`,
+	isFollowingUrl: (followed: string) => `http://${DOMAIN}/user/is_following/${followed}`,
+	followUrl: (channel: string) => `http://${DOMAIN}/user/follow/${channel}`,
+	unfollowUrl: (channel: string) => `http://${DOMAIN}/user/unfollow/${channel}`
 }
 
 export default config

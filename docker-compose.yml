@@ -59,7 +59,7 @@ services:
       dockerfile: dockerfiles/ingest_proxy.Dockerfile
     image: session/ingest-proxy 
     ports:
-      - 0.0.0.0:9000:1935
+      - 0.0.0.0:1935:1935
       - 0.0.0.0:9001:9999
       # 9999 haproxy admin port
     networks: 

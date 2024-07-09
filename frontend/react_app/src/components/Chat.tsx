@@ -1,9 +1,7 @@
 import React, { useEffect } from "react"
 import useWebSocket from "react-use-websocket"
 import { ChatMessage, ChatMsgType, UserInfo } from "../Datas"
-import { WebSocketMessage } from "react-use-websocket/dist/lib/types"
 import config from "../Config"
-import GenericLazyList from "./GenericLazyList"
 
 export default function Chat({ channel, getUser }:
 	{
@@ -15,13 +13,29 @@ export default function Chat({ channel, getUser }:
 	const [myMessage, setMyMessage] = React.useState<string>("")
 	const { sendJsonMessage, lastJsonMessage: newJsonMessage, readyState } =
 		useWebSocket<ChatMessage>(config.chatRelayUrl(channel));
+	const [username, setUsername] = React.useState<string | undefined>(undefined)
 
 	useEffect(() => {
 		if (newJsonMessage) {
 			console.log("Received message: " + JSON.stringify(newJsonMessage))
 			setMessages([newJsonMessage, ...messages])
 		}
+
+		if (username == undefined) {
+			loadUsername()
+		}
+
 	}, [newJsonMessage])
+
+	async function loadUsername(): Promise<void> {
+		let user = await getUser()
+		if (user) {
+			console.log("username loaded")
+			setUsername(user.username)
+		}else{
+			console.log("failed to load user.")
+		}
+	}
 
 	async function sendMessage() {
 		console.log("Sending message: " + myMessage)
@@ -54,23 +68,39 @@ export default function Chat({ channel, getUser }:
 		let light = "bg-gray-100 text-black"
 		let dark = "bg-gray-400 text-white"
 		let bg = ind % 2 == 0 ? light : dark
-		let content = `${message.sender}: ${message.txtContent}`
 
-		return (
-			<div className={`flex w-full
+		if (username && message.sender == username) {
+			return (
+				<div className={`flex w-full
+					px-2 
+					justify-end
+					text-base text-end 
+					rounded-xl
+					border-2 border-orange-600
+					${bg}
+					mb-2`}
+					key={ind}>
+					{message.txtContent}
+				</div>
+			)
+		} else {
+
+			return (
+				<div className={`flex w-full
 				px-2 text-base
 				rounded-xl
 				${bg} mb-2`}
-				key={ind}>
-				{content}
-			</div>
-		)
+					key={ind}>
+					{`${message.sender}: ${message.txtContent}`}
+				</div>
+			)
+		}
 	}
 
 	return (
 		<div className='flex flex-col size-full 
 				justify-center items-center
-				pr-2'>
+				p-2'>
 
 			<div className='flex flex-row w-[80%]
 				justify-center items-center

@@ -12,12 +12,6 @@ type PlayerPageProps = {
 	getUser: () => Promise<UserInfo | undefined>
 }
 
-enum VideoQuality {
-	HD = 'hd',
-	SD = 'sd',
-	SUBSD = 'subsd'
-}
-
 export function PlayerPage(props: PlayerPageProps) {
 
 	const { channel } = useParams<string>()
@@ -100,7 +94,6 @@ export function PlayerPage(props: PlayerPageProps) {
 
 	}
 
-
 	function formPosterUrl(streamer: string | undefined): string {
 		return streamer ? config.tnailUrl(streamer) : config.notFoundTnailUrl
 	}
@@ -130,12 +123,11 @@ export function PlayerPage(props: PlayerPageProps) {
 					onDone={doneHandler} />
 
 				<StreamOverlay
-
 					stream={stream}
 					chatVisible={chatVisible}
 					setChatVisible={setChatVisible}
 					visible={overlayVisible}
-					setOverlayVisible={setOverlayVisible} />
+				/>
 			</div>
 
 			{channel && chatVisible &&

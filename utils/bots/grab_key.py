@@ -3,8 +3,8 @@
 from tokens_auth import tokens_full_auth, tokens_get_key
 from config import get_key_url, remove_user_url, signin_url, signup_url
 
-username = "obs_streamer"
-email = 'obs@streamer.com'
+username = "obsstreamer"
+email = 'some@mail.com'
 password = 'obsstreamer1'
 
 # key_url = 'http://session.com/auth/get_key'

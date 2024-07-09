@@ -52,7 +52,7 @@ export default function HeaderBar({
 	function LogoText() {
 
 		let offline = 'text-orange-600'
-		let online = 'text-red-500'
+		let online = 'text-red-600'
 		let textColor = stream ? online : offline
 
 		return (
@@ -88,7 +88,9 @@ export default function HeaderBar({
 				px-10
 				justify-center items-center
 				font-[Oswald]
-				bg-gradient-to-t from-slate-800 from-1%  to-slate-900">
+				bg-slate-900
+				border-b-2 border-b-slate-800
+				">
 
 			{/* left section  */}
 			<div className='flex flex-row w-1/3 h-full justify-left items-center'>

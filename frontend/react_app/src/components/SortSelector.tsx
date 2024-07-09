@@ -14,7 +14,11 @@ export default function SortSelector({
 
 	return (
 		<div>
-			<select className='rounded-lg p-2 bg-transparent border border-gray-500 text-gray-200'
+			<select className='rounded-lg p-2 
+				bg-transparent 
+				border border-gray-500 
+				text-gray-200'
+					
 				defaultValue={values[0].value}
 				onChange={onSelectChange}>
 				{

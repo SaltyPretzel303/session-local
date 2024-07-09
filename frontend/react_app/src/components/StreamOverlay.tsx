@@ -8,17 +8,16 @@ export default function StreamOverlay(
 		chatVisible,
 		setChatVisible,
 		visible,
-		setOverlayVisible
 	}: {
 		stream: StreamInfo | undefined,
 		chatVisible: boolean,
 		setChatVisible: React.Dispatch<React.SetStateAction<boolean>>,
 		visible: boolean,
-		setOverlayVisible: React.Dispatch<React.SetStateAction<boolean>>
 	}) {
 
 	const [views, setViews] = React.useState(0)
 	let intervalTimer: NodeJS.Timer | undefined = undefined
+	const [isFollowing, setIsFollowing] = React.useState(false)
 
 	React.useEffect(() => {
 		if (visible) {
@@ -26,29 +25,91 @@ export default function StreamOverlay(
 			intervalTimer = setInterval(() => loadViews(), 5000)
 		}
 
+		checkIsFollowing()
+
 		return () => {
 			clearInterval(intervalTimer)
 		}
 	}, [visible])
 
 	async function loadViews(): Promise<void> {
-		console.log("Loading views.")
 		if (!stream) {
 			return
 		}
 
 		let url = config.viewCountUrl(stream.creator)
-		let view_res = await fetch(url)
+		let viewRes = await fetch(url)
 
-		if (!view_res || view_res.status != 200) {
+		if (!viewRes || viewRes.status != 200) {
 			console.log("Failed to fetch views count.")
 			return
 		}
 
-		console.log("Views loaded")
-		setViews(Number.parseInt(await view_res.text()))
+		setViews(Number.parseInt(await viewRes.text()))
 	}
 
+	async function followClick() {
+		if (!stream) {
+			return
+		}
+
+		const url = config.followUrl(stream.creator)
+		let res = await fetch(url)
+		setIsFollowing(res.status == 200)
+	}
+
+	async function unfollowClick() {
+		if (!stream) {
+			return
+		}
+
+		const url = config.unfollowUrl(stream.creator)
+		let res = await fetch(url)
+		setIsFollowing(res.status != 200)
+	}
+
+	async function checkIsFollowing() {
+		if (!stream) {
+			return
+		}
+
+		let res = await fetch(config.isFollowingUrl(stream?.creator))
+		setIsFollowing(res.status == 200)
+
+	}
+
+	function FollowButton() {
+		if (isFollowing) {
+			return (
+				<button className='flex ml-20 w-[100px]
+						px-2 justify-center
+						rounded-2xl 
+						text-white
+						bg-slate-700 bg-opacity-40
+						pointer-events-auto
+						border-2 border-white
+						hover:border-2 hover:border-red-600'
+					onClick={unfollowClick}
+				>
+					Unfollow</button>
+			)
+		} else {
+			return (
+				<button className='flex ml-20 w-[100px]
+						px-2 justify-center
+						rounded-2xl 
+						text-white
+						bg-slate-700 bg-opacity-40
+						pointer-events-auto
+						border-2 border-white
+						hover:border-2 hover:border-orange-600'
+					onClick={followClick}
+				>
+					Follow</button>
+			)
+		}
+
+	}
 
 	return (
 		<div className={`flex size-full 
@@ -61,26 +122,29 @@ export default function StreamOverlay(
 				justify-center items-center
 				w-full h-[100px] 
 				px-4
-				bg-gradient-to-b from-slate-400 to-transparent'>
-
-				<div className='flex flex-col h-full w-full pt-4'>
-					<p className='text-[30px] text-black'>{stream?.title}</p>
+				bg-gradient-to-b from-slate-900 from-50% to-transparent'>
+				<div className='flex flex-col h-full w-full pt-2 pl-8'>
+					<p className='text-[30px] text-white'>{stream?.title}</p>
 					<div className='flex flex-row items-baseline'>
-						<p className='text-[14px] text-black'>by:</p>
-						<p className='text-[20px] text-black ml-2'>{stream?.creator}</p>
+						<p className='text-[14px] text-white'>by:</p>
+						<p className='text-[20px] text-white ml-2'>{stream?.creator}</p>
 
-						<p className='text-[14px] text-black ml-20'>watching:</p>
-						<p className='text-[20px] text-black ml-2'>{views}</p>
+						<p className='text-[14px] text-white ml-20'>watching:</p>
+						<p className='text-[20px] text-white ml-2'>{views}</p>
+						<FollowButton />
 					</div>
 				</div>
 
 				<button className='flex w-[130px] 
-					border rounded-xl 
-					mb-6
+					border-2 rounded-xl 
+					pointer-events-auto
+					mb-8
 					justify-center
 					text-[20px]
-					pointer-events-auto
-					hover:border hover:border-orange-500'
+					text-white
+					bg-slate-800
+					bg-opacity-45
+					hover:border-2 hover:border-orange-500'
 					onClick={() => setChatVisible(!chatVisible)}>
 					{chatVisible ? "Hide chat" : "Show chat"}
 				</button>

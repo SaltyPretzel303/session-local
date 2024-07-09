@@ -294,6 +294,17 @@ def get_following(session: SessionContainer = Depends(verify_session())):
 
 	return list(map(to_public_follow_record, follow_data))
 
+@app.get("/is_following/{whom}")
+def is_following(whom: str, session: SessionContainer = Depends(verify_session())):
+	if session is None: 
+		raise HTTPException(status_code=code.HTTP_401_UNAUTHORIZED)
+
+	follow_res = users_db.is_following(session.user_id, whom)
+	if follow_res:
+		return "Success, is following."
+	else:
+		raise HTTPException(status_code = code.HTTP_404_NOT_FOUND)
+
 # not protected, used just for bots
 @app.get("/remove/{username}")
 async def remove_user(username: str):
@@ -308,7 +319,7 @@ async def remove_user(username: str):
 	await delete_user(user.tokens_id) # returns None
 	print("User removed from tokens db.")
 
-	users_db.remove_follow_rec(user)
+	users_db.remove_follow_rec_for(user)
 	print("Follow records removed.")
 
 	users_db.remove_user(user)
@@ -367,6 +378,25 @@ async def authorize_chatter(request:Request,
 	# everyone is authorized
 	return to_public_user(user)
 
+@app.get('/follow/{channel}')
+async def follow(channel:str, session: SessionContainer = Depends(verify_session())):
+	if session is None: 
+		raise HTTPException(status_code=code.HTTP_401_UNAUTHORIZED)
+	
+	res = users_db.follow(session.user_id, channel)
+	if res is None: 
+		raise HTTPException(code.HTTP_500_INTERNAL_SERVER_ERROR)
+	else: 
+		return to_public_follow_record(res)
+	
+@app.get('/unfollow/{channel}')
+async def unfollow(channel:str, session: SessionContainer = Depends(verify_session())):
+	if session is None: 
+		raise HTTPException(status_code=code.HTTP_401_UNAUTHORIZED)
+	
+	res = users_db.unfollow(session.user_id, channel)
+	
+	return "Success."
 
 async def update_view_count(username, stream):
 	print(f"Will update view count for: {stream}")

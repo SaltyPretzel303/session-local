@@ -13,7 +13,6 @@ import EmailPassword, { OnHandleEventContext, signOut }
 	from 'supertokens-auth-react/recipe/emailpassword'
 
 import Session from 'supertokens-auth-react/recipe/session'
-import Chat from "./components/Chat";
 
 SuperTokens.init({
 	appInfo: {

@@ -100,8 +100,6 @@ def publish_stream(session, key_url, video_path, ingest_path):
 		print(f"Failed to obtain stream key.")
 		return None
 
-	print(f"KeyData: {json_serialize(key_data)}")
-
 	ingest_url = f"{ingest_path}/{key_data.value}"
 	print(f"Publishing: {video_path} at {ingest_url}")
 
@@ -113,7 +111,8 @@ def publish_stream(session, key_url, video_path, ingest_path):
 			flvflags="no_duration_filesize",
 			loglevel="warning",
 			vcodec="libx264",
-			acodec="aac",	
+			acodec="aac",
+			# video_bitrate='100k',
 			g=60 # number of frames per key frame 
 		)\
 		.run_async(pipe_stdin=True)

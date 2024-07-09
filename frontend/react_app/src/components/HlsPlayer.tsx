@@ -19,6 +19,10 @@ export default function HlsPlayer(
 
 	const videoRef = useRef<HTMLVideoElement>(null);
 	let hls: Hls | undefined = undefined
+	// const [hls, setHls] = useState<Hls | undefined>(undefined)
+
+	let timer: NodeJS.Timer | undefined = undefined
+	const [bitrate, setBitrate] = useState("0")
 
 	useEffect(() => {
 		// console.log("Constructing hlsPlayer for: " + src)
@@ -39,10 +43,14 @@ export default function HlsPlayer(
 					xhr.withCredentials = true;
 				},
 				backBufferLength: 0,
-				liveDurationInfinity: true
+				liveDurationInfinity: true,
+				abrEwmaFastLive: 3
 			} as HlsConfig;
 
+
 			hls = new Hls(config)
+
+
 			hls.loadSource(src)
 			hls.attachMedia(videoElement)
 
@@ -51,7 +59,6 @@ export default function HlsPlayer(
 
 				hls.on(Hls.Events.BUFFER_EOS, doneHandler)
 				hls.startLoad()
-
 				// videoElement.play()
 				// videoElement.play()
 				// 	.then((res) => {
@@ -60,10 +67,23 @@ export default function HlsPlayer(
 				// 	.catch((err) => {
 				// 		console.log("Failed to start video: " + err)
 				// 	})
+
 			} else {
 				console.log("Stream will not be played.")
 				hls.stopLoad()
 			}
+
+			// setHls(mhls)
+
+			timer = setInterval(() => {
+				if (hls) {
+					// setBitrate(Math.trunc(hls.bandwidthEstimate / 1000) +
+					// "k")
+					let value = Math.trunc(hls.bandwidthEstimate / 1000)
+					// console.log(value)
+					setBitrate(value + "k")
+				}
+			}, 1000)
 
 		} else {
 			console.log("Unable to play stream in this browser ... ")
@@ -74,6 +94,10 @@ export default function HlsPlayer(
 			if (hls) {
 				hls.detachMedia()
 				hls.destroy()
+			}
+
+			if (timer) {
+				clearInterval(timer)
 			}
 		}
 
@@ -95,13 +119,22 @@ export default function HlsPlayer(
 		console.log("Pause handled, load stopped.")
 	}
 
+	function setLevel(lv: number) {
+		console.log("Setting level: " + lv)
+		if (hls) {
+			console.log("Hls ok")
+			hls.loadLevel = lv
+			console.log(hls.loadLevel)
+		}
+	}
+
 	return (
 		<video
 			className='flex h-full'
 			muted={muted}
 			poster={posterUrl}
 			ref={videoRef}
-			onPause={pauseHandler}
+			// onPause={pauseHandler}
 			autoPlay
 		/>
 	)

@@ -3,7 +3,7 @@ import config from './Config'
 import { useNavigate } from "react-router-dom"
 import StreamPreview from "./components/StreamPreview"
 import GenericPreviewList from "./components/GenericLazyList"
-import { Dispatch, SetStateAction, useEffect, useState } from "react"
+import { useState } from "react"
 import SortSelector from "./components/SortSelector"
 
 
@@ -53,12 +53,13 @@ export default function Explore(props: ExploreProps) {
 	function selectCategoryOrdering(e: React.ChangeEvent<HTMLSelectElement>) {
 		setSelectedCategoryOrder(Orderings[e.target.value as keyof typeof Orderings])
 	}
+
+	const [selectedCategory, setSelectedCategory] = useState<Category>(
+		{ display_name: "Chatting", name: "chatting" } as Category)
+
 	// #endregion
 
 	// #region ITEMS
-
-	const [selectedCategory, setSelectedCategory]
-		= useState<Category | undefined>(undefined)
 
 	const [followingStreams, setFollowingStreams] = useState<StreamInfo[]>([])
 	const [hasMoreFollowingStreams, setHasMoreFollowingStreams] =
@@ -164,9 +165,12 @@ export default function Explore(props: ExploreProps) {
 	async function fetchFollowingStreams(start: number, count: number, sort: Orderings): Promise<StreamInfo[]> {
 		let followingChannels = await fetchFollowingChannels(start, count)
 
-		return await Promise.all(followingChannels
-			.map(async f => await fetchStreamInfo(f.following))
-			.filter(f => f != undefined)) as StreamInfo[]
+		let data = await Promise.all(followingChannels
+			.map(async f => await fetchStreamInfo(f.following))) as StreamInfo[]
+		data = data.filter(f => f != undefined) as StreamInfo[]
+		console.log(data)
+
+		return data
 	}
 
 	async function fetchMockupData(start: number, count: number): Promise<StreamInfo[]> {
@@ -248,27 +252,33 @@ export default function Explore(props: ExploreProps) {
 		return <div className='flex size-full 
 			justify-center items-center
 			rounded-xl
-			border border-black 
-			bg-gray-200 
-			text-[30px]'>Loading ... </div>
+			bg-transparent
+			text-[30px]
+			text-orange-700'>Loading ... </div>
 	}
 
 	function categoryRenderer(category: Category) {
+		let text_color = category.name == selectedCategory?.name ?
+			"text-orange-600" :
+			"text-black"
 		return (
-			<div className='flex flex-col 
+			<div className={`group flex flex-col 
 					size-full p-2 mx-2
-					text-center text-black text-[25px]
+					text-center ${text_color} text-[25px]
 					rounded-xl
 					bg-slate-700
 					border-2 border-transparent
-					hover:border-2 hover:border-sky-800'
+					hover:border-orange-700`}
 				onClick={() => categoryClick(category)}>
-
-				<img className='flex size-full'
+				{/* // hover:border-sky-800 */}
+				<img className='flex size-full border-b border-b-slate-800'
 					src={config.lowCategoryIconUrl(category.name)} />
+
 				<p className='flex w-full 
-					border-2 border-black 
+					
 					rounded-xl
+					mt-[10px]
+					select-none
 					justify-center'>{category.display_name}</p>
 
 			</div>
@@ -332,7 +342,7 @@ export default function Explore(props: ExploreProps) {
 								followingStreams,
 								setFollowingStreams,
 								setHasMoreFollowingStreams,
-								fetchAllStreams,
+								fetchFollowingStreams,
 								selectedFollowingOrder)
 						}
 						hasMoreData={hasMoreFollowingStreams}
@@ -353,9 +363,9 @@ export default function Explore(props: ExploreProps) {
 
 				{/* CATEGORIES */}
 				<div className='flex flex-col 
-						h-[90%] w-[170px]
+						h-[90%] w-[160px]
 						justify-center items-center
-						bg-gradient-to-b from-slate-700 from-20% to-slate-800
+						bg-gradient-to-b from-slate-800 from-30% to-slate-850
 						rounded-2xl 
 						pt-2 ml-14
 						'>
@@ -378,7 +388,7 @@ export default function Explore(props: ExploreProps) {
 						hasMoreData={hasMoreCategories}
 						renderItem={categoryRenderer}
 						renderLoading={loadingCategoryRendered}
-						relativeHeight={100}
+						relativeHeight={110}
 					/>
 
 				</div>
@@ -393,7 +403,7 @@ export default function Explore(props: ExploreProps) {
 							justify-start items-center'>
 
 						<p className='flex flex-row w-3/4 text-[30px] text-orange-500 '>
-							{selectedCategory ? selectedCategory.display_name : "Recommended"}
+							{selectedCategory.display_name}
 						</p>
 
 						<div className='flex flex-row-reverse w-1/4 h-[50px] mt-2'>
@@ -410,9 +420,7 @@ export default function Explore(props: ExploreProps) {
 								exploreStreams,
 								setExploreStreams,
 								setHasMoreExpoloreStreams,
-								selectedCategory ?
-									(f, c, o) => fetchCategoryStreams(f, c, selectedCategory.name, o) :
-									(f, c, o) => fetchRecommendedStreams(f, c, o),
+								(f, c, o) => fetchCategoryStreams(f, c, selectedCategory.name, o),
 								selectedExploreOrder)
 						}
 						hasMoreData={hasMoreExploreStreams}
