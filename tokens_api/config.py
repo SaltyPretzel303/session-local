@@ -15,7 +15,7 @@ config = Config(
 		domain_name="session.com",
 		users_db_conn_string=f"mongodb://session_user:session_pwd@users-db.{DOMAIN}:27017/session_auth",
 		stream_key_len=10,
-		stream_key_longevity=20,
+		stream_key_longevity=40,
 		username_field="username",
 		view_update_url=f'http://stream-registry.{DOMAIN}/continue_view'
 		)

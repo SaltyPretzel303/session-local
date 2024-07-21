@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import random
 import string
 from typing import Any, Dict, List
@@ -177,7 +177,7 @@ def gen_stream_key(len) -> StreamKeyDoc:
 	return "".join(random.choice(chars) for i in range(len))
 
 def gen_exp_date(longevity) -> datetime:
-	return datetime.now() + timedelta(seconds=longevity)
+	return datetime.now(UTC) + timedelta(seconds=longevity)
 
 @app.get("/auth/get_key")
 def get_key(session: SessionContainer = Depends(verify_session())):
@@ -202,6 +202,7 @@ def get_key(session: SessionContainer = Depends(verify_session())):
 		print("Key expired or not initialized, reinitialize.")
 		key.value = gen_stream_key(config.stream_key_len)
 		key.exp_date = gen_exp_date(config.stream_key_longevity)
+		print(f"Key date: {key.exp_date}")
 
 	print(f"Key generated: {key.value}")
 	users_db.save_key(key)
@@ -225,10 +226,14 @@ def match_key(req_key:str):
 
 	if stream_key is None: 
 		print("No such key.")
-		res_data = KeyResponse.failure("No such key")
-		raise HTTPException(status_code=code.HTTP_404_NOT_FOUND, detail=res_data)
-		return jsonify(res_data), status.HTTP_404_NOT_FOUND
+		# res_data = KeyResponse.failure("No such key")
+		raise HTTPException(status_code=code.HTTP_404_NOT_FOUND, detail="No such key.")
 	
+	if stream_key.is_expired():
+		print("Key invalid/expired.")
+		# res_data = KeyResponse.failure("Key invalid.")
+		raise HTTPException(status_code=code.HTTP_404_NOT_FOUND, detail="No such key.")
+
 	users_db.invalidata_key(stream_key)
 
 	res_data = KeyResponse.success(value=stream_key.owner.username)
