@@ -1,5 +1,7 @@
 # version: '3.5'
 
+# ${DOMAIN_NAME} comes from the .env file 
+
 networks: 
   session-net: 
     name: session-net
@@ -170,6 +172,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # database: 
+  #   container_name: 'database.${DOMAIN_NAME}'
+  #   image: 'postgres:latest'
+  #   environment: 
+  #     POSTGRES_USER: supertokens_user
+  #     POSTGRES_PASSWORD: supertokens_pwd
+  #     POSTGRES_DB: supertokens
+  #   ports: 
+  #     - 5432:54323
+  #   network: 
+  #     - session-net 
+  #   healthcheck:
+  #     test: ['CMD', 'pg_isready', '-U', 'supertokens_user', '-d', 'supertokens']
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
 
   tokens-core:
     container_name: 'tokens-core.${DOMAIN_NAME}'

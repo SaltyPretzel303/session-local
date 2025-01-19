@@ -1,0 +1,11 @@
+{
+	"DomainName": "session.com",
+	"AuthConfig": {
+		"Path": "/auth",
+		"TokensAppName": "react_app",
+		"TokensApiAddr": "/",
+		"SiteBasePath": "/",
+		"TokensCoreAddr": "http://tokens-core.session.com",
+		"TokensCorePort": "3576"
+	}
+}

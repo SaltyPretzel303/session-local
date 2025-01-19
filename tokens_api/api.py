@@ -170,8 +170,6 @@ app.add_middleware(
     allow_headers=["Content-Type", "cookies"] + get_all_cors_headers(),
 )
 
-
-
 def gen_stream_key(len) -> StreamKeyDoc:
 	chars = string.ascii_letters+string.digits
 	return "".join(random.choice(chars) for i in range(len))
@@ -269,7 +267,6 @@ def get_user(username:str):
 
 	return PublicUser(username=user_data.username, email=user_data.email)
 	
-
 @app.get("/get_user_from_tokensid/{tokensid}")
 def get_user_from_tokensid(tokensid: str):
 	print(f"Processing get user from tokensid for: {tokensid}")
@@ -417,6 +414,7 @@ async def update_view_count(username, stream):
 
 
 
+# TODO remove 
 @app.get("/fetch")
 def fetch_cookie():
 

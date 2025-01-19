@@ -174,3 +174,7 @@ cython_debug/
 # done with python stuff
 
 .vscode
+
+mono_backend/go.sum 
+mono_backend/target
+mono_backend/session-backend 

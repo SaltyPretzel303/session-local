@@ -165,7 +165,6 @@ async def update(update_data: UpdateRequest, request: Request):
 		raise HTTPException(status_code=500, detail='Failed to update stream.')
 
 async def getUser(cookies) -> User:
-
 	async with AsyncClient() as client: 
 		auth_url = AppConfig.get_instance().is_authenticated_url
 		auth_res: HttpxResp = await client.get(url=auth_url, cookies=cookies)
