@@ -80,6 +80,17 @@ services:
       - session-net
     stop_signal: SIGINT
 
+  backend: 
+    container_name: 'backend.${DOMAIN_NAME}'
+    build: 
+      context: ./
+      dockerfile: ./dockerfiles/backend.Dockerfile
+    image: session/backend
+    ports: 
+      - "80:80"
+    networks:
+      - session-net
+
   stream-registry:
     container_name: 'stream-registry.${DOMAIN_NAME}'
     build: 

@@ -211,7 +211,6 @@ def get_key(session: SessionContainer = Depends(verify_session())):
 # This should be guarded somehow but at this point ... it's fine.
 @app.get("/match_key/{req_key}")
 def match_key(req_key:str):
-
 	print(f"Processing match key request with: {req_key}")
 
 	if not req_key: # not None and not empty
@@ -411,8 +410,6 @@ async def update_view_count(username, stream):
 			return False
 		
 	return True
-
-
 
 # TODO remove 
 @app.get("/fetch")

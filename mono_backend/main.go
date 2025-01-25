@@ -4,25 +4,50 @@ import (
 	"fmt"
 	"net/http"
 	"saltypretzel/session-backend/api"
-	"saltypretzel/session-backend/data"
+	"saltypretzel/session-backend/api/auth"
+	"saltypretzel/session-backend/api/controllers"
+	"saltypretzel/session-backend/api/services"
+	"saltypretzel/session-backend/db"
+
+	"github.com/supertokens/supertokens-golang/supertokens"
 )
 
 func main() {
 	fmt.Println("Starting web server.")
 
-	api.SetupTokens()
+	auth.InitSetupTokens()
 
 	mux := http.NewServeMux()
-	api.HandleUnprotected(mux, "/", func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("main handler")
-	})
 
-	api.HandleProtected(mux, "/user", func(rw http.ResponseWriter, r *http.Request, user data.User) {
-		fmt.Println("protected handler")
-		fmt.Printf("%+v", user)
-	})
+	// db, err := db.NewPostgre()
+	// if err != nil {
+	// 	fmt.Printf("Failed to connect to database: %v\n", err)
+	// 	return
+	// }
 
-	api.Listen(mux)
+	db := db.NewFileUserRepository()
+
+	userService := &services.UserService{
+		Db: db,
+	}
+
+	sessionProvider := auth.TokenSessionProvider{
+		UserService: *userService,
+	}
+
+	uController := &controllers.UserController{
+		BasePath:        "/user",
+		UserService:     userService,
+		SessionProvider: sessionProvider,
+	}
+
+	uController.Route(mux)
+
+	httpHandler := api.WithMiddleware(mux,
+		api.WithCors,
+		supertokens.Middleware)
+
+	http.ListenAndServe(":80", httpHandler)
 
 	fmt.Println("Web server is shutting down.")
 }
