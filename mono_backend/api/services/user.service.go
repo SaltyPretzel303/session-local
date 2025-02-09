@@ -1,33 +1,43 @@
 package services
 
-import "saltypretzel/session-backend/db"
+import (
+	"fmt"
+	"saltypretzel/session-backend/model"
+)
 
 type UserService struct {
-	Db db.UserRepository
+	UserDb IUserRepository
 }
 
-func (us *UserService) GetUserByUsername(username string) (*db.User, error) {
-	user, err := us.Db.GetByUsername(username)
+func (us *UserService) CreateUser(user model.User, tokenId string) (*model.User, error) {
+	dbUser, err := us.UserDb.CreateUser(user, tokenId)
+
+	if err != nil {
+		fmt.Println("user service failed to create user")
+		return nil, err
+	}
+
+	return dbUser.AsModel(), nil
+}
+
+func (us *UserService) GetUserByUsername(username string) (*model.User, error) {
+	user, err := us.UserDb.GetByUsername(username)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return user.AsModel(), nil
 }
 
-func (us *UserService) GetUserByToken(token string) (*db.User, error) {
-	user, err := us.Db.GetByToken(token)
+func (us *UserService) GetUserByToken(token string) (*model.User, error) {
+	user, err := us.UserDb.GetByToken(token)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return user.AsModel(), nil
 }
 
-func (us *UserService) IsAuthenticated(username string) (bool, error) {
-	return false, nil
-}
-
-func (us *UserService) GetFollowing(username string) ([]db.Channel, error) {
-	return []db.Channel{}, nil
+func (us *UserService) GetFollowing(username string) ([]model.Channel, error) {
+	return []model.Channel{}, nil
 }
 
 func (us *UserService) IsFollowing(username string, whom string) (bool, error) {

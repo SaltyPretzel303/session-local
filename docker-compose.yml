@@ -30,7 +30,8 @@ services:
     image: session/frontend_base
 
   gateway:
-    container_name: '${DOMAIN_NAME}'
+    container_name: 'gateway.session.com'
+    # container_name: '${DOMAIN_NAME}'
     build: 
       context: ./
       dockerfile: ./dockerfiles/gateway.Dockerfile
@@ -47,9 +48,9 @@ services:
       context: ./
       dockerfile: ./dockerfiles/frontend.Dockerfile
     image: session/frontend
-    ports:
+    # ports:
       # - "0.0.0.0:80:80" # 80 points to the gateway 
-      - "0.0.0.0:3000:80"
+      # - "0.0.0.0:3000:80"
     networks:
       - session-net
     stop_signal: SIGKILL
@@ -80,15 +81,44 @@ services:
       - session-net
     stop_signal: SIGINT
 
-  backend: 
+  # Monolith backend built with go
+  # backend: 
+  #   container_name: 'backend.${DOMAIN_NAME}'
+  #   build: 
+  #     context: ./
+  #     dockerfile: ./dockerfiles/backend.Dockerfile
+  #   image: session/backend
+  #   ports: 
+  #     - "3000:80"
+  #   networks:
+  #     - session-net
+  #   environment: 
+  #     GOPATH: /go_deps
+  #   volumes: 
+  #     - /home/nemanja/workspace/go_get:/go_deps
+  #   # environment:
+  #   #   APP_NAME: 'SessionWebApp'
+  #   # env_file: ./mono_backend/.env
+
+  dev-backend: 
     container_name: 'backend.${DOMAIN_NAME}'
     build: 
       context: ./
-      dockerfile: ./dockerfiles/backend.Dockerfile
-    image: session/backend
-    ports: 
-      - "80:80"
-    networks:
+      dockerfile: ./dockerfiles/dev_backend.Dockerfile
+    image: session/dev-backend
+    networks: 
+      - session-net 
+    volumes: 
+      - /home/nemanja/workspace/session-local/mono_backend:/app
+      
+  database: 
+    container_name: 'database.${DOMAIN_NAME}'
+    image: 'postgres:latest'
+    environment: 
+      POSTGRES_USER: session_user
+      POSTGRES_PASSWORD: session_password
+      POSTGRES_DB: session
+    networks: 
       - session-net
 
   stream-registry:

@@ -119,7 +119,7 @@ async def validate_username(username: str, tenant: str):
 
 init(
 	app_info=InputAppInfo(
-		app_name="react_app",
+		app_name="SessionApp",
 		# Has to be exact domain name, can't be patterns (can't start with .) 
 		# like cookie_domain.
 		# Domain name of the service exposing auth api.

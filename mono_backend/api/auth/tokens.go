@@ -3,8 +3,7 @@ package auth
 import (
 	"fmt"
 	"net/http"
-	"saltypretzel/session-backend/api/services"
-	"saltypretzel/session-backend/db"
+	"saltypretzel/session-backend/config"
 	"saltypretzel/session-backend/model"
 
 	"github.com/supertokens/supertokens-golang/recipe/emailpassword"
@@ -14,25 +13,25 @@ import (
 	"github.com/supertokens/supertokens-golang/supertokens"
 )
 
-type ISessionProvider interface {
-	GetSessionUser(w http.ResponseWriter, r *http.Request) *model.User
+type IAuthDataProvider interface {
+	GetUserByToken(string) (*model.User, error)
 }
 
 type TokenSessionProvider struct {
-	UserService services.UserService
+	AuthProvider IAuthDataProvider
 }
 
 func (ts TokenSessionProvider) GetSessionUser(w http.ResponseWriter, r *http.Request) *model.User {
-	var user *db.User
+	var user *model.User
 
 	// this is hack as fuck
 	session.VerifySession(nil, func(rw http.ResponseWriter, r *http.Request) {
-		// this handler is gonna be called immediately (.ServeHTTP(w,r))
+		// this handler is gonna be called immediately (.ServeHTTP(w,r) at the end)
 		container := session.GetSessionFromRequestContext(r.Context())
 		userId := container.GetUserID()
 
 		var err error = nil
-		user, err = ts.UserService.GetUserByToken(userId)
+		user, err = ts.AuthProvider.GetUserByToken(userId)
 
 		if err != nil {
 			user = nil
@@ -40,11 +39,7 @@ func (ts TokenSessionProvider) GetSessionUser(w http.ResponseWriter, r *http.Req
 
 	}).ServeHTTP(w, r)
 
-	if user != nil {
-		return user.AsModel()
-	} else {
-		return nil
-	}
+	return user
 }
 
 func validateUsername(value interface{}, tenantId string) *string {
@@ -78,53 +73,51 @@ func extendSignUp(original *signUpFunction) signUpFunction {
 	}
 }
 
-// TODO refactor to take config ?
-func InitSetupTokens() error {
-	apiBasePath := "/auth"
-	websiteBasePath := "/"
+func InitSuperTokens(cfg config.Config) error {
+	apiBasePath := cfg.Auth.AuthApiBase
+	websiteBasePath := cfg.Auth.SiteBasePath
 
-	// optionalUsername := false
+	optionalUsername := false
 
-	cookieDomain := ".session.com"
+	cookieDomain := fmt.Sprint(".", cfg.DomainName)
 
-	// signInOverride := epmodels.OverrideStruct{
-	// 	Functions: func(originalImplementation epmodels.RecipeInterface) epmodels.RecipeInterface {
+	signInOverride := epmodels.OverrideStruct{
+		Functions: func(originalImplementation epmodels.RecipeInterface) epmodels.RecipeInterface {
 
-	// 		extended := extendSignUp(originalImplementation.SignUp)
-	// 		originalImplementation.SignUp = &extended
+			extended := extendSignUp(originalImplementation.SignUp)
+			originalImplementation.SignUp = &extended
 
-	// 		return originalImplementation
-	// 	},
-	// }
+			return originalImplementation
+		},
+	}
 
 	err := supertokens.Init(supertokens.TypeInput{
-		Debug: true,
+		Debug: false,
 		Supertokens: &supertokens.ConnectionInfo{
-			// ConnectionURI: "http://tokens-core:3567",
-			ConnectionURI: "http://localhost:3567",
+			// ConnectionURI: "http://localhost:3567",
+			ConnectionURI: cfg.Auth.TokensCoreAddr,
 		},
 		AppInfo: supertokens.AppInfo{
-			AppName: "react_app",
-			// APIDomain:       "http://tokens-api.session.com",
-			APIDomain:       "http://session.com:8000",
-			WebsiteDomain:   "http://session.com",
+			AppName:         cfg.Auth.AppName,
+			APIDomain:       cfg.Auth.TokensApiAddr,
+			WebsiteDomain:   cfg.DomainName,
 			APIBasePath:     &apiBasePath,
 			WebsiteBasePath: &websiteBasePath,
 		},
 		RecipeList: []supertokens.Recipe{
-			emailpassword.Init(nil),
-			// emailpassword.Init(&epmodels.TypeInput{
-			// 	SignUpFeature: &epmodels.TypeInputSignUp{
-			// 		FormFields: []epmodels.TypeInputFormField{
-			// 			{
-			// 				ID:       "usernamer",
-			// 				Validate: validateUsername,
-			// 				Optional: &optionalUsername,
-			// 			},
-			// 		},
-			// 	},
-			// 	Override: &signInOverride,
-			// }),
+			// emailpassword.Init(nil),
+			emailpassword.Init(&epmodels.TypeInput{
+				SignUpFeature: &epmodels.TypeInputSignUp{
+					FormFields: []epmodels.TypeInputFormField{
+						{
+							ID:       "usernamer",
+							Validate: validateUsername,
+							Optional: &optionalUsername,
+						},
+					},
+				},
+				Override: &signInOverride,
+			}),
 			session.Init(&sessmodels.TypeInput{
 				CookieDomain: &cookieDomain,
 			}),
@@ -132,9 +125,54 @@ func InitSetupTokens() error {
 	})
 
 	if err != nil {
-		fmt.Printf("error initializing supertokens: %v \n", err)
 		return err
 	}
 
 	return nil
+}
+
+func listTokens() []string {
+	pageCnt := 100
+	recipes := []string{"emailpassword"}
+
+	tokens := []string{}
+
+	dmy := "" // dummy value for first interation
+	var pageToken *string = &dmy
+
+	for pageToken != nil {
+		res, err := supertokens.GetUsersNewestFirst("", pageToken, &pageCnt, &recipes, nil)
+
+		if err != nil {
+			for _, single := range res.Users {
+				tokens = append(tokens, single.User["id"].(string))
+			}
+		}
+
+		pageToken = res.NextPaginationToken
+	}
+
+	return tokens
+}
+
+func removeToken(token string) error {
+	return supertokens.DeleteUser(token)
+}
+
+func (sp *TokenSessionProvider) MergeUsers(dProvider IAuthDataProvider) {
+	tokens := listTokens()
+	fmt.Println("merging tokens: ", tokens)
+
+	for _, token := range tokens {
+		if user, _ := dProvider.GetUserByToken(token); user != nil {
+
+			fmt.Println("removing token: ", token)
+			err := removeToken(token)
+
+			if err != nil {
+				fmt.Println("failed to remove token: ", token)
+			}
+		}
+	}
+
 }

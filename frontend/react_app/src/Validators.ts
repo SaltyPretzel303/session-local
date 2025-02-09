@@ -18,7 +18,9 @@ export async function validUsername(username: string): Promise<string | undefine
 	}
 
 	try {
-		let res = await fetch(config.userUrl(username))
+		let url = config.userByUsernameUrl(username)
+		console.log(`fetching user at: ${url}`)
+		let res = await fetch(url)
 
 		if (res.status == 200) {
 			console.log("User found, username not unique.")

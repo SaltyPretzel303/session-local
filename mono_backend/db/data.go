@@ -25,7 +25,9 @@ func (u *User) AsModel() *model.User {
 
 type Channel struct {
 	gorm.Model
-	UserID uint
+	UserID      uint
+	Name        string
+	Description string
 }
 
 type FollowRecord struct {
@@ -33,4 +35,10 @@ type FollowRecord struct {
 
 	UserId    uint
 	ChannelId uint
+}
+
+type StreamKey struct {
+	gorm.Model
+
+	UserID uint
 }

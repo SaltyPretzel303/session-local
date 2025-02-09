@@ -12,52 +12,63 @@ import SuperTokens, { SuperTokensWrapper } from "supertokens-auth-react"
 import EmailPassword, { OnHandleEventContext, signOut }
 	from 'supertokens-auth-react/recipe/emailpassword'
 
-import Session from 'supertokens-auth-react/recipe/session'
+import Session, { validateClaims } from 'supertokens-auth-react/recipe/session'
 
-SuperTokens.init({
-	appInfo: {
-		appName: "react_app",
-		apiDomain: `http://${config.domainName}`,
-		apiBasePath: "/auth",
-		websiteDomain: `http://${config.domainName}`,
-		websiteBasePath: "/",
-	},
-	recipeList: [
-		EmailPassword.init({
-			onHandleEvent: async (context: OnHandleEventContext) => {
-				console.log("Handling post login.")
-				console.log(context)
+// SuperTokens.init({
+// 	appInfo: {
+// 		appName: "SessionApp",
+// 		apiDomain: `http://${config.domainName}`,
+// 		apiBasePath: "/auth",
+// 		websiteDomain: `http://${config.domainName}`,
+// 		websiteBasePath: "/",
+// 	},
+// 	recipeList: [
+// 		EmailPassword.init({
+// 			onHandleEvent: (context: OnHandleEventContext) => {
+// 				console.log("Handling post login.")
 
-				await new Promise((res) => setTimeout(res, 1000))
+// 				if (context.action === "SUCCESS") {
+// 					if (context.isNewRecipeUser && context.user.loginMethods.length === 1) {
+// 						console.log("Sig up successfull.")
+// 					} else {
+// 						console.log("Sig in successfull.")
+// 					}
 
-				console.log("Past async call.")
-			},
-			signInAndUpFeature: {
-				signUpForm: {
-					formFields: [
-						{
-							id: "username",
-							label: "Unique Username",
-							validate: validUsername
-						}
-					]
-				}
-			}
-		}),
-		Session.init(
-			{
-				sessionTokenFrontendDomain: `.${config.domainName}`,
-				// If multi domain is set on the backend, this field MUST
-				// have the same value as cookie_domain in session.init()
+// 					// await loadUser()
+// 				}
 
-				// sessionTokenBackendDomain: ".session.com"
-				// ^ Not documented for emailpassword login, avoid.
-			}
-		)
+// 				// Two ways to check does session exists.
+// 				// 	if(!context.loading && context.doesSessionExist){
+// 				// 		^ this one allowed only inside < SupertokensWrapper(or context ... ?) >
+// 				// }
+// 				// if (await Session.doesSessionExist()) {
 
-	]
-});
+// 			},
+// 			signInAndUpFeature: {
+// 				signUpForm: {
+// 					formFields: [
+// 						{
+// 							id: "username",
+// 							label: "Unique Username",
+// 							validate: validUsername
+// 						}
+// 					]
+// 				}
+// 			}
+// 		}),
+// 		Session.init(
+// 			{
+// 				sessionTokenFrontendDomain: `.${config.domainName}`,
+// 				// If multi domain is set on the backend, this field MUST
+// 				// have the same value as cookie_domain in session.init()
 
+// 				// sessionTokenBackendDomain: ".session.com"
+// 				// ^ Not documented for emailpassword login, AVOID.
+// 			}
+// 		)
+
+// 	]
+// });
 
 export default function Home() {
 
@@ -67,52 +78,68 @@ export default function Home() {
 	const [loginVisible, setLoginVisible] = useState(false)
 	const [forcedLogin, setForcedLogin] = useState(false)
 
-	// useEffect(() => {
-	// 	loadInfo()
-	// }, [userInfo, streamInfo])
+	useEffect(() => {
+		console.log("Setting up tokens.")
 
-	// async function loadInfo() {
-	// 	if (userInfo != undefined) {
-	// 		console.log("User already fetched in home.")
-	// 		return
-	// 	}
+		SuperTokens.init({
+			appInfo: {
+				appName: "SessionApp",
+				apiDomain: `http://${config.domainName}`,
+				apiBasePath: "/auth",
+				websiteDomain: `http://${config.domainName}`,
+				websiteBasePath: "/",
+			},
+			recipeList: [
+				EmailPassword.init({
+					onHandleEvent: postLogin,
+					signInAndUpFeature: {
+						signUpForm: {
+							formFields: [
+								{
+									id: "username",
+									label: "Unique Username",
+									validate: validUsername
+								}
+							]
+						}
+					}
+				}),
+				Session.init(
+					{
+						sessionTokenFrontendDomain: `.${config.domainName}`,
+						// If multi domain is set on the backend, this field MUST
+						// have the same value as cookie_domain in session.init()
 
-	// 	console.log("Will load user in home.")
-	// 	let user = await loadUser() // will call setUserInfo
+						// sessionTokenBackendDomain: ".session.com"
+						// ^ Not documented for emailpassword login, AVOID.
+					}
+				)
 
-	// 	if (user == undefined) {
-	// 		console.log("User undefined, wont load stream info.")
-	// 		return
-	// 	}
+			]
+		});
+	}, [])
 
-	// 	console.log("Will load stream in home.")
-	// 	let stream = await loadStream() // will call setStreamInfo
-	// }
 
-	// Not used, callback was broken, async methods would just be ... cancelled
-	// without any notice or error.
 	async function postLogin(context: OnHandleEventContext) {
 		console.log("Handling post login.")
 
-		// if (context.action === "SUCCESS") {
-		// 	if (context.isNewRecipeUser && context.user.loginMethods.length === 1) {
-		// 		// ^ from documentation 
-		// 		console.log("Sig up successfull.")
-		// 	} else {
-		// 		console.log("Sig in successfull.")
-		// 	}
+		if (context.action === "SUCCESS") {
+			if (context.isNewRecipeUser && context.user.loginMethods.length === 1) {
+				console.log("Sig up successfull.")
+			} else {
+				console.log("Sig in successfull.")
+			}
 
-		// 	// await getUser()
+			await loadUser()
+		}
+
+		// Two ways to check does session exists.
+		// 	if(!context.loading && context.doesSessionExist){
+		// 		^ this one allowed only inside < SupertokensWrapper(or context ... ?) >
+		// }
+		// if (await Session.doesSessionExist()) {
 
 	}
-
-	// Two ways to check does session exists.
-	// if (!context.loading && context.doesSessionExist){
-	// 		^ this one allowed only inside <SupertokensWrapper (or context ... ?)>
-	// }
-	// if (await Session.doesSessionExist()){
-
-	// }
 
 	async function loadUser(): Promise<UserInfo | undefined> {
 		if (userInfo != undefined) {
@@ -121,7 +148,7 @@ export default function Home() {
 		}
 
 		if (! await Session.doesSessionExist()) {
-			console.log("Session does not exist.")
+			console.log("Session does not exist, won't fetch user data.")
 			return undefined
 		}
 
@@ -192,48 +219,77 @@ export default function Home() {
 	}
 
 	return (
+		// <SuperTokensWrapper>
+		<div>
+			<HeaderBar
+				loginVisible={loginVisible}
+				setLoginVisible={setLoginVisible}
+				forcedLogin={forcedLogin}
+				user={userInfo}
+				getUser={loadUser}
+				stream={streamInfo}
+				getStream={loadStream}
+				logoutHandler={logout} />
 
-		<div className='flex flex-col 
-			justify-center items-center
-			overflow-hidden
-			h-dvh w-dvw'>
+			<button onClick={async () => {
+				console.log("Will validate someone")
+				let res = await fetch("http://session.com/api/v1/user/username?username=someone")
+				// let res = await fetch("http://localhost:3000/api/v1/user/username?username=someone")
+				// let res = await fetch("http://localhost:3000/api/v1/user/token?token=some_token")
+				console.log(`valid username: ${res}`)
 
-			<SuperTokensWrapper>
-
-				<BrowserRouter>
-					<div className='flex h-[50px] min-h-[50px] w-full'>
-						<HeaderBar
-							loginVisible={loginVisible}
-							setLoginVisible={setLoginVisible}
-							forcedLogin={forcedLogin}
-							user={userInfo}
-							getUser={loadUser}
-							stream={streamInfo}
-							getStream={loadStream}
-							logoutHandler={logout} />
-					</div>
-
-					<div className='flex size-full 
-								justify-center items-center 
-								overflow-hidden
-								bg-white'>
-						<Routes>
-
-							<Route path="/"
-								element={<Explore getUser={loadUser} />}
-							/>
-
-							<Route path="/watch/:channel"
-								element={<PlayerPage getUser={loadUser} />}
-							/>
-
-						</Routes>
-
-					</div>
-					
-				</BrowserRouter>
-
-			</SuperTokensWrapper >
+			}}>CLICK ON ME</button>
 		</div>
+		// </SuperTokensWrapper>
+
+		// <div className='flex flex-col 
+		// 	justify-center items-center
+		// 	overflow-hidden
+		// 	h-dvh w-dvw'>
+
+		// 	<SuperTokensWrapper>
+
+		// 		<BrowserRouter>
+
+		// 			<div className='flex h-[50px] min-h-[50px] w-full'>
+		// 				<HeaderBar
+		// 					loginVisible={loginVisible}
+		// 					setLoginVisible={setLoginVisible}
+		// 					forcedLogin={forcedLogin}
+		// 					user={userInfo}
+		// 					getUser={loadUser}
+		// 					stream={streamInfo}
+		// 					getStream={loadStream}
+		// 					logoutHandler={logout} />
+		// 			</div>
+
+		// 			<div className='flex size-full 
+		// 						justify-center items-center 
+		// 						overflow-hidden
+		// 						bg-white'>
+		// 				<Routes>
+
+		// 					<Route path="/" element={
+		// 						<div>
+		// 							EMPTY
+		// 						</div>
+		// 					} />
+
+		// 					{/* <Route path="/"
+		// 						element={<Explore getUser={loadUser} />}
+		// 					/>
+
+		// 					<Route path="/watch/:channel"
+		// 						element={<PlayerPage getUser={loadUser} />}
+		// 					/> */}
+
+		// 				</Routes>
+
+		// 			</div>
+
+		// 		</BrowserRouter>
+
+		// 	</SuperTokensWrapper >
+		// </div>
 	)
 }

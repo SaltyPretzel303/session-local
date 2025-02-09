@@ -3,17 +3,19 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"saltypretzel/session-backend/api/auth"
 	"saltypretzel/session-backend/model"
 	"strings"
 
 	"github.com/supertokens/supertokens-golang/supertokens"
 )
 
+type ISessionProvider interface {
+	GetSessionUser(w http.ResponseWriter, r *http.Request) *model.User
+}
+
 func WithCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(response http.ResponseWriter, r *http.Request) {
-		fmt.Println("cors midleware")
-		response.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		response.Header().Set("Access-Control-Allow-Origin", "http://session.com")
 		response.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		if r.Method == "OPTIONS" {
@@ -31,8 +33,7 @@ func WithCors(next http.Handler) http.Handler {
 	})
 }
 
-func WithUser(sProvider auth.ISessionProvider, handler ProtectedHandler) http.Handler {
-
+func WithUser(sProvider ISessionProvider, handler ProtectedHandler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("protected middleware")
 
@@ -50,9 +51,7 @@ func WithUser(sProvider auth.ISessionProvider, handler ProtectedHandler) http.Ha
 type BasicHandler func(rw http.ResponseWriter, r *http.Request)
 type ProtectedHandler func(rw http.ResponseWriter, r *http.Request, user model.User)
 
-func HandleProtected(mux *http.ServeMux,
-	path string,
-	sProvider auth.ISessionProvider,
+func HandleProtected(mux *http.ServeMux, path string, sProvider ISessionProvider,
 	handler ProtectedHandler) {
 
 	mux.Handle(path, WithUser(sProvider, handler))
@@ -70,4 +69,69 @@ func WithMiddleware(mux *http.ServeMux, handlers ...Middleware) http.Handler {
 		asHandler = handler(asHandler)
 	}
 	return asHandler
+}
+
+type Method string
+
+const (
+	Get    Method = "GET"
+	Post   Method = "POST"
+	Delete Method = "DELETE"
+)
+
+type Route struct {
+	Method Method
+	Path   string
+}
+
+func (r Route) FormPath(prefix string) string {
+	return fmt.Sprintf("%v %v%v", r.Method, prefix, r.Path)
+}
+
+type BasicRoute struct {
+	Route
+	Handler BasicHandler
+}
+
+type ProtectedRoute struct {
+	Route
+	Handler ProtectedHandler
+}
+
+type IController interface {
+	GetBasicRoutes() []BasicRoute
+	GetProtectedRoutes() []ProtectedRoute
+}
+
+type IProtectedController interface {
+	GetSessionProvider() ISessionProvider
+}
+
+func Apply(mux *http.ServeMux, base string, controller IController) {
+	routes := controller.GetBasicRoutes()
+	fmt.Println("Applying basic routes: ")
+	for _, route := range routes {
+		path := route.FormPath(base)
+
+		fmt.Println("Applying route: ", path)
+		mux.Handle(path, http.HandlerFunc(route.Handler))
+	}
+
+	pRoutes := controller.GetProtectedRoutes()
+
+	if asProtected, ok := controller.(IProtectedController); ok {
+		fmt.Println("Applying protected routes: ")
+		sProvider := asProtected.GetSessionProvider()
+
+		for _, route := range pRoutes {
+			path := route.FormPath(base)
+
+			fmt.Println("Applying route: ", path)
+			mux.Handle(path, WithUser(sProvider, route.Handler))
+		}
+	} else if len(pRoutes) > 0 {
+		fmt.Println("Controller contains protected routes but can't provide session provider.")
+		fmt.Println(controller)
+	}
+
 }

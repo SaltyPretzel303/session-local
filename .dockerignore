@@ -94,5 +94,5 @@ venv/
 **/*.mp4
 **/*.flv
 
-**/go.sum
+# **/go.sum
 **/target

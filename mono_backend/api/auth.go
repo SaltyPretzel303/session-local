@@ -2,8 +2,6 @@ package api
 
 import (
 	"fmt"
-	"net/http"
-	"saltypretzel/session-backend/data"
 
 	"github.com/supertokens/supertokens-golang/recipe/emailpassword"
 	"github.com/supertokens/supertokens-golang/recipe/emailpassword/epmodels"
@@ -23,9 +21,7 @@ type signUpFunction = func(email string,
 	userContext supertokens.UserContext) (epmodels.SignUpResponse, error)
 
 func extendSignUp(original *signUpFunction) signUpFunction {
-	return func(email string,
-		password string,
-		tenantId string,
+	return func(email string, password string, tenantId string,
 		userContext supertokens.UserContext) (epmodels.SignUpResponse, error) {
 
 		fmt.Println("Doing extended signup processing.")
@@ -48,19 +44,19 @@ func SetupTokens() error {
 	apiBasePath := "/auth"
 	websiteBasePath := "/"
 
-	// optionalUsername := false
+	optionalUsername := false
 
 	cookieDomain := ".session.com"
 
-	// signInOverride := epmodels.OverrideStruct{
-	// 	Functions: func(originalImplementation epmodels.RecipeInterface) epmodels.RecipeInterface {
+	signInOverride := epmodels.OverrideStruct{
+		Functions: func(originalImplementation epmodels.RecipeInterface) epmodels.RecipeInterface {
 
-	// 		extended := extendSignUp(originalImplementation.SignUp)
-	// 		originalImplementation.SignUp = &extended
+			extended := extendSignUp(originalImplementation.SignUp)
+			originalImplementation.SignUp = &extended
 
-	// 		return originalImplementation
-	// 	},
-	// }
+			return originalImplementation
+		},
+	}
 
 	err := supertokens.Init(supertokens.TypeInput{
 		Debug: true,
@@ -77,19 +73,19 @@ func SetupTokens() error {
 			WebsiteBasePath: &websiteBasePath,
 		},
 		RecipeList: []supertokens.Recipe{
-			emailpassword.Init(nil),
-			// emailpassword.Init(&epmodels.TypeInput{
-			// 	SignUpFeature: &epmodels.TypeInputSignUp{
-			// 		FormFields: []epmodels.TypeInputFormField{
-			// 			{
-			// 				ID:       "usernamer",
-			// 				Validate: validateUsername,
-			// 				Optional: &optionalUsername,
-			// 			},
-			// 		},
-			// 	},
-			// 	Override: &signInOverride,
-			// }),
+			// emailpassword.Init(nil),
+			emailpassword.Init(&epmodels.TypeInput{
+				SignUpFeature: &epmodels.TypeInputSignUp{
+					FormFields: []epmodels.TypeInputFormField{
+						{
+							ID:       "usernamer",
+							Validate: validateUsername,
+							Optional: &optionalUsername,
+						},
+					},
+				},
+				Override: &signInOverride,
+			}),
 			session.Init(&sessmodels.TypeInput{
 				CookieDomain: &cookieDomain,
 			}),
@@ -102,20 +98,4 @@ func SetupTokens() error {
 	}
 
 	return nil
-}
-
-func getUser(w http.ResponseWriter, r *http.Request) data.User {
-	var user data.User
-
-	// this is hack as fuck
-	session.VerifySession(nil, func(rw http.ResponseWriter, r *http.Request) {
-		// this handler is gonna be called immediately (.ServeHTTP(w,r))
-		container := session.GetSessionFromRequestContext(r.Context())
-		userId := container.GetUserID()
-
-		user = data.GetUserByTokensId(userId)
-
-	}).ServeHTTP(w, r)
-
-	return user
 }

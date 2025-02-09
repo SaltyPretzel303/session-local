@@ -1,11 +1,18 @@
 {
 	"DomainName": "session.com",
+	"ApiPrefix": "/api/v1",
 	"AuthConfig": {
-		"Path": "/auth",
-		"TokensAppName": "react_app",
-		"TokensApiAddr": "/",
+		"AuthApiBase": "/auth",
 		"SiteBasePath": "/",
-		"TokensCoreAddr": "http://tokens-core.session.com",
-		"TokensCorePort": "3576"
+		"AppName": "SessionApp",
+		"TokensApiAddr": "http://tokens-api.session.com",
+		"TokensCoreAddr": "http://tokens-core.session.com:3576"
+	},
+	"Db": {
+		"Address": "database.session.com",
+		"Port": 5432,
+		"User": "session_user",
+		"Password": "session_password",
+		"Database": "session"
 	}
 }

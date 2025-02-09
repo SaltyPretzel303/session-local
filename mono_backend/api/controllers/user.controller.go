@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"saltypretzel/session-backend/api"
-	"saltypretzel/session-backend/api/auth"
 	"saltypretzel/session-backend/api/services"
 	"saltypretzel/session-backend/model"
 )
@@ -16,7 +16,7 @@ const (
 type UserController struct {
 	BasePath        string
 	UserService     *services.UserService
-	SessionProvider auth.ISessionProvider
+	SessionProvider api.ISessionProvider
 }
 
 func (uc *UserController) GetBasePath() string {
@@ -24,15 +24,22 @@ func (uc *UserController) GetBasePath() string {
 }
 
 func (uc *UserController) getByUsername(resp http.ResponseWriter, r *http.Request) {
-	username := r.Form.Get("username")
+	fmt.Println("Processing api ... ")
+	username := r.URL.Query().Get("username")
+	// username := r.Form.Get("username")
 	user, err := uc.UserService.GetUserByUsername(username)
 
+	fmt.Println("Processing get user by username: ", username)
+
 	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error"))
 		return
 	}
+
 	rData, err := json.Marshal(user)
 	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error"))
 		return
 	}
@@ -41,11 +48,18 @@ func (uc *UserController) getByUsername(resp http.ResponseWriter, r *http.Reques
 }
 
 func (uc *UserController) getByToken(resp http.ResponseWriter, r *http.Request) {
-	// r.tokensid
+	// token := r.Form.Get("token")
+
+	token := r.URL.Query().Get("token")
+	fmt.Println("Procession get user by tokensid: ", token)
+
 	resp.Write([]byte("GetUserByToken"))
 }
 
 func (uc *UserController) isAuthenticated(resp http.ResponseWriter, r *http.Request, user model.User) {
+	// Since this is should be protected route, if the request si not denied by
+	// the middleware ... user is authenticated/has_session.
+	resp.WriteHeader(http.StatusOK)
 }
 
 func (uc *UserController) getFollowing(resp http.ResponseWriter, r *http.Request, user model.User) {
@@ -82,26 +96,35 @@ func (uc *UserController) unfollow(resp http.ResponseWriter, r *http.Request, us
 	resp.Write([]byte("Unfollow"))
 }
 
-// TODO refactor so this is in generator method
-func (uc *UserController) Route(server *http.ServeMux) {
-	api.HandleUnprotected(server, GET(uc, "/username"), uc.getByUsername)
-	api.HandleUnprotected(server, GET(uc, "/token"), uc.getByToken)
+func (uc *UserController) withPath(path string) string {
+	return fmt.Sprintf("%v%v", uc.BasePath, path)
+}
 
-	// TODO revisit this one, this may be a path conflict
-	api.HandleProtected(server, GET(uc, "/"), uc.SessionProvider, uc.isAuthenticated)
+func (uc *UserController) GetSessionProvider() api.ISessionProvider {
+	return uc.SessionProvider
+}
 
-	api.HandleProtected(server, GET(uc, "/following"), uc.SessionProvider, uc.getFollowing)
-	api.HandleProtected(server, GET(uc, "/is_following"), uc.SessionProvider, uc.isFollowing)
+func (uc *UserController) GetBasicRoutes() []api.BasicRoute {
+	type route = api.Route
+	return []api.BasicRoute{
+		{Route: route{Method: api.Get, Path: uc.withPath("/username")}, Handler: uc.getByUsername},
+		{Route: route{Method: api.Get, Path: uc.withPath("/token")}, Handler: uc.getByToken},
+		{Route: route{Method: api.Delete, Path: uc.withPath("/")}, Handler: uc.removeUser},
+	}
+}
 
-	// TODO add admin role, also user should be able to remove itself
-	// testing purpose only !!!
-	api.HandleUnprotected(server, DELETE(uc, "/"), uc.removeUser)
+func (uc *UserController) GetProtectedRoutes() []api.ProtectedRoute {
+	type route = api.Route
+	return []api.ProtectedRoute{
+		{Route: route{Method: api.Get, Path: uc.withPath("/")}, Handler: uc.isAuthenticated},
 
-	// TODO move to channel.controller
-	api.HandleProtected(server, GET(uc, "/authorize/view"), uc.SessionProvider, uc.authorizeView)
-	api.HandleProtected(server, GET(uc, "/authorize/chat"), uc.SessionProvider, uc.authorizeChat)
+		{Route: route{Method: api.Get, Path: uc.withPath("/following")}, Handler: uc.getFollowing},
+		{Route: route{Method: api.Get, Path: uc.withPath("/is_following")}, Handler: uc.isFollowing},
 
-	api.HandleProtected(server, GET(uc, "/follow"), uc.SessionProvider, uc.follow)
-	api.HandleProtected(server, GET(uc, "/unfollow"), uc.SessionProvider, uc.unfollow)
+		{Route: route{Method: api.Get, Path: uc.withPath("/authorize/view")}, Handler: uc.authorizeView},
+		{Route: route{Method: api.Get, Path: uc.withPath("/authorize/chat")}, Handler: uc.authorizeChat},
 
+		{Route: route{Method: api.Get, Path: uc.withPath("/follow")}, Handler: uc.follow},
+		{Route: route{Method: api.Get, Path: uc.withPath("/unfollow")}, Handler: uc.unfollow},
+	}
 }

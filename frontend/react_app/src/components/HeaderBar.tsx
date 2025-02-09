@@ -37,17 +37,17 @@ export default function HeaderBar({
 
 	const [userInfoVisible, setUserInfoVisible] = useState(false)
 
-	useEffect(() => {
+	// useEffect(() => {
 
-		if (user == undefined) {
-			getUser()
-		}
+	// 	if (user == undefined) {
+	// 		getUser()
+	// 	}
 
-		if (stream == undefined) {
-			getStream()
-		}
+	// 	if (stream == undefined) {
+	// 		getStream()
+	// 	}
 
-	}, [user, stream])
+	// }, [user, stream])
 
 	function LogoText() {
 
@@ -111,7 +111,7 @@ export default function HeaderBar({
 					relative justify-center items-center
 					z-50'>
 
-					<Search getUser={getUser} />
+					{/* <Search getUser={getUser} /> */}
 
 				</div>
 			</div>
