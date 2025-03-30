@@ -40,7 +40,7 @@ func main() {
 
 	// ====== REPOSITORIES ======
 
-	gormDb, err := db.GetPgresDb(cfg.Db)
+	gormDb, err := db.NewPgresDb(cfg.Db)
 	if err != nil {
 		fmt.Println("failed to create db connection: ", err)
 		os.Exit(1)
@@ -55,6 +55,7 @@ func main() {
 	_, err = db.NewChannelRepo(gormDb, userRepo)
 	if err != nil {
 		fmt.Println("failed to create gorm channel repository, err: ", err)
+		os.Exit(1)
 	}
 
 	// ====== REPOSITORIES ======

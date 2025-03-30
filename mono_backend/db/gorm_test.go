@@ -1,24 +1,75 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"saltypretzel/session-backend/config"
 	"saltypretzel/session-backend/model"
+	"strconv"
 	"testing"
+
+	"github.com/docker/go-connections/nat"
+	_ "github.com/jackc/pgx/v5"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func dbConfig() config.Db {
 	return config.Db{
-		Address:  "database.session.com",
 		Port:     5432,
-		User:     "session_user",
-		Password: "session_password",
-		Database: "session",
+		User:     "test_session_user",
+		Password: "test_session_password",
+		Database: "test_session",
 	}
 }
 
-func getDb(t *testing.T) *GormUserRepository {
-	gormDb, err := GetPgresDb(dbConfig())
+func setupDb(ctx context.Context, t *testing.T) config.Db {
+	cfg := dbConfig()
+
+	var envs = map[string]string{
+		"POSTGRES_USER":     cfg.User,
+		"POSTGRES_PASSWORD": cfg.Password,
+		"POSTGRES_DB":       cfg.Database,
+	}
+
+	// pgresUrl := func(host string, port nat.Port) string {
+	// 	return fmt.Sprintf("postgres://%s:%s@localhost:%v/%v?sslmode=disable",
+	// 		cfg.User, cfg.Password, cfg.Port, cfg.Database)
+	// }
+
+	port := nat.Port(strconv.Itoa(cfg.Port))
+
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "postgres:latest",
+			ExposedPorts: []string{port.Port()},
+			Cmd:          []string{"postgres", "-c", "fsync=off"},
+			Env:          envs,
+			// WaitingFor:   wait.ForSQL(port, "pgx", pgresUrl),
+			WaitingFor: wait.ForListeningPort(nat.Port("5432/tcp")),
+		},
+		Started: true,
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, req)
+	if err != nil {
+		t.Fatal("failed to create db testcontainer: ", err)
+	}
+
+	host_port, err := container.MappedPort(ctx, port)
+	if err != nil {
+		t.Fatal("failed to get mapped db testcontainer port: ", err)
+	}
+
+	cfg.Address = "localhost"
+	p, _ := strconv.Atoi(host_port.Port())
+	cfg.Port = p
+
+	return cfg
+}
+
+func getDb(t *testing.T, cfg config.Db) *GormUserRepository {
+	gormDb, err := NewPgresDb(cfg)
 
 	if err != nil {
 		t.Fatal("failed to create db, err: ", err)
@@ -34,7 +85,10 @@ func getDb(t *testing.T) *GormUserRepository {
 
 func TestCreateUser(t *testing.T) {
 
-	db := getDb(t)
+	ctx := context.Background()
+	c_cfg := setupDb(ctx, t)
+
+	db := getDb(t, c_cfg)
 
 	for i := 0; i < 10; i++ {
 		username := fmt.Sprintf("user_%v", i)
@@ -56,9 +110,12 @@ func TestCreateUser(t *testing.T) {
 
 func TestGetUserByUsername(t *testing.T) {
 
-	db := getDb(t)
+	ctx := context.Background()
+	c_cfg := setupDb(ctx, t)
 
-	for i := 0; i < 10; i++ {
+	db := getDb(t, c_cfg)
+
+	for i := range 10 {
 		username := fmt.Sprintf("user_%v", i)
 
 		user, err := db.GetByUsername(username)
@@ -84,9 +141,12 @@ func TestGetUserByUsername(t *testing.T) {
 }
 
 func TestGetUserByToken(t *testing.T) {
-	db := getDb(t)
+	ctx := context.Background()
+	c_cfg := setupDb(ctx, t)
 
-	for i := 0; i < 10; i++ {
+	db := getDb(t, c_cfg)
+
+	for i := range 10 {
 		token := fmt.Sprintf("users_%v_token", i)
 
 		user, err := db.GetByToken(token)
@@ -113,7 +173,10 @@ func TestGetUserByToken(t *testing.T) {
 }
 
 func TestRemoveUserByUsername(t *testing.T) {
-	db := getDb(t)
+	ctx := context.Background()
+	c_cfg := setupDb(ctx, t)
+
+	db := getDb(t, c_cfg)
 
 	for i := 0; i < 10; i++ {
 		username := fmt.Sprintf("user_%v", i)

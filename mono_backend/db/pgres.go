@@ -20,7 +20,7 @@ func AsPage(qRange *model.QueryRange) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func GetPgresDb(cfg config.Db) (*gorm.DB, error) {
+func NewPgresDb(cfg config.Db) (*gorm.DB, error) {
 	dns := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v sslmode=disable",
 		cfg.Address, cfg.Port, cfg.User, cfg.Password, cfg.Database)
 
