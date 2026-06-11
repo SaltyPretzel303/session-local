@@ -1,4 +1,4 @@
-FROM python:latest
+FROM python:3.14
 
 ADD ./icons_service/nginx.conf /etc/nginx/nginx.conf
 

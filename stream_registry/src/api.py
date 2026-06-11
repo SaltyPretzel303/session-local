@@ -13,7 +13,6 @@ import uvicorn
 from datetime import datetime, timedelta
 
 from requests import get
-from httpx import AsyncClient, Response as HttpxResp
 
 from shared_model.continue_view_request import ContinueViewRequest
 from shared_model.following_info import FollowingInfo
@@ -165,14 +164,22 @@ async def update(update_data: UpdateRequest, request: Request):
 		raise HTTPException(status_code=500, detail='Failed to update stream.')
 
 async def getUser(cookies) -> User:
-	async with AsyncClient() as client: 
-		auth_url = AppConfig.get_instance().is_authenticated_url
-		auth_res: HttpxResp = await client.get(url=auth_url, cookies=cookies)
+	
+	from requests import get
+	url = AppConfig.get_instance().is_authenticated_url
+	res = get(url, cookies=cookies)
+	if not res or not res.ok: 
+		return None 
+	return User(**res.json())
 
-		if auth_res is None or auth_res.status_code != 200: 
-			return None
+	# async with AsyncClient() as client: 
+	# 	auth_url = AppConfig.get_instance().is_authenticated_url
+	# 	auth_res: HttpxResp = await client.get(url=auth_url, cookies=cookies)
 
-		return User(**auth_res.json())
+	# 	if auth_res is None or auth_res.status_code != 200: 
+	# 		return None
+
+	# 	return User(**auth_res.json())
 
 @app.post("/continue_view")
 async def add_viewer(view_request: ContinueViewRequest):
@@ -353,9 +360,8 @@ def to_public_cat(cat: ConfCategory):
 
 @app.get("/category_low_tnail/{category}")
 async def get_category_low_tnail(category: str):
-	cat:ConfCategory = next(filter(lambda c: c.name==category, 
-							AppConfig.get_instance().categories), 
-						None)
+	cats = AppConfig.get_instance().categories
+	cat = next((c for c in cats if c.name == category), None)
 	
 	if cat is None: 
 		raise HTTPException(status_code=404)
@@ -453,7 +459,6 @@ def gen_stream_info(ind: int):
 			f"creator_{ind}", 
 			f"chatting",
 			MediaServerInfo("127.0.0.1", 10000, "live","http://localhost:10000/live/streamer_subsd/index.m3u8") )
-
 
 # Data MUST be str, not byte or byte[] !!!
 # To translate byte/byte[] to string use .decode() method. 

@@ -1,0 +1,1 @@
+find . -name setup.py | xargs -i sh -c 'cat {} | grep --invert-match "#" | tr -d "\n\t \"" | grep -oP "install_requires=\[\K.*?(?=\],|\]\))"' | tr -d "'" | sed 's/,/ /g' | tr ' ' '\n' | sort -u | xargs -i sh -c 'v=`curl --no-progress-meter https://pypi.org/pypi/{}/json | jq .info.version`; v=`echo $v | tr -d "\""`; echo "{}==$v"'

@@ -1,4 +1,4 @@
-FROM python
+FROM python:3.14
 
 WORKDIR /app/auth_service
 ADD auth_service/setup.py ./setup.py

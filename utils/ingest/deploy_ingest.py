@@ -32,7 +32,7 @@ def is_conflicting(container):
 	name = container['Names'][0]
 	print(f"Matching: {name}", end="\t->\t")
 
-	reg_res = re.findall(f"{INGEST_PREFIX}(\d+)\.{INGEST_DOMAIN}$", name)
+	reg_res = re.findall(fr"{INGEST_PREFIX}(\d+)\.{INGEST_DOMAIN}$", name)
 	
 	if len(reg_res) > 0:
 		ind = int(reg_res[0])
@@ -50,12 +50,12 @@ if len(argv) > 1:
 		START_IND = int(argv[2])
 
 print("Using arguments: ")
-print(f"Instance count:\t{INSTANCE_CNT}")
-print(f"Start index:\t{START_IND}")
+print(f"\tInstance count:\t{INSTANCE_CNT}")
+print(f"\tStart index:\t{START_IND}")
 
 d_api = APIClient()
 
-name_filter = f"{INGEST_PREFIX}(\d)+\.{INGEST_DOMAIN}"
+name_filter = rf"{INGEST_PREFIX}(\d+)\.{INGEST_DOMAIN}"
 containers = d_api.containers(all=True, filters={"name": name_filter})
 
 conflict_conts = [c for c in containers if is_conflicting(c)]

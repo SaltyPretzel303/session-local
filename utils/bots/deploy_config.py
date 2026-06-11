@@ -27,7 +27,8 @@ class DeployConfig:
 					remove_url=f'http://{DOMAIN_NAME}/user/remove',
 					key_route=f'http://{DOMAIN_NAME}/auth/get_key',
 					source_file=LOCAL_VIDEO_PATH,
-					ingest_url=f'rtmp://{DOMAIN_NAME}:9000/ingest',
+					# ingest_url=f'rtmp://{DOMAIN_NAME}:9000/ingest',
+					ingest_url=f'rtmp://{DOMAIN_NAME}/ingest',
 					update_url=f'http://{DOMAIN_NAME}/stream/update',
 					stream_info_url=f'http://{DOMAIN_NAME}/stream/stream_info')
 					

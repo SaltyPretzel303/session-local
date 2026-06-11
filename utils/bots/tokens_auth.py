@@ -1,10 +1,6 @@
 
 from dataclasses import dataclass
 from requests import Session, get, post
-from jsonpickle import encode
-
-def jsonify(obj):
-	return encode(obj, unpicklable=False, indent=4)
 
 def form_remove_url(base: str, username: str):
 	return f"{base}/{username}"

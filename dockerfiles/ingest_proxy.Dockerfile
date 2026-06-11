@@ -1,4 +1,4 @@
-FROM haproxy:latest
+FROM haproxy:3.4
 
 USER root
 
@@ -13,7 +13,8 @@ RUN mkdir /run/haproxy
 
 COPY ingest_proxy/haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 
-EXPOSE 9000
+# WHY 9000 ????
+EXPOSE 9000 
 EXPOSE 9001
 
 ENTRYPOINT ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]

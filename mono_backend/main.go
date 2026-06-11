@@ -17,6 +17,13 @@ import (
 
 const CONFIG_FILE = "config.json"
 
+func log_config(cfg *config.Config) {
+	fmt.Println(" ====== CONFIG ====== ")
+	bts, _ := json.MarshalIndent(cfg, " ", "    ")
+	fmt.Println(string(bts))
+	fmt.Println(" ====== CONFIG ====== ")
+}
+
 func main() {
 
 	fmt.Println("Starting web server.")
@@ -25,10 +32,7 @@ func main() {
 	config.WithFile(CONFIG_FILE, &cfg)
 	config.WithEnv(&cfg)
 
-	fmt.Println(" ====== CONFIG ====== ")
-	bts, _ := json.MarshalIndent(cfg, " ", "    ")
-	fmt.Println(string(bts))
-	fmt.Println(" ====== CONFIG ====== ")
+	log_config(&cfg)
 
 	err := auth.InitSuperTokens(cfg)
 	if err != nil {

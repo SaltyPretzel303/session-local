@@ -14,61 +14,61 @@ import EmailPassword, { OnHandleEventContext, signOut }
 
 import Session, { validateClaims } from 'supertokens-auth-react/recipe/session'
 
-// SuperTokens.init({
-// 	appInfo: {
-// 		appName: "SessionApp",
-// 		apiDomain: `http://${config.domainName}`,
-// 		apiBasePath: "/auth",
-// 		websiteDomain: `http://${config.domainName}`,
-// 		websiteBasePath: "/",
-// 	},
-// 	recipeList: [
-// 		EmailPassword.init({
-// 			onHandleEvent: (context: OnHandleEventContext) => {
-// 				console.log("Handling post login.")
+SuperTokens.init({
+	appInfo: {
+		appName: "SessionApp",
+		apiDomain: `http://${config.domainName}`,
+		apiBasePath: "/auth",
+		websiteDomain: `http://${config.domainName}`,
+		websiteBasePath: "/",
+	},
+	recipeList: [
+		EmailPassword.init({
+			onHandleEvent: (context: OnHandleEventContext) => {
+				console.log("Handling post login.")
 
-// 				if (context.action === "SUCCESS") {
-// 					if (context.isNewRecipeUser && context.user.loginMethods.length === 1) {
-// 						console.log("Sig up successfull.")
-// 					} else {
-// 						console.log("Sig in successfull.")
-// 					}
+				if (context.action === "SUCCESS") {
+					if (context.isNewRecipeUser && context.user.loginMethods.length === 1) {
+						console.log("Sig up successfull.")
+					} else {
+						console.log("Sig in successfull.")
+					}
 
-// 					// await loadUser()
-// 				}
+					// await loadUser()
+				}
 
-// 				// Two ways to check does session exists.
-// 				// 	if(!context.loading && context.doesSessionExist){
-// 				// 		^ this one allowed only inside < SupertokensWrapper(or context ... ?) >
-// 				// }
-// 				// if (await Session.doesSessionExist()) {
+				// Two ways to check does session exists.
+				// 	if(!context.loading && context.doesSessionExist){
+				// 		^ this one allowed only inside < SupertokensWrapper(or context ... ?) >
+				// }
+				// if (await Session.doesSessionExist()) {
 
-// 			},
-// 			signInAndUpFeature: {
-// 				signUpForm: {
-// 					formFields: [
-// 						{
-// 							id: "username",
-// 							label: "Unique Username",
-// 							validate: validUsername
-// 						}
-// 					]
-// 				}
-// 			}
-// 		}),
-// 		Session.init(
-// 			{
-// 				sessionTokenFrontendDomain: `.${config.domainName}`,
-// 				// If multi domain is set on the backend, this field MUST
-// 				// have the same value as cookie_domain in session.init()
+			},
+			signInAndUpFeature: {
+				signUpForm: {
+					formFields: [
+						{
+							id: "username",
+							label: "Unique Username",
+							validate: validUsername
+						}
+					]
+				}
+			}
+		}),
+		Session.init(
+			{
+				sessionTokenFrontendDomain: `.${config.domainName}`,
+				// If multi domain is set on the backend, this field MUST
+				// have the same value as cookie_domain in session.init()
 
-// 				// sessionTokenBackendDomain: ".session.com"
-// 				// ^ Not documented for emailpassword login, AVOID.
-// 			}
-// 		)
+				// sessionTokenBackendDomain: ".session.com"
+				// ^ Not documented for emailpassword login, AVOID.
+			}
+		)
 
-// 	]
-// });
+	]
+});
 
 export default function Home() {
 
@@ -77,6 +77,8 @@ export default function Home() {
 
 	const [loginVisible, setLoginVisible] = useState(false)
 	const [forcedLogin, setForcedLogin] = useState(false)
+
+	const [text, setText] = useState("sample text")
 
 	useEffect(() => {
 		console.log("Setting up tokens.")
@@ -220,76 +222,75 @@ export default function Home() {
 
 	return (
 		// <SuperTokensWrapper>
-		<div>
-			<HeaderBar
-				loginVisible={loginVisible}
-				setLoginVisible={setLoginVisible}
-				forcedLogin={forcedLogin}
-				user={userInfo}
-				getUser={loadUser}
-				stream={streamInfo}
-				getStream={loadStream}
-				logoutHandler={logout} />
+		// <div className='
+		// 	flex flex-col	
+		// 	bg-black 
+		// 	w-full h-screen
+		// 	items-center
+		// 	justify-start'>
+		// 	<HeaderBar
+		// 		loginVisible={loginVisible}
+		// 		setLoginVisible={setLoginVisible}
+		// 		forcedLogin={forcedLogin}
+		// 		user={userInfo}
+		// 		getUser={loadUser}
+		// 		stream={streamInfo}
+		// 		getStream={loadStream}
+		// 		logoutHandler={logout} />
 
-			<button onClick={async () => {
-				console.log("Will validate someone")
-				let res = await fetch("http://session.com/api/v1/user/username?username=someone")
-				// let res = await fetch("http://localhost:3000/api/v1/user/username?username=someone")
-				// let res = await fetch("http://localhost:3000/api/v1/user/token?token=some_token")
-				console.log(`valid username: ${res}`)
+		<div className='flex flex-col 
+			justify-center items-center
+			overflow-hidden
+			h-dvh w-dvw'>
 
-			}}>CLICK ON ME</button>
+			<SuperTokensWrapper>
+
+				<BrowserRouter>
+
+					<div className='flex h-[50px] min-h-[50px] w-full'>
+						<HeaderBar
+							loginVisible={loginVisible}
+							setLoginVisible={setLoginVisible}
+							forcedLogin={forcedLogin}
+							user={userInfo}
+							getUser={loadUser}
+							stream={streamInfo}
+							getStream={loadStream}
+							logoutHandler={logout} />
+					</div>
+
+					<div className='flex size-full 
+								justify-center items-center 
+								overflow-hidden
+								bg-white'>
+						<Routes>
+
+							{/* <Route path="/" element={
+								<div>
+									EMPTY
+								</div>
+							} /> */}
+
+							<Route path="/"
+								element={<Explore getUser={loadUser} />}
+							/>
+
+							<Route path="/watch/:channel"
+								element={<PlayerPage getUser={loadUser} />}
+							/>
+
+						</Routes>
+
+					</div>
+
+				</BrowserRouter>
+
+			</SuperTokensWrapper >
 		</div>
+
+		//		</div>
 		// </SuperTokensWrapper>
 
-		// <div className='flex flex-col 
-		// 	justify-center items-center
-		// 	overflow-hidden
-		// 	h-dvh w-dvw'>
 
-		// 	<SuperTokensWrapper>
-
-		// 		<BrowserRouter>
-
-		// 			<div className='flex h-[50px] min-h-[50px] w-full'>
-		// 				<HeaderBar
-		// 					loginVisible={loginVisible}
-		// 					setLoginVisible={setLoginVisible}
-		// 					forcedLogin={forcedLogin}
-		// 					user={userInfo}
-		// 					getUser={loadUser}
-		// 					stream={streamInfo}
-		// 					getStream={loadStream}
-		// 					logoutHandler={logout} />
-		// 			</div>
-
-		// 			<div className='flex size-full 
-		// 						justify-center items-center 
-		// 						overflow-hidden
-		// 						bg-white'>
-		// 				<Routes>
-
-		// 					<Route path="/" element={
-		// 						<div>
-		// 							EMPTY
-		// 						</div>
-		// 					} />
-
-		// 					{/* <Route path="/"
-		// 						element={<Explore getUser={loadUser} />}
-		// 					/>
-
-		// 					<Route path="/watch/:channel"
-		// 						element={<PlayerPage getUser={loadUser} />}
-		// 					/> */}
-
-		// 				</Routes>
-
-		// 			</div>
-
-		// 		</BrowserRouter>
-
-		// 	</SuperTokensWrapper >
-		// </div>
 	)
 }

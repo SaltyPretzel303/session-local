@@ -2,7 +2,7 @@
 
 import argparse
 import docker
-from streamer import stream 
+from streamer import stream
 from deploy_config import DeployConfig, LOCAL_VIDEO_PATH
 from config import DOMAIN_NAME
 

@@ -1,4 +1,4 @@
-FROM python 
+FROM python:3.14
 
 RUN apt update; apt install ffmpeg -y
 RUN apt update; apt install uvicorn -y
@@ -9,7 +9,7 @@ RUN pip install .
 
 WORKDIR /app
 RUN mkdir tnails
-COPY unavailable.png ./tnails/unavailable.png
+# COPY unavailable.png ./tnails/unavailable.png
 # ^ provide some icon representing unavailable stream thumbnail 
 # This may not be used. Default stream icon could be implemnted on frontend. 
 

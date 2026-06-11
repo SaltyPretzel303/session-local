@@ -1,4 +1,4 @@
-FROM python 
+FROM python:3.14
 
 RUN apt update; apt install ffmpeg -y
 

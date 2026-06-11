@@ -209,6 +209,6 @@ const newConfig: configuration = {
 }
 
 
-const config: configuration = newConfig
+const config: configuration = oldConfig
 
 export default config

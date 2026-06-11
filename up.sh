@@ -1,5 +1,7 @@
 #!/bin/bash 
 
+export PYTHONPATH=$PYTHONPATH:`pwd`/`dirname $0`/utils
+
 docker compose up --detach stream-registry \
 	registry-database \
 	users-db \
@@ -12,12 +14,12 @@ docker compose up --detach stream-registry \
 
 echo "Auth, stream registry and frontend services deployed."
 
-./utils/cdn/remove_cdn.py
-./utils/cdn/deploy_cdn.py
+python utils/cdn/remove_cdn.py
+python utils/cdn/deploy_cdn.py
 
 echo "Cdn instances deployed." 
 
-# Has to be deployed after cdn instances are up and running beacuse 
+# Has to be deployed after cdn instances are up and running because
 # it will try to resolve all hostanmes on startup. Resolver directive 
 # is not allowed in rtmp.server section.
 docker compose up --detach cdn-proxy

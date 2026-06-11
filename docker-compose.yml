@@ -16,7 +16,6 @@ networks:
           # gateway: 172.23.2.254
     
 services:
-
   nginx-rtmp: 
     build: 
       context: ./ 
@@ -46,7 +45,7 @@ services:
     container_name: 'frontend.${DOMAIN_NAME}'
     build: 
       context: ./
-      dockerfile: ./dockerfiles/frontend.Dockerfile
+      dockerfile: ./dockerfiles/frontend_${FRONT_STAGE}.Dockerfile
     image: session/frontend
     # ports:
       # - "0.0.0.0:80:80" # 80 points to the gateway 
@@ -100,16 +99,16 @@ services:
   #   #   APP_NAME: 'SessionWebApp'
   #   # env_file: ./mono_backend/.env
 
-  dev-backend: 
-    container_name: 'backend.${DOMAIN_NAME}'
-    build: 
-      context: ./
-      dockerfile: ./dockerfiles/dev_backend.Dockerfile
-    image: session/dev-backend
-    networks: 
-      - session-net 
-    volumes: 
-      - /home/nemanja/workspace/session-local/mono_backend:/app
+  # dev-backend: 
+  #   container_name: 'backend.${DOMAIN_NAME}'
+  #   build: 
+  #     context: ./
+  #     dockerfile: ./dockerfiles/dev_backend.Dockerfile
+  #   image: session/dev-backend
+  #   networks: 
+  #     - session-net 
+  #   volumes: 
+  #     - /home/nemanja/workspace/session-local/mono_backend:/app
       
   database: 
     container_name: 'database.${DOMAIN_NAME}'

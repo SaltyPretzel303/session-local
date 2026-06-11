@@ -120,6 +120,7 @@ class Db:
 
 		return update_result > 0
 
+	@staticmethod
 	def validate_category(cat: str):
 		cats = AppConfig.get_instance().categories
 		return next(filter(lambda c: c.name == cat, cats), None) is not None

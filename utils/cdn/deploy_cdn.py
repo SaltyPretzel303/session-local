@@ -2,10 +2,10 @@
 
 import os
 import docker 
-import jsonpickle
-from requests import Response, post
-from retry_requests import retry
+from requests.adapters import HTTPAdapter
+from requests import post, Session
 from config import DOMAIN_NAME
+import json
 
 # For each region specified in regions json/dict create one cdn server instance.
 # Update regions json with the created server's ip and initialize cdn manager 
@@ -121,7 +121,7 @@ def deploy_with_api(region_key, index):
 	
 	return
 
-def deploy_with_shell(region_conf):
+def deploy_with_shell(region_conf, index):
 	# Using shell is allowing me to assing ip to each container, which will 
 	# allow me to have single /etc/hosts. Static DNS in some way.
 	c_name = region_conf['domainName']
@@ -142,23 +142,24 @@ def deploy_with_shell(region_conf):
 
 	return
 
-index=0
-for region_key in regions:
-	for region in regions[region_key]:
-		print(f"Deploying region: {region}")
-		deploy_with_shell(region)
-		index = index+1
-
+for ind, instance in enumerate([instance for region in regions.values() for instance in region]):
+	print(f"Deploying region: {instance}")
+	deploy_with_shell(instance, ind)
+	
 print("CDNS deployed, will initialize manager.")
 
-config = jsonpickle.encode(regions, unpicklable=False)
+config = json.dumps(regions)
 
-retry_session = retry(retries=5, backoff_factor=0.2)
+ping_url = f'http://{MANAGER_IP}/ping'
+
+s = Session()
+s.mount(ping_url, adapter=HTTPAdapter(max_retries=5))
 try:
-	print(f"Waiting for cdn manager on: {MANAGER_IP}")
-	retry_session.get(f'http://{MANAGER_IP}/ping')
 
-	init_res: Response = post(f'http://{MANAGER_IP}/initialize', json=config)
+	print(f"Waiting for cdn manager on: {ping_url}")
+	s.send()
+
+	init_res = post(f'http://{MANAGER_IP}/initialize', json=config)
 	print(f"Initialize status code: {init_res.status_code}")
 	
 except:

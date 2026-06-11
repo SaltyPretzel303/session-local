@@ -5,7 +5,6 @@ from time import sleep
 from threading import Thread
 import ffmpeg # pip install ffmpeg-python NOT JUST FFMPEG !!!
 
-from jsonpickle import encode
 from requests import Response, Session, post
 import signal 
 from tokens_auth import StreamKey, tokens_signin, tokens_signup, tokens_get_key, tokens_remove_user
@@ -85,12 +84,6 @@ def setup_arg_parser():
 						default=update_stream_url)
 
 	return parser.parse_args()
-
-def json_serialize(data):
-	return encode(data, unpicklable=False)
-
-def jsonify(obj):
-	return encode(obj, unpicklable=False, indent=4)
 
 def publish_stream(session, key_url, video_path, ingest_path):
 
